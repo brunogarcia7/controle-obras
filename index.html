@@ -10,14 +10,16 @@
 
     <style>
         /* --- DESIGN SYSTEM (PREMIUM) --- */
-        :root { --primary: #2563eb; --bg-body: #f1f5f9; --bg-card: #ffffff; --border: #e2e8f0; --success: #10b981; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg-body); margin: 0; padding: 30px; color: #1e293b; }
-        .container { max-width: 1400px; margin: 0 auto; } /* Aumentei a largura para caber o contrato */
+        :root { --primary: #2563eb; --bg-body: #f1f5f9; --bg-card: #ffffff; --border: #e2e8f0; --success: #10b981; --text: #1e293b; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-body); margin: 0; padding: 30px; color: var(--text); }
+        .container { max-width: 1400px; margin: 0 auto; }
         
         h2 { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; }
         
-        /* CARD */
-        .card { background: var(--bg-card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 40px; border: 1px solid var(--border); }
+        /* CARDS */
+        .card { background: var(--bg-card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 30px; border: 1px solid var(--border); }
+        
+        /* FORMULÁRIO */
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; align-items: end; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         label { font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
@@ -27,15 +29,20 @@
         input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
         input[readonly] { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }
 
-        /* BOTÃO + */
+        /* BOTÕES ESPECIAIS */
         .input-group { display: flex; gap: 8px; width: 100%; }
         .input-group select { flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; }
         .btn-plus { height: 48px; width: 48px; background-color: var(--success); color: white; border: none; border-radius: 0 8px 8px 0; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
         .btn-plus:hover { background-color: #059669; }
 
-        /* BOTÃO SALVAR */
         .btn-save { grid-column: 1 / -1; height: 54px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 15px; }
         .btn-save:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* AREA DE FILTROS (NOVO) */
+        .filter-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
+        .btn-clear { height: 48px; padding: 0 20px; background: white; border: 1px solid var(--border); color: #64748b; font-weight: 600; cursor: pointer; border-radius: 8px; }
+        .btn-clear:hover { background: #e2e8f0; color: #ef4444; border-color: #ef4444; }
 
         /* TABELAS */
         .section-title { font-size: 1.2rem; margin-bottom: 15px; padding-left: 10px; border-left: 4px solid var(--primary); color: #334155; }
@@ -45,11 +52,12 @@
         th { background: #f8fafc; text-align: left; padding: 16px; font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; border-bottom: 1px solid var(--border); }
         td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 0.95rem; vertical-align: middle; }
         
-        /* BADGES E ÍCONES */
+        /* BADGES */
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
         .bg-green { background: #dcfce7; color: #166534; }
         .bg-red { background: #fee2e2; color: #991b1b; }
         
+        /* AÇÕES */
         .btn-icon { width: 34px; height: 34px; border: none; border-radius: 6px; cursor: pointer; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; transition: 0.2s; }
         .btn-icon:hover { transform: scale(1.1); }
         .action-renew { background: #e0f2fe; color: #0284c7; }
@@ -67,7 +75,6 @@
     <div class="card">
         <form id="rentalForm">
             <div class="form-grid">
-                
                 <div class="form-group">
                     <label>Obra</label>
                     <div class="input-group">
@@ -75,7 +82,6 @@
                         <button type="button" class="btn-plus" onclick="adicionarOpcao('obraSelect')" title="Nova Obra">+</button>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label>Fornecedor</label>
                     <div class="input-group">
@@ -83,12 +89,10 @@
                         <button type="button" class="btn-plus" onclick="adicionarOpcao('fornecedorSelect')" title="Novo Fornecedor">+</button>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label>Equipamento</label>
                     <input type="text" id="equipamento" placeholder="Ex: Martelete" required>
                 </div>
-
                 <div class="form-group">
                     <label>Período</label>
                     <select id="unidade" onchange="calcData()">
@@ -97,30 +101,42 @@
                         <option value="Dia">Diária</option>
                     </select>
                 </div>
-
                 <div class="form-group">
                     <label>Data Início</label>
                     <input type="date" id="inicio" required onchange="calcData()">
                 </div>
-
                 <div class="form-group">
                     <label>Fim Previsto</label>
                     <input type="date" id="fim" readonly>
                 </div>
-
                 <div class="form-group">
                     <label>Nº Contrato</label>
                     <input type="text" id="contrato" placeholder="000-000">
                 </div>
-
                 <div class="form-group">
                     <label>Valor (R$)</label>
                     <input type="number" id="valor" step="0.01" placeholder="0.00" required>
                 </div>
-
                 <button type="submit" class="btn-save">SALVAR REGISTRO</button>
             </div>
         </form>
+    </div>
+
+    <h3 class="section-title">🔍 Filtrar Resultados</h3>
+    <div class="filter-grid">
+        <div class="form-group">
+            <label>Filtrar por Obra</label>
+            <select id="filtroObra" onchange="filtrarTabela()">
+                <option value="">Todas as Obras</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Filtrar por Fornecedor</label>
+            <select id="filtroFornecedor" onchange="filtrarTabela()">
+                <option value="">Todos os Fornecedores</option>
+            </select>
+        </div>
+        <button class="btn-clear" onclick="limparFiltros()">Limpar Filtros</button>
     </div>
 
     <h3 class="section-title">🟢 Locações Ativas</h3>
@@ -129,14 +145,8 @@
             <table>
                 <thead>
                     <tr>
-                        <th width="14%">Obra</th> 
-                        <th width="14%">Fornecedor</th> 
-                        <th width="14%">Equipamento</th> 
-                        <th>Início</th> 
-                        <th>Fim Previsto</th> 
-                        <th>Status</th> 
-                        <th>Contrato</th> <th>Valor</th> 
-                        <th style="text-align:center">Ações</th>
+                        <th width="14%">Obra</th> <th width="14%">Fornecedor</th> <th width="14%">Equipamento</th> 
+                        <th>Início</th> <th>Fim Previsto</th> <th>Status</th> <th>Contrato</th> <th>Valor</th> <th style="text-align:center">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="tabela-ativos"></tbody>
@@ -150,13 +160,8 @@
             <table>
                 <thead>
                     <tr>
-                        <th width="14%">Obra</th> 
-                        <th width="14%">Fornecedor</th> 
-                        <th width="18%">Equipamento</th> 
-                        <th>Início</th> 
-                        <th>Devolução</th> 
-                        <th>Contrato</th> <th>Valor</th> 
-                        <th style="text-align:center">Ações</th>
+                        <th width="14%">Obra</th> <th width="14%">Fornecedor</th> <th width="18%">Equipamento</th> 
+                        <th>Início</th> <th>Devolução</th> <th>Contrato</th> <th>Valor</th> <th style="text-align:center">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="tabela-historico"></tbody>
@@ -168,12 +173,15 @@
 </div>
 
 <script>
-    // --- 1. CONEXÃO SUPABASE ---
+    // --- 1. CONFIGURAÇÃO SUPABASE ---
     const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- 2. LÓGICA DE LISTAS INTELIGENTES ---
+    // Variável Global para guardar os dados (para filtrar sem recarregar)
+    let CACHE_DADOS = [];
+
+    // --- 2. LISTAS E FILTROS ---
     const PADRAO_OBRAS = ["Vinícola", "Sede Start Química", "Tamboré"];
     const PADRAO_FORN = ["TETO LOC.", "CASA DO CONSTRUTOR", "ALUFORT"];
 
@@ -182,8 +190,14 @@
         const fornNoBanco = [...new Set(dados.map(item => item.fornecedor))];
         const listaObras = [...new Set([...PADRAO_OBRAS, ...obrasNoBanco])].sort();
         const listaForn = [...new Set([...PADRAO_FORN, ...fornNoBanco])].sort();
+
+        // Preenche Cadastro
         preencherSelect('obraSelect', listaObras);
         preencherSelect('fornecedorSelect', listaForn);
+
+        // Preenche Filtros (Mantendo a seleção atual se houver)
+        preencherSelectFiltro('filtroObra', listaObras);
+        preencherSelectFiltro('filtroFornecedor', listaForn);
     }
 
     function preencherSelect(id, lista) {
@@ -200,39 +214,69 @@
         if(valorAtual && lista.includes(valorAtual)) sel.value = valorAtual;
     }
 
+    // Função especial para o filtro (tem a opção "Todas")
+    function preencherSelectFiltro(id, lista) {
+        const sel = document.getElementById(id);
+        const valorAtual = sel.value;
+        const textoPadrao = id === 'filtroObra' ? 'Todas as Obras' : 'Todos os Fornecedores';
+        
+        sel.innerHTML = `<option value="">${textoPadrao}</option>`;
+        lista.forEach(item => {
+            if(item) {
+                const opt = document.createElement('option');
+                opt.value = item; opt.text = item;
+                sel.add(opt);
+            }
+        });
+        if(valorAtual) sel.value = valorAtual;
+    }
+
     window.adicionarOpcao = function(idSelect) {
         const novo = prompt("Digite o nome para cadastrar:");
         if(novo && novo.trim()) {
             const sel = document.getElementById(idSelect);
             let existe = false;
-            for(let i=0; i<sel.options.length; i++) {
-                if(sel.options[i].value === novo) existe = true;
-            }
+            for(let i=0; i<sel.options.length; i++) { if(sel.options[i].value === novo) existe = true; }
             if(!existe) {
                 const opt = document.createElement('option');
                 opt.value = novo; opt.text = novo;
                 sel.add(opt);
                 sel.value = novo; 
-            } else {
-                alert("Este item já está na lista!");
-                sel.value = novo;
-            }
+            } else { alert("Item já existe!"); sel.value = novo; }
         }
     }
 
-    // --- 3. CARREGAMENTO E CRUD ---
+    // --- 3. LÓGICA DE DADOS ---
     async function carregarDados() {
-        const { data, error } = await client
-            .from('locacoes')
-            .select('*')
-            .order('created_at', { ascending: false });
-
+        const { data, error } = await client.from('locacoes').select('*').order('created_at', { ascending: false });
         if (error) { console.error(error); return; }
+        
+        CACHE_DADOS = data; // Salva na memória
         carregarListas(data); 
-        renderizar(data);
+        filtrarTabela(); // Chama o render via filtro
     }
 
-    // SALVAR
+    // Função de Filtragem
+    window.filtrarTabela = function() {
+        const obraFiltro = document.getElementById('filtroObra').value;
+        const fornFiltro = document.getElementById('filtroFornecedor').value;
+
+        const dadosFiltrados = CACHE_DADOS.filter(item => {
+            const matchObra = obraFiltro ? item.obra === obraFiltro : true;
+            const matchForn = fornFiltro ? item.fornecedor === fornFiltro : true;
+            return matchObra && matchForn;
+        });
+
+        renderizar(dadosFiltrados);
+    }
+
+    window.limparFiltros = function() {
+        document.getElementById('filtroObra').value = "";
+        document.getElementById('filtroFornecedor').value = "";
+        filtrarTabela();
+    }
+
+    // --- 4. CRUD ---
     document.getElementById('rentalForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.querySelector('.btn-save');
@@ -245,57 +289,47 @@
             unidade: document.getElementById('unidade').value,
             data_inicio: document.getElementById('inicio').value,
             data_fim: document.getElementById('fim').value,
-            contrato: document.getElementById('contrato').value || '-', // Salva o contrato
+            contrato: document.getElementById('contrato').value || '-',
             valor: document.getElementById('valor').value,
             status: 'ativo'
         };
 
         const { error } = await client.from('locacoes').insert([novo]);
-        
         if(!error) {
             document.getElementById('rentalForm').reset();
             document.getElementById('obraSelect').value = "";
             document.getElementById('fornecedorSelect').value = "";
             carregarDados();
-        } else {
-            alert("Erro: " + error.message);
-        }
+        } else { alert("Erro: " + error.message); }
         btn.textContent = "SALVAR REGISTRO"; btn.disabled = false;
     });
 
-    // RENOVAR
     window.renovar = async (id, dataFimAtual, unidade) => {
         if(!confirm("Renovar por mais um período?")) return;
         const data = new Date(dataFimAtual);
         data.setMinutes(data.getMinutes() + data.getTimezoneOffset());
-        
         if (unidade === 'Mês') data.setDate(data.getDate() + 30);
         else if (unidade === 'Quinzena') data.setDate(data.getDate() + 15);
         else data.setDate(data.getDate() + 1);
-
-        const novaData = data.toISOString().split('T')[0];
-        const { error } = await client.from('locacoes').update({ data_fim: novaData }).eq('id', id);
+        const { error } = await client.from('locacoes').update({ data_fim: data.toISOString().split('T')[0] }).eq('id', id);
         if(!error) carregarDados();
     };
 
-    // DEVOLVER
     window.devolver = async (id) => {
         const hoje = new Date().toISOString().split('T')[0];
         const dataReal = prompt("Data da Devolução:", hoje);
         if(!dataReal) return;
-
         const { error } = await client.from('locacoes').update({ status: 'devolvido', data_devolucao: dataReal }).eq('id', id);
         if(!error) carregarDados();
     };
 
-    // EXCLUIR
     window.excluir = async (id) => {
         if(!confirm("Tem certeza que deseja apagar?")) return;
         const { error } = await client.from('locacoes').delete().eq('id', id);
         if(!error) carregarDados();
     };
 
-    // RENDERIZAR
+    // --- 5. RENDERIZAÇÃO ---
     function renderizar(lista) {
         const tbAtivos = document.getElementById('tabela-ativos');
         const tbHist = document.getElementById('tabela-historico');
@@ -306,26 +340,18 @@
         lista.forEach(item => {
             const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
             const dataIn = fmtData(item.data_inicio);
-            const contrato = item.contrato || '-'; // Garante que mostre algo se estiver vazio
+            const contrato = item.contrato || '-';
 
             if (item.status === 'ativo') {
                 const hoje = new Date(); hoje.setHours(0,0,0,0);
                 const venc = new Date(item.data_fim + 'T00:00:00');
                 const diff = Math.ceil((venc - hoje) / 86400000);
-
-                let badge = '';
-                if(diff < 0) badge = `<span class="badge bg-red">ATRASADO ${Math.abs(diff)}d</span>`;
-                else if(diff <= 2) badge = `<span class="badge bg-red">⚠️ Vence em ${diff}d</span>`;
-                else badge = `<span class="badge bg-green">Em dia (${diff}d)</span>`;
+                let badge = diff < 0 ? `<span class="badge bg-red">ATRASADO ${Math.abs(diff)}d</span>` : (diff <= 2 ? `<span class="badge bg-red">⚠️ Vence em ${diff}d</span>` : `<span class="badge bg-green">Em dia (${diff}d)</span>`);
 
                 tbAtivos.innerHTML += `
                     <tr>
-                        <td><b>${item.obra}</b></td>
-                        <td>${item.fornecedor}</td>
-                        <td>${item.equipamento}</td>
-                        <td>${dataIn}</td>
-                        <td>${fmtData(item.data_fim)}</td>
-                        <td>${badge}</td>
+                        <td><b>${item.obra}</b></td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
+                        <td>${dataIn}</td> <td>${fmtData(item.data_fim)}</td> <td>${badge}</td>
                         <td>${contrato}</td> <td>${val}</td>
                         <td style="text-align:center">
                             <button class="btn-icon action-renew" onclick="renovar(${item.id}, '${item.data_fim}', '${item.unidade}')" title="Renovar">🔄</button>
@@ -336,11 +362,8 @@
             } else {
                 tbHist.innerHTML += `
                     <tr>
-                        <td>${item.obra}</td>
-                        <td>${item.fornecedor}</td>
-                        <td>${item.equipamento}</td>
-                        <td>${dataIn}</td>
-                        <td><b>${fmtData(item.data_devolucao)}</b></td>
+                        <td>${item.obra}</td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
+                        <td>${dataIn}</td> <td><b>${fmtData(item.data_devolucao)}</b></td>
                         <td>${contrato}</td> <td>${val}</td>
                         <td style="text-align:center">
                             <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Apagar">🗑️</button>
@@ -362,7 +385,6 @@
     }
     
     function fmtData(d) { if(!d) return '-'; return d.split('-').reverse().join('/'); }
-
     carregarDados();
 </script>
 </body>
