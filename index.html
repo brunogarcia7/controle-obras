@@ -38,8 +38,7 @@
         .btn-save { grid-column: 1 / -1; height: 54px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 15px; }
         .btn-save:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        /* AREA DE FILTROS (NOVO) */
-        .filter-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        /* AREA DE FILTROS */
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
         .btn-clear { height: 48px; padding: 0 20px; background: white; border: 1px solid var(--border); color: #64748b; font-weight: 600; cursor: pointer; border-radius: 8px; }
         .btn-clear:hover { background: #e2e8f0; color: #ef4444; border-color: #ef4444; }
@@ -56,6 +55,7 @@
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
         .bg-green { background: #dcfce7; color: #166534; }
         .bg-red { background: #fee2e2; color: #991b1b; }
+        .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
         
         /* AÇÕES */
         .btn-icon { width: 34px; height: 34px; border: none; border-radius: 6px; cursor: pointer; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; transition: 0.2s; }
@@ -160,8 +160,8 @@
             <table>
                 <thead>
                     <tr>
-                        <th width="14%">Obra</th> <th width="14%">Fornecedor</th> <th width="18%">Equipamento</th> 
-                        <th>Início</th> <th>Devolução</th> <th>Contrato</th> <th>Valor</th> <th style="text-align:center">Ações</th>
+                        <th width="14%">Obra</th> <th width="14%">Fornecedor</th> <th width="16%">Equipamento</th> 
+                        <th>Início</th> <th>Devolução</th> <th>Dias</th> <th>Contrato</th> <th>Valor</th> <th style="text-align:center">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="tabela-historico"></tbody>
@@ -178,24 +178,19 @@
     const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Variável Global para guardar os dados (para filtrar sem recarregar)
     let CACHE_DADOS = [];
-
-    // --- 2. LISTAS E FILTROS ---
     const PADRAO_OBRAS = ["Vinícola", "Sede Start Química", "Tamboré"];
     const PADRAO_FORN = ["TETO LOC.", "CASA DO CONSTRUTOR", "ALUFORT"];
 
+    // --- 2. LISTAS E FILTROS ---
     async function carregarListas(dados) {
         const obrasNoBanco = [...new Set(dados.map(item => item.obra))];
         const fornNoBanco = [...new Set(dados.map(item => item.fornecedor))];
         const listaObras = [...new Set([...PADRAO_OBRAS, ...obrasNoBanco])].sort();
         const listaForn = [...new Set([...PADRAO_FORN, ...fornNoBanco])].sort();
 
-        // Preenche Cadastro
         preencherSelect('obraSelect', listaObras);
         preencherSelect('fornecedorSelect', listaForn);
-
-        // Preenche Filtros (Mantendo a seleção atual se houver)
         preencherSelectFiltro('filtroObra', listaObras);
         preencherSelectFiltro('filtroFornecedor', listaForn);
     }
@@ -204,30 +199,16 @@
         const sel = document.getElementById(id);
         const valorAtual = sel.value; 
         sel.innerHTML = '<option value="" disabled selected>Selecione...</option>';
-        lista.forEach(item => {
-            if(item) {
-                const opt = document.createElement('option');
-                opt.value = item; opt.text = item;
-                sel.add(opt);
-            }
-        });
+        lista.forEach(item => { if(item) sel.add(new Option(item, item)); });
         if(valorAtual && lista.includes(valorAtual)) sel.value = valorAtual;
     }
 
-    // Função especial para o filtro (tem a opção "Todas")
     function preencherSelectFiltro(id, lista) {
         const sel = document.getElementById(id);
         const valorAtual = sel.value;
         const textoPadrao = id === 'filtroObra' ? 'Todas as Obras' : 'Todos os Fornecedores';
-        
         sel.innerHTML = `<option value="">${textoPadrao}</option>`;
-        lista.forEach(item => {
-            if(item) {
-                const opt = document.createElement('option');
-                opt.value = item; opt.text = item;
-                sel.add(opt);
-            }
-        });
+        lista.forEach(item => { if(item) sel.add(new Option(item, item)); });
         if(valorAtual) sel.value = valorAtual;
     }
 
@@ -238,9 +219,7 @@
             let existe = false;
             for(let i=0; i<sel.options.length; i++) { if(sel.options[i].value === novo) existe = true; }
             if(!existe) {
-                const opt = document.createElement('option');
-                opt.value = novo; opt.text = novo;
-                sel.add(opt);
+                sel.add(new Option(novo, novo));
                 sel.value = novo; 
             } else { alert("Item já existe!"); sel.value = novo; }
         }
@@ -250,23 +229,19 @@
     async function carregarDados() {
         const { data, error } = await client.from('locacoes').select('*').order('created_at', { ascending: false });
         if (error) { console.error(error); return; }
-        
-        CACHE_DADOS = data; // Salva na memória
+        CACHE_DADOS = data; 
         carregarListas(data); 
-        filtrarTabela(); // Chama o render via filtro
+        filtrarTabela(); 
     }
 
-    // Função de Filtragem
     window.filtrarTabela = function() {
         const obraFiltro = document.getElementById('filtroObra').value;
         const fornFiltro = document.getElementById('filtroFornecedor').value;
-
         const dadosFiltrados = CACHE_DADOS.filter(item => {
             const matchObra = obraFiltro ? item.obra === obraFiltro : true;
             const matchForn = fornFiltro ? item.fornecedor === fornFiltro : true;
             return matchObra && matchForn;
         });
-
         renderizar(dadosFiltrados);
     }
 
@@ -360,11 +335,17 @@
                         </td>
                     </tr>`;
             } else {
+                // Cálculo de dias totais (Devolução - Início)
+                const start = new Date(item.data_inicio + 'T00:00:00');
+                const end = new Date(item.data_devolucao + 'T00:00:00');
+                const totalDias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                const displayDias = totalDias < 0 ? 0 : totalDias;
+
                 tbHist.innerHTML += `
                     <tr>
                         <td>${item.obra}</td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
                         <td>${dataIn}</td> <td><b>${fmtData(item.data_devolucao)}</b></td>
-                        <td>${contrato}</td> <td>${val}</td>
+                        <td><span class="badge bg-gray">${displayDias} dias</span></td> <td>${contrato}</td> <td>${val}</td>
                         <td style="text-align:center">
                             <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Apagar">🗑️</button>
                         </td>
