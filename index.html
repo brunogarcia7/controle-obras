@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Obras - Online</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* --- ESTILO (DESIGN SYSTEM) --- */
+        :root { --primary: #2563eb; --bg-body: #f1f5f9; --bg-card: #ffffff; --border: #e2e8f0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-body); margin: 0; padding: 30px; color: #1e293b; }
+        .container { max-width: 1300px; margin: 0 auto; }
+        
+        /* Cabeçalho */
+        h2 { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; color: #1e293b; }
+        
+        /* Cartão do Formulário */
+        .card { background: var(--bg-card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 40px; border: 1px solid var(--border); }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; align-items: end; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        /* Campos de Entrada */
+        input, select { height: 48px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; box-sizing: border-box; background: #fff; font-size: 0.95rem; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        input[readonly] { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }
+        
+        /* Botão Salvar */
+        .btn-save { grid-column: 1 / -1; height: 54px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 15px; transition: 0.2s; }
+        .btn-save:hover { background: #1d4ed8; transform: translateY(-1px); }
+        
+        /* Tabelas */
+        .table-container { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 50px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .section-title { font-size: 1.2rem; margin-bottom: 15px; padding-left: 10px; border-left: 4px solid var(--primary); color: #334155; }
+        
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        th { background: #f8fafc; text-align: left; padding: 16px; font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; border-bottom: 1px solid var(--border); }
+        td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 0.95rem; vertical-align: middle; }
+        tr:hover { background: #f8fafc; }
+
+        /* Badges e Ícones */
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+        .bg-green { background: #dcfce7; color: #166534; }
+        .bg-red { background: #fee2e2; color: #991b1b; }
+        
+        .btn-icon { width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; margin-left: 5px; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-icon:hover { transform: scale(1.1); }
+        
+        .action-check { background: #dcfce7; color: #16a34a; }
+        .action-trash { background: #f1f5f9; color: #94a3b8; }
+        .action-renew { background: #e0f2fe; color: #0284c7; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🏗️ Gestão de Obras (Online)</h2>
+
+    <div class="card">
+        <form id="rentalForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Obra</label>
+                    <input type="text" id="obra" placeholder="Nome da Obra" required>
+                </div>
+                <div class="form-group">
+                    <label>Fornecedor</label>
+                    <input type="text" id="fornecedor" placeholder="Fornecedor" required>
+                </div>
+                <div class="form-group">
+                    <label>Equipamento</label>
+                    <input type="text" id="equipamento" placeholder="Ex: Betoneira" required>
+                </div>
+                <div class="form-group">
+                    <label>Período</label>
+                    <select id="unidade" onchange="calcData()">
+                        <option value="Mês">Mês (30 dias)</option>
+                        <option value="Quinzena">Quinzena (15 dias)</option>
+                        <option value="Dia">Diária</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Data Início</label>
+                    <input type="date" id="inicio" required onchange="calcData()">
+                </div>
+                <div class="form-group">
+                    <label>Fim Previsto</label>
+                    <input type="date" id="fim" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Contrato</label>
+                    <input type="text" id="contrato" placeholder="000-000">
+                </div>
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="number" id="valor" step="0.01" placeholder="0.00" required>
+                </div>
+                <button type="submit" class="btn-save">SALVAR REGISTRO</button>
+            </div>
+        </form>
+    </div>
+
+    <h3 class="section-title">🟢 Locações Ativas</h3>
+    <div class="table-container">
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="15%">Obra</th> 
+                        <th width="15%">Fornecedor</th> 
+                        <th width="15%">Equipamento</th> 
+                        <th>Início</th> 
+                        <th>Fim Previsto</th> 
+                        <th>Status</th> 
+                        <th>Valor</th> 
+                        <th style="text-align:center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-ativos"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <h3 class="section-title" style="color:#64748b; border-color:#cbd5e1; margin-top:50px">📂 Histórico de Devoluções</h3>
+    <div class="table-container" style="opacity:0.9">
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="15%">Obra</th> 
+                        <th width="15%">Fornecedor</th> 
+                        <th width="20%">Equipamento</th> 
+                        <th>Início</th> 
+                        <th>Devolução</th> 
+                        <th>Valor</th> 
+                        <th style="text-align:center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-historico"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. CONFIGURAÇÃO DO SUPABASE (EMBUTIDA) ---
+    const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
+    
+    // Inicia a conexão
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- 2. FUNÇÕES PRINCIPAIS ---
+
+    // CARREGAR DADOS
+    async function carregarDados() {
+        const { data, error } = await client
+            .from('locacoes')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("Erro ao carregar:", error);
+            // Se a tabela não existir ainda ou a chave estiver errada
+            if(error.code === '42P01') alert("Erro: A tabela 'locacoes' ainda não foi criada no Supabase.");
+            return;
+        }
+        renderizar(data);
+    }
+
+    // SALVAR NOVO
+    document.getElementById('rentalForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const btn = document.querySelector('.btn-save');
+        btn.textContent = "Salvando...";
+        btn.disabled = true;
+
+        const novo = {
+            obra: document.getElementById('obra').value,
+            fornecedor: document.getElementById('fornecedor').value,
+            equipamento: document.getElementById('equipamento').value,
+            unidade: document.getElementById('unidade').value,
+            data_inicio: document.getElementById('inicio').value,
+            data_fim: document.getElementById('fim').value,
+            contrato: document.getElementById('contrato').value || '-',
+            valor: document.getElementById('valor').value,
+            status: 'ativo'
+        };
+
+        const { error } = await client.from('locacoes').insert([novo]);
+        
+        if (!error) {
+            document.getElementById('rentalForm').reset();
+            carregarDados();
+        } else {
+            alert("Erro ao salvar: " + error.message);
+        }
+        
+        btn.textContent = "SALVAR REGISTRO";
+        btn.disabled = false;
+    });
+
+    // RENOVAR (Adiciona tempo)
+    window.renovar = async (id, dataFimAtual, unidade) => {
+        if(!confirm("Deseja renovar este equipamento por mais um período?")) return;
+        
+        const data = new Date(dataFimAtual);
+        data.setMinutes(data.getMinutes() + data.getTimezoneOffset()); // Ajuste fuso horário
+        
+        if (unidade === 'Mês') data.setDate(data.getDate() + 30);
+        else if (unidade === 'Quinzena') data.setDate(data.getDate() + 15);
+        else if (unidade === 'Dia') data.setDate(data.getDate() + 1);
+
+        const novaData = data.toISOString().split('T')[0];
+
+        const { error } = await client
+            .from('locacoes')
+            .update({ data_fim: novaData })
+            .eq('id', id);
+            
+        if(!error) carregarDados();
+        else alert("Erro ao renovar: " + error.message);
+    };
+
+    // DEVOLVER (Manda pro histórico)
+    window.devolver = async (id) => {
+        const hoje = new Date().toISOString().split('T')[0];
+        const dataReal = prompt("Data da devolução (AAAA-MM-DD):", hoje);
+        if(!dataReal) return;
+
+        const { error } = await client
+            .from('locacoes')
+            .update({ status: 'devolvido', data_devolucao: dataReal })
+            .eq('id', id);
+
+        if(!error) carregarDados();
+        else alert("Erro ao devolver: " + error.message);
+    };
+
+    // EXCLUIR (Apaga do banco)
+    window.excluir = async (id) => {
+        if(!confirm("Tem certeza? Isso apagará o registro permanentemente.")) return;
+        
+        const { error } = await client.from('locacoes').delete().eq('id', id);
+        
+        if(!error) carregarDados();
+        else alert("Erro ao excluir: " + error.message);
+    };
+
+    // --- 3. RENDERIZAÇÃO ---
+    function renderizar(lista) {
+        const tbAtivos = document.getElementById('tabela-ativos');
+        const tbHist = document.getElementById('tabela-historico');
+        tbAtivos.innerHTML = ''; tbHist.innerHTML = '';
+
+        if(!lista) return;
+
+        lista.forEach(item => {
+            const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            const dataIn = fmtData(item.data_inicio);
+            
+            if (item.status === 'ativo') {
+                // Cálculo de Vencimento
+                const hoje = new Date(); hoje.setHours(0,0,0,0);
+                const venc = new Date(item.data_fim + 'T00:00:00');
+                const diff = Math.ceil((venc - hoje) / (86400000));
+                
+                let badge = '';
+                if(diff < 0) badge = `<span class="badge bg-red">ATRASADO ${Math.abs(diff)} dias</span>`;
+                else if(diff <= 2) badge = `<span class="badge bg-red">⚠️ Vence em ${diff} dias</span>`;
+                else badge = `<span class="badge bg-green">Em dia (${diff} dias)</span>`;
+
+                tbAtivos.innerHTML += `
+                    <tr>
+                        <td><b>${item.obra}</b></td>
+                        <td>${item.fornecedor}</td>
+                        <td>${item.equipamento}</td>
+                        <td>${dataIn}</td>
+                        <td>${fmtData(item.data_fim)}</td>
+                        <td>${badge}</td>
+                        <td>${val}</td>
+                        <td style="text-align:center">
+                            <button class="btn-icon action-renew" onclick="renovar(${item.id}, '${item.data_fim}', '${item.unidade}')" title="Renovar">🔄</button>
+                            <button class="btn-icon action-check" onclick="devolver(${item.id})" title="Devolver">✅</button>
+                            <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Excluir">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // Histórico
+                tbHist.innerHTML += `
+                    <tr>
+                        <td>${item.obra}</td>
+                        <td>${item.fornecedor}</td>
+                        <td>${item.equipamento}</td>
+                        <td>${dataIn}</td>
+                        <td><b>${fmtData(item.data_devolucao)}</b></td>
+                        <td>${val}</td>
+                        <td style="text-align:center">
+                            <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Excluir Definitivamente">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+    }
+
+    // Auxiliares
+    window.calcData = () => {
+        const ini = document.getElementById('inicio').value;
+        const uni = document.getElementById('unidade').value;
+        if(!ini) return;
+        
+        const d = new Date(ini);
+        d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+        
+        if(uni === 'Mês') d.setDate(d.getDate() + 30);
+        else if(uni === 'Quinzena') d.setDate(d.getDate() + 15);
+        else d.setDate(d.getDate() + 1);
+        
+        document.getElementById('fim').value = d.toISOString().split('T')[0];
+    }
+    
+    function fmtData(d) { if(!d) return '-'; return d.split('-').reverse().join('/'); }
+
+    // Start
+    carregarDados();
+
+</script>
+</body>
+</html>
