@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTROLE DE FERRAMENTAS ELETRICAS</title>
+    
+    <title>Controle de Ferramentas Elétricas</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏗️</text></svg>">
 
@@ -13,27 +14,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* --- DESIGN SYSTEM (V26 - Fundo #D3D3D3) --- */
+        /* --- DESIGN SYSTEM RESTAURADO (V28 - Fundo #D3D3D3) --- */
         :root {
-            var(--bg-body): #D3D3D3;       /* Cinza Claro Solicitado */
+            /* CORREÇÃO DO ERRO AQUI: Definição correta das variáveis */
+            --bg-body: #D3D3D3;       /* Cinza Claro Solicitado */
             
             /* Componentes */
-            var(--bg-card): #ffffff;       /* Branco Absoluto */
-            var(--bg-input): #ffffff;      
-            var(--border): #cbd5e1;        /* Bordas levemente mais escuras para contraste */
+            --bg-card: #ffffff;       /* Branco Absoluto */
+            --bg-input: #ffffff;      
+            --border: #cbd5e1;        /* Bordas */
             
             /* Cores de Texto */
-            var(--text-title-page): #1e293b; 
-            var(--text-main): #334155;       
-            var(--text-muted): #64748b;      
+            --text-title-page: #1e293b; 
+            --text-main: #334155;       
+            --text-muted: #64748b;      
             
             /* Cores de Ação */
-            var(--primary): #2563eb;       
-            var(--primary-hover): #1d4ed8;
-            var(--success): #10b981;
-            var(--warning): #f59e0b;
-            var(--danger): #ef4444;
-            var(--purple): #7c3aed;
+            --primary: #2563eb;       
+            --primary-hover: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --purple: #7c3aed;
         }
 
         body {
@@ -65,7 +67,7 @@
             gap: 15px;
             font-weight: 700;
             letter-spacing: -0.03em;
-            text-transform: uppercase; /* Força letras maiúsculas */
+            text-transform: uppercase; /* Força letras maiúsculas no título visual */
         }
         
         .app-badge {
@@ -76,10 +78,10 @@
             border-radius: 20px;
             border: 1px solid rgba(37, 99, 235, 0.2);
             background: #fff;
-            text-transform: none; /* Badge normal */
+            text-transform: none; 
         }
 
-        /* CARDS (Brancos) */
+        /* CARDS */
         .card {
             background: var(--bg-card);
             padding: 35px;
