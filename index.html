@@ -38,8 +38,21 @@
         .btn-save { grid-column: 1 / -1; height: 54px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 15px; }
         .btn-save:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        /* AREA DE FILTROS */
-        .filter-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
+        /* AREA DE FILTROS (ATUALIZADO PARA 4 COLUNAS) */
+        .filter-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr 1fr auto; /* Obra | Forn | Contrato | Botão */
+            gap: 15px; 
+            align-items: end; 
+            background: #f8fafc; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            margin-bottom: 30px; 
+        }
+        /* Ajuste para celular */
+        @media (max-width: 768px) { .filter-grid { grid-template-columns: 1fr; } }
+
         .btn-clear { height: 48px; padding: 0 20px; background: white; border: 1px solid var(--border); color: #64748b; font-weight: 600; cursor: pointer; border-radius: 8px; }
         .btn-clear:hover { background: #e2e8f0; color: #ef4444; border-color: #ef4444; }
 
@@ -136,7 +149,13 @@
                 <option value="">Todos os Fornecedores</option>
             </select>
         </div>
-        <button class="btn-clear" onclick="limparFiltros()">Limpar Filtros</button>
+        
+        <div class="form-group">
+            <label>Buscar Contrato</label>
+            <input type="text" id="filtroContrato" placeholder="Digite o nº do contrato..." onkeyup="filtrarTabela()">
+        </div>
+
+        <button class="btn-clear" onclick="limparFiltros()">Limpar Tudo</button>
     </div>
 
     <h3 class="section-title">🟢 Locações Ativas</h3>
@@ -161,7 +180,8 @@
                 <thead>
                     <tr>
                         <th width="14%">Obra</th> <th width="14%">Fornecedor</th> <th width="16%">Equipamento</th> 
-                        <th>Início</th> <th>Devolução</th> <th>Dias</th> <th>Contrato</th> <th>Valor</th> <th style="text-align:center">Ações</th>
+                        <th>Início</th> <th>Devolução</th> <th>Dias</th> 
+                        <th>Contrato</th> <th>Valor</th> <th style="text-align:center">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="tabela-historico"></tbody>
@@ -234,13 +254,21 @@
         filtrarTabela(); 
     }
 
+    // FILTRAGEM (Atualizada com Contrato)
     window.filtrarTabela = function() {
         const obraFiltro = document.getElementById('filtroObra').value;
         const fornFiltro = document.getElementById('filtroFornecedor').value;
+        const contratoFiltro = document.getElementById('filtroContrato').value.trim().toLowerCase(); // Pega texto minúsculo
+
         const dadosFiltrados = CACHE_DADOS.filter(item => {
             const matchObra = obraFiltro ? item.obra === obraFiltro : true;
             const matchForn = fornFiltro ? item.fornecedor === fornFiltro : true;
-            return matchObra && matchForn;
+            
+            // Lógica do contrato: Se digitou algo, verifica se contém. Se não digitou, ignora.
+            const itemContrato = item.contrato ? String(item.contrato).toLowerCase() : '';
+            const matchContrato = contratoFiltro ? itemContrato.includes(contratoFiltro) : true;
+
+            return matchObra && matchForn && matchContrato;
         });
         renderizar(dadosFiltrados);
     }
@@ -248,6 +276,7 @@
     window.limparFiltros = function() {
         document.getElementById('filtroObra').value = "";
         document.getElementById('filtroFornecedor').value = "";
+        document.getElementById('filtroContrato').value = ""; // Limpa contrato
         filtrarTabela();
     }
 
@@ -335,7 +364,6 @@
                         </td>
                     </tr>`;
             } else {
-                // Cálculo de dias totais (Devolução - Início)
                 const start = new Date(item.data_inicio + 'T00:00:00');
                 const end = new Date(item.data_devolucao + 'T00:00:00');
                 const totalDias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
@@ -345,7 +373,8 @@
                     <tr>
                         <td>${item.obra}</td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
                         <td>${dataIn}</td> <td><b>${fmtData(item.data_devolucao)}</b></td>
-                        <td><span class="badge bg-gray">${displayDias} dias</span></td> <td>${contrato}</td> <td>${val}</td>
+                        <td><span class="badge bg-gray">${displayDias} dias</span></td>
+                        <td>${contrato}</td> <td>${val}</td>
                         <td style="text-align:center">
                             <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Apagar">🗑️</button>
                         </td>
