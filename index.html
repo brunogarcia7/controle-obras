@@ -11,8 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* --- DESIGN SYSTEM (PREMIUM) --- */
-        :root { --primary: #2563eb; --bg-body: #f1f5f9; --bg-card: #ffffff; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --text: #1e293b; }
+        /* --- DESIGN SYSTEM (V19) --- */
+        :root { --primary: #2563eb; --bg-body: #f1f5f9; --bg-card: #ffffff; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --text: #1e293b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); margin: 0; padding: 30px; color: var(--text); }
         .container { max-width: 1400px; margin: 0 auto; }
         
@@ -31,7 +31,7 @@
         input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
         input[readonly] { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }
 
-        /* BOTÕES ESPECIAIS */
+        /* BOTÕES */
         .input-group { display: flex; gap: 8px; width: 100%; }
         .input-group select { flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; }
         .btn-plus { height: 48px; width: 48px; background-color: var(--success); color: white; border: none; border-radius: 0 8px 8px 0; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
@@ -43,15 +43,12 @@
         .btn-save.editing { background-color: var(--warning); color: #78350f; }
         .cancel-edit { display: none; margin-top: 10px; color: #ef4444; cursor: pointer; text-align: center; font-size: 0.9rem; text-decoration: underline; grid-column: 1 / -1; }
 
-        /* AREA DE FILTROS + BOTÃO PDF */
+        /* FILTROS E RELATÓRIO */
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 15px; align-items: end; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
         @media (max-width: 1000px) { .filter-grid { grid-template-columns: 1fr; } }
 
         .btn-clear { height: 48px; padding: 0 20px; background: white; border: 1px solid var(--border); color: #64748b; font-weight: 600; cursor: pointer; border-radius: 8px; }
-        .btn-clear:hover { background: #e2e8f0; color: #ef4444; border-color: #ef4444; }
-
         .btn-pdf { height: 48px; padding: 0 25px; background: #1e293b; color: white; border: none; font-weight: 600; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 8px; }
-        .btn-pdf:hover { background: #0f172a; }
 
         /* TABELAS */
         .section-title { font-size: 1.2rem; margin-bottom: 15px; padding-left: 10px; border-left: 4px solid var(--primary); color: #334155; }
@@ -62,11 +59,19 @@
         td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 0.95rem; vertical-align: middle; }
         
         /* BADGES */
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; display: inline-block; }
         .bg-green { background: #dcfce7; color: #166534; }
         .bg-red { background: #fee2e2; color: #991b1b; }
         .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
         
+        /* ANIMAÇÃO DE URGÊNCIA (PULSAR) */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .urgent { animation: pulse-red 2s infinite; background: #fee2e2; color: #ef4444; border: 1px solid #ef4444; }
+
         /* AÇÕES */
         .btn-icon { width: 34px; height: 34px; border: none; border-radius: 6px; cursor: pointer; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; transition: 0.2s; }
         .btn-icon:hover { transform: scale(1.1); }
@@ -429,7 +434,7 @@
         data.setMinutes(data.getMinutes() + data.getTimezoneOffset());
         if (unidade === 'Mês') data.setDate(data.getDate() + 30);
         else if (unidade === 'Quinzena') data.setDate(data.getDate() + 15);
-        else data.setDate(data.getDate() + 1); // Renova por +1 dia na diária
+        else data.setDate(data.getDate() + 1); // Renovação = +1 dia
         const { error } = await client.from('locacoes').update({ data_fim: data.toISOString().split('T')[0] }).eq('id', id);
         if(!error) carregarDados();
     };
@@ -468,7 +473,18 @@
             const hoje = new Date(); hoje.setHours(0,0,0,0);
             const venc = new Date(item.data_fim + 'T00:00:00');
             const diff = Math.ceil((venc - hoje) / 86400000);
-            let badge = diff < 0 ? `<span class="badge bg-red">ATRASADO ${Math.abs(diff)}d</span>` : (diff <= 2 ? `<span class="badge bg-red">⚠️ Vence em ${diff}d</span>` : `<span class="badge bg-green">Em dia (${diff}d)</span>`);
+            
+            // LÓGICA DO BADGE (V19)
+            let badge = '';
+            if(diff < 0) {
+                badge = `<span class="badge bg-red">ATRASADO ${Math.abs(diff)}d</span>`;
+            } else if (diff === 0) {
+                badge = `<span class="badge urgent">⚠️ VENCE HOJE</span>`;
+            } else if (diff <= 2) {
+                badge = `<span class="badge bg-red">⚠️ Vence em ${diff}d</span>`;
+            } else {
+                badge = `<span class="badge bg-green">Em dia (${diff}d)</span>`;
+            }
 
             tbAtivos.innerHTML += `
                 <tr>
@@ -507,7 +523,7 @@
         });
     }
 
-    // --- CORREÇÃO DA DATA (V18) ---
+    // --- CORREÇÃO DA DATA (V19 - Diária é 0 dias) ---
     window.calcData = () => {
         const ini = document.getElementById('inicio').value;
         const uni = document.getElementById('unidade').value;
@@ -516,7 +532,7 @@
         
         if(uni === 'Mês') d.setDate(d.getDate() + 30);
         else if(uni === 'Quinzena') d.setDate(d.getDate() + 15);
-        else d.setDate(d.getDate()); // DIA = Mesma data (0 dias)
+        else d.setDate(d.getDate()); // DIA = Mesmo dia
         
         document.getElementById('fim').value = d.toISOString().split('T')[0];
     }
