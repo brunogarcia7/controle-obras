@@ -11,8 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* --- DESIGN SYSTEM (V19) --- */
-        :root { --primary: #2563eb; --bg-body: #f1f5f9; --bg-card: #ffffff; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --text: #1e293b; }
+        /* --- DESIGN SYSTEM (V20) --- */
+        :root { --primary: #2563eb; --bg-body: #f1f5f9; --bg-card: #ffffff; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --purple: #7c3aed; --text: #1e293b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); margin: 0; padding: 30px; color: var(--text); }
         .container { max-width: 1400px; margin: 0 auto; }
         
@@ -39,14 +39,12 @@
 
         .btn-save { grid-column: 1 / -1; height: 54px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-save:hover { opacity: 0.9; transform: translateY(-1px); }
-        
         .btn-save.editing { background-color: var(--warning); color: #78350f; }
         .cancel-edit { display: none; margin-top: 10px; color: #ef4444; cursor: pointer; text-align: center; font-size: 0.9rem; text-decoration: underline; grid-column: 1 / -1; }
 
         /* FILTROS E RELATÓRIO */
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 15px; align-items: end; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
         @media (max-width: 1000px) { .filter-grid { grid-template-columns: 1fr; } }
-
         .btn-clear { height: 48px; padding: 0 20px; background: white; border: 1px solid var(--border); color: #64748b; font-weight: 600; cursor: pointer; border-radius: 8px; }
         .btn-pdf { height: 48px; padding: 0 25px; background: #1e293b; color: white; border: none; font-weight: 600; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 8px; }
 
@@ -63,13 +61,10 @@
         .bg-green { background: #dcfce7; color: #166534; }
         .bg-red { background: #fee2e2; color: #991b1b; }
         .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .bg-purple { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
         
-        /* ANIMAÇÃO DE URGÊNCIA (PULSAR) */
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
+        /* ANIMAÇÃO */
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         .urgent { animation: pulse-red 2s infinite; background: #fee2e2; color: #ef4444; border: 1px solid #ef4444; }
 
         /* AÇÕES */
@@ -102,7 +97,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Fornecedor</label>
+                    <label>Fornecedor / Loja</label>
                     <div class="input-group">
                         <select id="fornecedorSelect" required><option value="" disabled selected>Carregando...</option></select>
                         <button type="button" class="btn-plus" onclick="adicionarOpcao('fornecedorSelect')" title="Novo Fornecedor">+</button>
@@ -113,15 +108,16 @@
                     <input type="text" id="equipamento" placeholder="Ex: Martelete" required>
                 </div>
                 <div class="form-group">
-                    <label>Período</label>
+                    <label>Período / Tipo</label>
                     <select id="unidade" onchange="calcData()">
                         <option value="Mês">Mês (30 dias)</option>
                         <option value="Quinzena">Quinzena (15 dias)</option>
                         <option value="Dia">Diária</option>
+                        <option value="Proprio" style="font-weight:bold; color:var(--purple);">⭐ Próprio (Construtora)</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Data Início</label>
+                    <label id="lblInicio">Data Início</label>
                     <input type="date" id="inicio" required onchange="calcData()">
                 </div>
                 <div class="form-group">
@@ -129,7 +125,7 @@
                     <input type="date" id="fim" readonly>
                 </div>
                 <div class="form-group">
-                    <label>Nº Contrato</label>
+                    <label>Nº Contrato / Nota</label>
                     <input type="text" id="contrato" placeholder="000-000">
                 </div>
                 <div class="form-group">
@@ -159,13 +155,13 @@
         </div>
         <div class="form-group">
             <label>Buscar Contrato</label>
-            <input type="text" id="filtroContrato" placeholder="Digite o nº do contrato..." onkeyup="filtrarTabela()">
+            <input type="text" id="filtroContrato" placeholder="Digite o nº..." onkeyup="filtrarTabela()">
         </div>
         <button class="btn-clear" onclick="limparFiltros()">Limpar Tudo</button>
         <button class="btn-pdf" onclick="gerarPDF()">📄 Gerar PDF</button>
     </div>
 
-    <h3 class="section-title">🟢 Locações Ativas (Ordenado por Urgência)</h3>
+    <h3 class="section-title">🟢 Locações Ativas (Aluguel)</h3>
     <div class="table-container">
         <div class="scroll-wrapper">
             <table>
@@ -180,7 +176,7 @@
         </div>
     </div>
 
-    <h3 class="section-title" style="color:#64748b; border-color:#cbd5e1; margin-top:60px">📂 Histórico de Devoluções</h3>
+    <h3 class="section-title" style="color:#64748b; border-color:#cbd5e1; margin-top:50px">📂 Histórico de Devoluções</h3>
     <div class="table-container" style="opacity:0.9">
         <div class="scroll-wrapper">
             <table>
@@ -195,21 +191,35 @@
             </table>
         </div>
     </div>
+
+    <h3 class="section-title" style="color:#7c3aed; border-color:#7c3aed; margin-top:50px">🛠️ Ferramentas Próprias (Patrimônio)</h3>
+    <div class="table-container">
+        <div class="scroll-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="15%">Obra Atual</th> <th width="15%">Origem/Loja</th> <th width="20%">Equipamento</th> 
+                        <th>Data Compra</th> <th>Nota Fiscal</th> <th>Valor Compra</th> <th style="text-align:center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-proprios"></tbody>
+            </table>
+        </div>
+    </div>
     
     <div class="footer-info">Sistema conectado ao Supabase</div>
 </div>
 
 <script>
-    // --- 1. CONFIGURAÇÃO SUPABASE ---
     const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let CACHE_DADOS = [];
     const PADRAO_OBRAS = ["Vinícola", "Sede Start Química", "Tamboré"];
-    const PADRAO_FORN = ["TETO LOC.", "CASA DO CONSTRUTOR", "ALUFORT"];
+    const PADRAO_FORN = ["TETO LOC.", "CASA DO CONSTRUTOR", "ALUFORT", "LEROY MERLIN", "MAGALU"];
 
-    // --- 2. LISTAS E FILTROS ---
+    // --- LISTAS ---
     async function carregarListas(dados) {
         const obrasNoBanco = [...new Set(dados.map(item => item.obra))];
         const fornNoBanco = [...new Set(dados.map(item => item.fornecedor))];
@@ -254,7 +264,7 @@
         }
     }
 
-    // --- 3. LÓGICA DE DADOS ---
+    // --- LÓGICA DE DADOS ---
     async function carregarDados() {
         const { data, error } = await client.from('locacoes').select('*');
         if (error) { console.error(error); return; }
@@ -285,82 +295,132 @@
         filtrarTabela();
     }
 
-    // --- 4. FUNÇÃO GERAR PDF ---
-    window.gerarPDF = function() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4');
-
-        doc.setFontSize(18);
-        doc.text("Relatório de Locação de Equipamentos", 14, 22);
+    // --- RENDERIZAÇÃO ---
+    function renderizar(lista) {
+        const tbAtivos = document.getElementById('tabela-ativos');
+        const tbHist = document.getElementById('tabela-historico');
+        const tbProprios = document.getElementById('tabela-proprios');
         
-        doc.setFontSize(10);
-        const dataHoje = new Date().toLocaleDateString('pt-BR');
-        doc.text(`Gerado em: ${dataHoje}`, 14, 28);
+        tbAtivos.innerHTML = ''; 
+        tbHist.innerHTML = '';
+        tbProprios.innerHTML = '';
 
-        const obraFiltro = document.getElementById('filtroObra').value;
-        const fornFiltro = document.getElementById('filtroFornecedor').value;
-        const contratoFiltro = document.getElementById('filtroContrato').value.trim().toLowerCase();
+        if(!lista) return;
 
-        const dadosAtuais = CACHE_DADOS.filter(item => {
-            const matchObra = obraFiltro ? item.obra === obraFiltro : true;
-            const matchForn = fornFiltro ? item.fornecedor === fornFiltro : true;
-            const itemContrato = item.contrato ? String(item.contrato).toLowerCase() : '';
-            const matchContrato = contratoFiltro ? itemContrato.includes(contratoFiltro) : true;
-            return matchObra && matchForn && matchContrato;
+        // Separação em 3 grupos
+        const proprios = lista.filter(i => i.unidade === 'Proprio'); // Ferramentas Próprias
+        const alugados = lista.filter(i => i.unidade !== 'Proprio'); // Alugados
+
+        const ativos = alugados.filter(i => i.status === 'ativo');
+        const historico = alugados.filter(i => i.status !== 'ativo');
+
+        // Ordenações
+        ativos.sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
+        historico.sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
+        proprios.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio));
+
+        // 1. RENDERIZA ATIVOS (ALUGUEL)
+        ativos.forEach(item => {
+            const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            const dataIn = fmtData(item.data_inicio);
+            const contrato = item.contrato || '-';
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+            const venc = new Date(item.data_fim + 'T00:00:00');
+            const diff = Math.ceil((venc - hoje) / 86400000);
+            
+            let badge = '';
+            if(diff < 0) badge = `<span class="badge bg-red">ATRASADO ${Math.abs(diff)}d</span>`;
+            else if (diff === 0) badge = `<span class="badge urgent">⚠️ VENCE HOJE</span>`;
+            else if (diff <= 2) badge = `<span class="badge bg-red">⚠️ Vence em ${diff}d</span>`;
+            else badge = `<span class="badge bg-green">Em dia (${diff}d)</span>`;
+
+            tbAtivos.innerHTML += `
+                <tr>
+                    <td><b>${item.obra}</b></td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
+                    <td>${dataIn}</td> <td>${fmtData(item.data_fim)}</td> <td>${badge}</td>
+                    <td>${contrato}</td> <td>${val}</td>
+                    <td style="text-align:center">
+                        <button class="btn-icon action-renew" onclick="renovar(${item.id}, '${item.data_fim}', '${item.unidade}')" title="Renovar">🔄</button>
+                        <button class="btn-icon action-check" onclick="devolver(${item.id})" title="Devolver">✅</button>
+                        <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
+                        <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Excluir">🗑️</button>
+                    </td>
+                </tr>`;
         });
 
-        const ativos = dadosAtuais.filter(i => i.status === 'ativo').sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
-        const historico = dadosAtuais.filter(i => i.status !== 'ativo').sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
+        // 2. RENDERIZA HISTÓRICO
+        historico.forEach(item => {
+            const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            const dataIn = fmtData(item.data_inicio);
+            const contrato = item.contrato || '-';
+            const start = new Date(item.data_inicio + 'T00:00:00');
+            const end = new Date(item.data_devolucao + 'T00:00:00');
+            const totalDias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+            const displayDias = totalDias < 0 ? 0 : totalDias;
 
-        if(ativos.length > 0) {
-            doc.autoTable({
-                startY: 35,
-                head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Fim Prev.', 'Contrato', 'Valor']],
-                body: ativos.map(i => [
-                    i.obra, 
-                    i.fornecedor, 
-                    i.equipamento, 
-                    fmtData(i.data_inicio), 
-                    fmtData(i.data_fim), 
-                    i.contrato || '-', 
-                    parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})
-                ]),
-                theme: 'grid',
-                headStyles: { fillColor: [37, 99, 235] },
-                styles: { fontSize: 8 }
-            });
-        }
+            tbHist.innerHTML += `
+                <tr>
+                    <td>${item.obra}</td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
+                    <td>${dataIn}</td> <td><b>${fmtData(item.data_devolucao)}</b></td>
+                    <td><span class="badge bg-gray">${displayDias} dias</span></td>
+                    <td>${contrato}</td> <td>${val}</td>
+                    <td style="text-align:center">
+                        <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
+                        <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Apagar">🗑️</button>
+                    </td>
+                </tr>`;
+        });
 
-        if(historico.length > 0) {
-            let finalY = doc.lastAutoTable.finalY || 35;
-            doc.text("Histórico de Devoluções", 14, finalY + 15);
-            doc.autoTable({
-                startY: finalY + 20,
-                head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Devolução', 'Dias', 'Contrato', 'Valor']],
-                body: historico.map(i => {
-                    const start = new Date(i.data_inicio + 'T00:00:00');
-                    const end = new Date(i.data_devolucao + 'T00:00:00');
-                    const dias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-                    return [
-                        i.obra, 
-                        i.fornecedor, 
-                        i.equipamento, 
-                        fmtData(i.data_inicio), 
-                        fmtData(i.data_devolucao), 
-                        dias > 0 ? dias : 0,
-                        i.contrato || '-', 
-                        parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})
-                    ];
-                }),
-                theme: 'grid',
-                headStyles: { fillColor: [100, 116, 139] },
-                styles: { fontSize: 8 }
-            });
-        }
-        doc.save('relatorio_obras.pdf');
+        // 3. RENDERIZA PRÓPRIOS (NOVO)
+        proprios.forEach(item => {
+            const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            const dataCompra = fmtData(item.data_inicio);
+            const nota = item.contrato || '-';
+
+            tbProprios.innerHTML += `
+                <tr>
+                    <td><b>${item.obra}</b></td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
+                    <td>${dataCompra}</td> <td>${nota}</td> <td><b>${val}</b></td>
+                    <td style="text-align:center">
+                        <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
+                        <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Excluir">🗑️</button>
+                    </td>
+                </tr>`;
+        });
     }
 
-    // --- 5. CRUD ---
+    // --- DATAS E UX ---
+    window.calcData = () => {
+        const ini = document.getElementById('inicio').value;
+        const uni = document.getElementById('unidade').value;
+        const fimInput = document.getElementById('fim');
+        
+        // Se for Próprio, não tem data fim
+        if (uni === 'Proprio') {
+            fimInput.value = '';
+            fimInput.disabled = true;
+            fimInput.style.backgroundColor = '#e2e8f0';
+            document.getElementById('lblInicio').innerText = "Data Compra/Entrada";
+            return;
+        } else {
+            fimInput.disabled = false;
+            fimInput.style.backgroundColor = '#f8fafc';
+            document.getElementById('lblInicio').innerText = "Data Início";
+        }
+
+        if(!ini) return;
+        const d = new Date(ini); d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+        
+        if(uni === 'Mês') d.setDate(d.getDate() + 30);
+        else if(uni === 'Quinzena') d.setDate(d.getDate() + 15);
+        else if(uni === 'Dia') d.setDate(d.getDate());
+        
+        fimInput.value = d.toISOString().split('T')[0];
+    }
+    
+    function fmtData(d) { if(!d) return '-'; return d.split('-').reverse().join('/'); }
+
+    // --- CRUD ---
     document.getElementById('rentalForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btnSubmit');
@@ -369,14 +429,16 @@
 
         const editId = document.getElementById('editId').value;
         const editStatus = document.getElementById('editStatus').value;
+        const uni = document.getElementById('unidade').value;
 
         const dadosForm = {
             obra: document.getElementById('obraSelect').value,      
             fornecedor: document.getElementById('fornecedorSelect').value, 
             equipamento: document.getElementById('equipamento').value,
-            unidade: document.getElementById('unidade').value,
+            unidade: uni,
             data_inicio: document.getElementById('inicio').value,
-            data_fim: document.getElementById('fim').value,
+            // Se for próprio, mandamos a data de início também no fim só para não dar erro no banco, mas não usaremos
+            data_fim: uni === 'Proprio' ? document.getElementById('inicio').value : document.getElementById('fim').value,
             contrato: document.getElementById('contrato').value || '-',
             valor: document.getElementById('valor').value,
             status: editId ? editStatus : 'ativo'
@@ -404,7 +466,14 @@
         document.getElementById('equipamento').value = item.equipamento;
         document.getElementById('unidade').value = item.unidade;
         document.getElementById('inicio').value = item.data_inicio;
-        document.getElementById('fim').value = item.data_fim;
+        
+        // Ajuste visual se for proprio
+        calcData(); // Atualiza labels e inputs
+        
+        if (item.unidade !== 'Proprio') {
+            document.getElementById('fim').value = item.data_fim;
+        }
+
         document.getElementById('contrato').value = item.contrato;
         document.getElementById('valor').value = item.valor;
         document.getElementById('editId').value = item.id;
@@ -426,6 +495,7 @@
         document.getElementById('btnCancel').style.display = 'none';
         document.getElementById('obraSelect').value = "";
         document.getElementById('fornecedorSelect').value = "";
+        calcData(); // Reseta estados visuais
     }
 
     window.renovar = async (id, dataFimAtual, unidade) => {
@@ -434,7 +504,7 @@
         data.setMinutes(data.getMinutes() + data.getTimezoneOffset());
         if (unidade === 'Mês') data.setDate(data.getDate() + 30);
         else if (unidade === 'Quinzena') data.setDate(data.getDate() + 15);
-        else data.setDate(data.getDate() + 1); // Renovação = +1 dia
+        else data.setDate(data.getDate());
         const { error } = await client.from('locacoes').update({ data_fim: data.toISOString().split('T')[0] }).eq('id', id);
         if(!error) carregarDados();
     };
@@ -453,91 +523,79 @@
         if(!error) carregarDados();
     };
 
-    // --- 6. RENDERIZAÇÃO ---
-    function renderizar(lista) {
-        const tbAtivos = document.getElementById('tabela-ativos');
-        const tbHist = document.getElementById('tabela-historico');
-        tbAtivos.innerHTML = ''; tbHist.innerHTML = '';
+    // --- PDF ---
+    window.gerarPDF = function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4');
+        doc.setFontSize(18);
+        doc.text("Relatório Geral de Obras e Ferramentas", 14, 22);
+        doc.setFontSize(10);
+        doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 28);
 
-        if(!lista) return;
+        // Filtros Atuais
+        const obraFiltro = document.getElementById('filtroObra').value;
+        const fornFiltro = document.getElementById('filtroFornecedor').value;
+        const contratoFiltro = document.getElementById('filtroContrato').value.trim().toLowerCase();
 
-        const ativos = lista.filter(i => i.status === 'ativo');
-        const historico = lista.filter(i => i.status !== 'ativo');
-        ativos.sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
-        historico.sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
-
-        ativos.forEach(item => {
-            const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-            const dataIn = fmtData(item.data_inicio);
-            const contrato = item.contrato || '-';
-            const hoje = new Date(); hoje.setHours(0,0,0,0);
-            const venc = new Date(item.data_fim + 'T00:00:00');
-            const diff = Math.ceil((venc - hoje) / 86400000);
-            
-            // LÓGICA DO BADGE (V19)
-            let badge = '';
-            if(diff < 0) {
-                badge = `<span class="badge bg-red">ATRASADO ${Math.abs(diff)}d</span>`;
-            } else if (diff === 0) {
-                badge = `<span class="badge urgent">⚠️ VENCE HOJE</span>`;
-            } else if (diff <= 2) {
-                badge = `<span class="badge bg-red">⚠️ Vence em ${diff}d</span>`;
-            } else {
-                badge = `<span class="badge bg-green">Em dia (${diff}d)</span>`;
-            }
-
-            tbAtivos.innerHTML += `
-                <tr>
-                    <td><b>${item.obra}</b></td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
-                    <td>${dataIn}</td> <td>${fmtData(item.data_fim)}</td> <td>${badge}</td>
-                    <td>${contrato}</td> <td>${val}</td>
-                    <td style="text-align:center">
-                        <button class="btn-icon action-renew" onclick="renovar(${item.id}, '${item.data_fim}', '${item.unidade}')" title="Renovar">🔄</button>
-                        <button class="btn-icon action-check" onclick="devolver(${item.id})" title="Devolver">✅</button>
-                        <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
-                        <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Excluir">🗑️</button>
-                    </td>
-                </tr>`;
+        const dadosAtuais = CACHE_DADOS.filter(item => {
+            const matchObra = obraFiltro ? item.obra === obraFiltro : true;
+            const matchForn = fornFiltro ? item.fornecedor === fornFiltro : true;
+            const itemContrato = item.contrato ? String(item.contrato).toLowerCase() : '';
+            const matchContrato = contratoFiltro ? itemContrato.includes(contratoFiltro) : true;
+            return matchObra && matchForn && matchContrato;
         });
 
-        historico.forEach(item => {
-            const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-            const dataIn = fmtData(item.data_inicio);
-            const contrato = item.contrato || '-';
-            const start = new Date(item.data_inicio + 'T00:00:00');
-            const end = new Date(item.data_devolucao + 'T00:00:00');
-            const totalDias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-            const displayDias = totalDias < 0 ? 0 : totalDias;
+        const proprios = dadosAtuais.filter(i => i.unidade === 'Proprio').sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio));
+        const alugados = dadosAtuais.filter(i => i.unidade !== 'Proprio');
+        const ativos = alugados.filter(i => i.status === 'ativo').sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
+        const historico = alugados.filter(i => i.status !== 'ativo').sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
 
-            tbHist.innerHTML += `
-                <tr>
-                    <td>${item.obra}</td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
-                    <td>${dataIn}</td> <td><b>${fmtData(item.data_devolucao)}</b></td>
-                    <td><span class="badge bg-gray">${displayDias} dias</span></td>
-                    <td>${contrato}</td> <td>${val}</td>
-                    <td style="text-align:center">
-                        <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
-                        <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Apagar">🗑️</button>
-                    </td>
-                </tr>`;
-        });
+        let currentY = 35;
+
+        // 1. Tabela Ativos
+        if(ativos.length > 0) {
+            doc.text("Locações Ativas", 14, currentY);
+            doc.autoTable({
+                startY: currentY + 5,
+                head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Fim Prev.', 'Contrato', 'Valor']],
+                body: ativos.map(i => [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), fmtData(i.data_fim), i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]),
+                theme: 'grid', headStyles: { fillColor: [37, 99, 235] }, styles: { fontSize: 8 }
+            });
+            currentY = doc.lastAutoTable.finalY + 15;
+        }
+
+        // 2. Tabela Histórico
+        if(historico.length > 0) {
+            // Verifica se cabe na página
+            if (currentY > 170) { doc.addPage(); currentY = 20; }
+            doc.text("Histórico de Devoluções", 14, currentY);
+            doc.autoTable({
+                startY: currentY + 5,
+                head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Devolução', 'Dias', 'Contrato', 'Valor']],
+                body: historico.map(i => {
+                    const d = Math.ceil((new Date(i.data_devolucao) - new Date(i.data_inicio)) / 86400000);
+                    return [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), fmtData(i.data_devolucao), d>0?d:0, i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})];
+                }),
+                theme: 'grid', headStyles: { fillColor: [100, 116, 139] }, styles: { fontSize: 8 }
+            });
+            currentY = doc.lastAutoTable.finalY + 15;
+        }
+
+        // 3. Tabela Próprios
+        if(proprios.length > 0) {
+            if (currentY > 170) { doc.addPage(); currentY = 20; }
+            doc.text("Ferramentas Próprias (Patrimônio)", 14, currentY);
+            doc.autoTable({
+                startY: currentY + 5,
+                head: [['Obra Atual', 'Origem/Loja', 'Equipamento', 'Data Compra', 'Nota Fiscal', 'Valor Pago']],
+                body: proprios.map(i => [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]),
+                theme: 'grid', headStyles: { fillColor: [124, 58, 237] }, styles: { fontSize: 8 }
+            });
+        }
+
+        doc.save('relatorio_completo.pdf');
     }
 
-    // --- CORREÇÃO DA DATA (V19 - Diária é 0 dias) ---
-    window.calcData = () => {
-        const ini = document.getElementById('inicio').value;
-        const uni = document.getElementById('unidade').value;
-        if(!ini) return;
-        const d = new Date(ini); d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-        
-        if(uni === 'Mês') d.setDate(d.getDate() + 30);
-        else if(uni === 'Quinzena') d.setDate(d.getDate() + 15);
-        else d.setDate(d.getDate()); // DIA = Mesmo dia
-        
-        document.getElementById('fim').value = d.toISOString().split('T')[0];
-    }
-    
-    function fmtData(d) { if(!d) return '-'; return d.split('-').reverse().join('/'); }
     carregarDados();
 </script>
 </body>
