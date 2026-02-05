@@ -7,6 +7,8 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
     <style>
         /* --- DESIGN SYSTEM (PREMIUM) --- */
@@ -41,10 +43,16 @@
         .btn-save.editing { background-color: var(--warning); color: #78350f; }
         .cancel-edit { display: none; margin-top: 10px; color: #ef4444; cursor: pointer; text-align: center; font-size: 0.9rem; text-decoration: underline; grid-column: 1 / -1; }
 
-        /* AREA DE FILTROS */
-        .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
+        /* AREA DE FILTROS + BOTÃO PDF */
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 15px; align-items: end; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
+        /* Ajuste responsivo */
+        @media (max-width: 1000px) { .filter-grid { grid-template-columns: 1fr; } }
+
         .btn-clear { height: 48px; padding: 0 20px; background: white; border: 1px solid var(--border); color: #64748b; font-weight: 600; cursor: pointer; border-radius: 8px; }
         .btn-clear:hover { background: #e2e8f0; color: #ef4444; border-color: #ef4444; }
+
+        .btn-pdf { height: 48px; padding: 0 25px; background: #1e293b; color: white; border: none; font-weight: 600; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 8px; }
+        .btn-pdf:hover { background: #0f172a; }
 
         /* TABELAS */
         .section-title { font-size: 1.2rem; margin-bottom: 15px; padding-left: 10px; border-left: 4px solid var(--primary); color: #334155; }
@@ -131,7 +139,7 @@
         </form>
     </div>
 
-    <h3 class="section-title">🔍 Filtrar Resultados</h3>
+    <h3 class="section-title">🔍 Filtrar e Relatório</h3>
     <div class="filter-grid">
         <div class="form-group">
             <label>Filtrar por Obra</label>
@@ -150,6 +158,7 @@
             <input type="text" id="filtroContrato" placeholder="Digite o nº do contrato..." onkeyup="filtrarTabela()">
         </div>
         <button class="btn-clear" onclick="limparFiltros()">Limpar Tudo</button>
+        <button class="btn-pdf" onclick="gerarPDF()">📄 Gerar PDF</button>
     </div>
 
     <h3 class="section-title">🟢 Locações Ativas (Ordenado por Urgência)</h3>
@@ -243,7 +252,6 @@
 
     // --- 3. LÓGICA DE DADOS ---
     async function carregarDados() {
-        // Carrega tudo
         const { data, error } = await client.from('locacoes').select('*');
         if (error) { console.error(error); return; }
         CACHE_DADOS = data; 
@@ -273,7 +281,90 @@
         filtrarTabela();
     }
 
-    // --- 4. CRUD ---
+    // --- 4. FUNÇÃO GERAR PDF (NOVA) ---
+    window.gerarPDF = function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4'); // 'l' = Paisagem (Landscape)
+
+        // Título
+        doc.setFontSize(18);
+        doc.text("Relatório de Locação de Equipamentos", 14, 22);
+        
+        // Data do Relatório
+        doc.setFontSize(10);
+        const dataHoje = new Date().toLocaleDateString('pt-BR');
+        doc.text(`Gerado em: ${dataHoje}`, 14, 28);
+
+        // Dados Filtrados Atuais
+        const obraFiltro = document.getElementById('filtroObra').value;
+        const fornFiltro = document.getElementById('filtroFornecedor').value;
+        const contratoFiltro = document.getElementById('filtroContrato').value.trim().toLowerCase();
+
+        const dadosAtuais = CACHE_DADOS.filter(item => {
+            const matchObra = obraFiltro ? item.obra === obraFiltro : true;
+            const matchForn = fornFiltro ? item.fornecedor === fornFiltro : true;
+            const itemContrato = item.contrato ? String(item.contrato).toLowerCase() : '';
+            const matchContrato = contratoFiltro ? itemContrato.includes(contratoFiltro) : true;
+            return matchObra && matchForn && matchContrato;
+        });
+
+        const ativos = dadosAtuais.filter(i => i.status === 'ativo').sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
+        const historico = dadosAtuais.filter(i => i.status !== 'ativo').sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
+
+        // Tabela 1: Ativos
+        if(ativos.length > 0) {
+            doc.autoTable({
+                startY: 35,
+                head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Fim Prev.', 'Contrato', 'Valor']],
+                body: ativos.map(i => [
+                    i.obra, 
+                    i.fornecedor, 
+                    i.equipamento, 
+                    fmtData(i.data_inicio), 
+                    fmtData(i.data_fim), 
+                    i.contrato || '-', 
+                    parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [37, 99, 235] },
+                styles: { fontSize: 8 }
+            });
+        }
+
+        // Tabela 2: Histórico (Se houver espaço ou nova página)
+        if(historico.length > 0) {
+            let finalY = doc.lastAutoTable.finalY || 35;
+            
+            doc.text("Histórico de Devoluções", 14, finalY + 15);
+            
+            doc.autoTable({
+                startY: finalY + 20,
+                head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Devolução', 'Dias', 'Contrato', 'Valor']],
+                body: historico.map(i => {
+                    const start = new Date(i.data_inicio + 'T00:00:00');
+                    const end = new Date(i.data_devolucao + 'T00:00:00');
+                    const dias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                    return [
+                        i.obra, 
+                        i.fornecedor, 
+                        i.equipamento, 
+                        fmtData(i.data_inicio), 
+                        fmtData(i.data_devolucao), 
+                        dias > 0 ? dias : 0,
+                        i.contrato || '-', 
+                        parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})
+                    ];
+                }),
+                theme: 'grid',
+                headStyles: { fillColor: [100, 116, 139] },
+                styles: { fontSize: 8 }
+            });
+        }
+
+        doc.save('relatorio_obras.pdf');
+    }
+
+    // --- 5. CRUD ---
     document.getElementById('rentalForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btnSubmit');
@@ -304,18 +395,14 @@
             error = res.error;
         }
 
-        if(!error) {
-            resetarFormulario();
-            carregarDados();
-        } else { alert("Erro: " + error.message); }
-        
+        if(!error) { resetarFormulario(); carregarDados(); } 
+        else { alert("Erro: " + error.message); }
         btn.textContent = originalText; btn.disabled = false;
     });
 
     window.editar = function(id) {
         const item = CACHE_DADOS.find(i => i.id === id);
         if(!item) return;
-
         document.getElementById('obraSelect').value = item.obra;
         document.getElementById('fornecedorSelect').value = item.fornecedor;
         document.getElementById('equipamento').value = item.equipamento;
@@ -326,7 +413,6 @@
         document.getElementById('valor').value = item.valor;
         document.getElementById('editId').value = item.id;
         document.getElementById('editStatus').value = item.status;
-
         const btn = document.getElementById('btnSubmit');
         btn.textContent = "ATUALIZAR REGISTRO";
         btn.classList.add('editing');
@@ -371,7 +457,7 @@
         if(!error) carregarDados();
     };
 
-    // --- 5. RENDERIZAÇÃO E ORDENAÇÃO ---
+    // --- 6. RENDERIZAÇÃO ---
     function renderizar(lista) {
         const tbAtivos = document.getElementById('tabela-ativos');
         const tbHist = document.getElementById('tabela-historico');
@@ -379,22 +465,15 @@
 
         if(!lista) return;
 
-        // Separa os dados
         const ativos = lista.filter(i => i.status === 'ativo');
         const historico = lista.filter(i => i.status !== 'ativo');
-
-        // Ordena ATIVOS: Data Fim Ascendente (Menor data = vence primeiro = Topo)
         ativos.sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
-
-        // Ordena HISTÓRICO: Data Devolução Descendente (Mais recente = Topo)
         historico.sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
 
-        // RENDERIZA ATIVOS
         ativos.forEach(item => {
             const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
             const dataIn = fmtData(item.data_inicio);
             const contrato = item.contrato || '-';
-
             const hoje = new Date(); hoje.setHours(0,0,0,0);
             const venc = new Date(item.data_fim + 'T00:00:00');
             const diff = Math.ceil((venc - hoje) / 86400000);
@@ -414,12 +493,10 @@
                 </tr>`;
         });
 
-        // RENDERIZA HISTÓRICO
         historico.forEach(item => {
             const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
             const dataIn = fmtData(item.data_inicio);
             const contrato = item.contrato || '-';
-            
             const start = new Date(item.data_inicio + 'T00:00:00');
             const end = new Date(item.data_devolucao + 'T00:00:00');
             const totalDias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
