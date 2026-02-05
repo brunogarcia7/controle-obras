@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Obras - Hybrid</title>
+    <title>Gestão de Obras - Clean Light</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,19 +11,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* --- DESIGN SYSTEM HYBRID (V23) --- */
+        /* --- DESIGN SYSTEM CLEAN LIGHT (V24) --- */
         :root {
-            /* Fundo Escuro */
-            --bg-body: #0f172a;       /* Dark Slate (Fundo da tela) */
+            /* Fundo CLARO (Cinza Suave) */
+            --bg-body: #f1f5f9;       /* Slate 100 - Fundo claro moderno */
             
-            /* Componentes Claros */
+            /* Componentes */
             --bg-card: #ffffff;       /* Branco Absoluto */
             --bg-input: #ffffff;      
             --border: #e2e8f0;        /* Bordas claras */
             
             /* Cores de Texto */
-            --text-title-page: #ffffff; /* Título da página (no fundo escuro) */
-            --text-main: #334155;       /* Texto principal (nos cartões) */
+            --text-title-page: #1e293b; /* Título escuro para fundo claro */
+            --text-main: #334155;       /* Texto principal */
             --text-muted: #64748b;      /* Texto secundário */
             
             /* Cores de Ação */
@@ -45,14 +45,14 @@
 
         .container { max-width: 1400px; margin: 0 auto; }
         
-        /* CABEÇALHO MODERNIZADO */
+        /* CABEÇALHO */
         .app-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 40px;
             padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--border); /* Borda mais sutil */
         }
         
         .app-title {
@@ -67,20 +67,20 @@
         }
         
         .app-badge {
-            background: rgba(37, 99, 235, 0.2);
-            color: #60a5fa;
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary);
             font-size: 0.8rem;
             padding: 4px 10px;
             border-radius: 20px;
-            border: 1px solid rgba(37, 99, 235, 0.3);
+            border: 1px solid rgba(37, 99, 235, 0.2);
         }
 
-        /* CARDS (Brancos novamente) */
+        /* CARDS (Brancos) */
         .card {
             background: var(--bg-card);
             padding: 35px;
             border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
             margin-bottom: 30px;
             border: 1px solid var(--border);
         }
@@ -97,16 +97,17 @@
             letter-spacing: 0.05em;
         }
         
-        /* INPUTS & SELECTS (Brancos e Limpos) */
+        /* INPUTS & SELECTS */
         input, select {
-            height: 50px;
+            height: 50px; /* Altura fixa */
             padding: 0 16px;
             background: var(--bg-input);
-            border: 1px solid #cbd5e1; /* Borda um pouco mais visível */
+            border: 1px solid #cbd5e1;
             border-radius: 8px;
             color: var(--text-main);
             font-size: 0.95rem;
             transition: all 0.2s;
+            width: 100%; box-sizing: border-box; /* Garante largura correta */
         }
         input:focus, select:focus {
             outline: none;
@@ -116,22 +117,35 @@
         input::placeholder { color: #94a3b8; }
         input[readonly] { background: #f8fafc; color: #94a3b8; cursor: not-allowed; border-color: #e2e8f0; }
 
-        /* BOTÕES */
-        .input-group { display: flex; gap: 0; }
-        .input-group select { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; }
-        
+        /* --- CORREÇÃO DE ALINHAMENTO DOS BOTÕES + --- */
+        .input-group {
+            display: flex;
+            width: 100%;
+            align-items: stretch; /* Garante que ambos tenham a mesma altura */
+        }
+        .input-group select {
+            flex: 1; /* Ocupa o espaço restante */
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-right: none; /* Evita borda dupla */
+            height: 50px; /* Altura forçada */
+        }
         .btn-plus {
-            height: 50px; width: 50px;
+            height: 50px; /* Altura forçada igual ao select */
+            width: 50px;
+            flex-shrink: 0; /* Não deixa o botão esmagar */
             background-color: #f1f5f9;
             color: var(--success);
             border: 1px solid #cbd5e1;
-            border-radius: 0 8px 8px 0;
+            border-radius: 0 8px 8px 0; /* Arredonda só a direita */
             font-size: 1.4rem; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             transition: 0.2s;
+            padding: 0; /* Remove padding interno */
         }
         .btn-plus:hover { background-color: var(--success); color: white; border-color: var(--success); }
 
+        /* BOTÃO SALVAR */
         .btn-save {
             grid-column: 1 / -1; height: 56px;
             background: var(--primary);
@@ -146,7 +160,7 @@
         
         .cancel-edit { display: none; margin-top: 15px; color: var(--danger); cursor: pointer; text-align: center; font-size: 0.9rem; text-decoration: underline; grid-column: 1 / -1; font-weight: 600; }
 
-        /* HEADER EXPANSÍVEL (Branco) */
+        /* HEADER EXPANSÍVEL */
         .section-title {
             font-size: 1.1rem;
             padding: 20px 25px;
@@ -165,11 +179,10 @@
         .section-title:hover { border-color: var(--primary); transform: translateX(5px); }
         .section-title.collapsed { border-radius: 12px; opacity: 0.8; }
         
-        /* Bordas laterais coloridas */
         .border-green { border-left: 5px solid var(--success); }
         .border-gray { border-left: 5px solid var(--text-muted); }
         .border-purple { border-left: 5px solid var(--purple); }
-        .border-blue { border-left: 5px solid var(--primary); } /* Para filtros */
+        .border-blue { border-left: 5px solid var(--primary); }
 
         .toggle-icon { transition: transform 0.3s ease; color: var(--text-muted); font-size: 0.8rem; }
         .collapsed .toggle-icon { transform: rotate(-90deg); }
@@ -199,7 +212,7 @@
         .btn-pdf { height: 50px; padding: 0 25px; background: #1e293b; color: white; border: none; font-weight: 600; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-pdf:hover { background: #0f172a; transform: translateY(-1px); }
 
-        /* TABELA (Clara) */
+        /* TABELA */
         .scroll-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         
@@ -221,9 +234,8 @@
         .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
         .bg-purple { background: #f3e8ff; color: #6b21a8; }
 
-        /* Animação Urgente */
-        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         .urgent { animation: pulse-red 2s infinite; background: #fee2e2; color: #ef4444; border: 1px solid #ef4444; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
         /* AÇÕES */
         .btn-icon { width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; margin-left: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.2s; }
@@ -233,7 +245,7 @@
         .action-edit { background: #fef3c7; color: #d97706; }
         .action-trash { background: #f1f5f9; color: #94a3b8; }
         
-        .footer-info { text-align: center; font-size: 0.8rem; color: rgba(255,255,255,0.3); margin-top: 50px; }
+        .footer-info { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 50px; opacity: 0.8; }
     </style>
 </head>
 <body>
