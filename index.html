@@ -45,7 +45,6 @@
 
         /* AREA DE FILTROS + BOTÃO PDF */
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 15px; align-items: end; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
-        /* Ajuste responsivo */
         @media (max-width: 1000px) { .filter-grid { grid-template-columns: 1fr; } }
 
         .btn-clear { height: 48px; padding: 0 20px; background: white; border: 1px solid var(--border); color: #64748b; font-weight: 600; cursor: pointer; border-radius: 8px; }
@@ -281,21 +280,18 @@
         filtrarTabela();
     }
 
-    // --- 4. FUNÇÃO GERAR PDF (NOVA) ---
+    // --- 4. FUNÇÃO GERAR PDF ---
     window.gerarPDF = function() {
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4'); // 'l' = Paisagem (Landscape)
+        const doc = new jsPDF('l', 'mm', 'a4');
 
-        // Título
         doc.setFontSize(18);
         doc.text("Relatório de Locação de Equipamentos", 14, 22);
         
-        // Data do Relatório
         doc.setFontSize(10);
         const dataHoje = new Date().toLocaleDateString('pt-BR');
         doc.text(`Gerado em: ${dataHoje}`, 14, 28);
 
-        // Dados Filtrados Atuais
         const obraFiltro = document.getElementById('filtroObra').value;
         const fornFiltro = document.getElementById('filtroFornecedor').value;
         const contratoFiltro = document.getElementById('filtroContrato').value.trim().toLowerCase();
@@ -311,7 +307,6 @@
         const ativos = dadosAtuais.filter(i => i.status === 'ativo').sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
         const historico = dadosAtuais.filter(i => i.status !== 'ativo').sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
 
-        // Tabela 1: Ativos
         if(ativos.length > 0) {
             doc.autoTable({
                 startY: 35,
@@ -331,12 +326,9 @@
             });
         }
 
-        // Tabela 2: Histórico (Se houver espaço ou nova página)
         if(historico.length > 0) {
             let finalY = doc.lastAutoTable.finalY || 35;
-            
             doc.text("Histórico de Devoluções", 14, finalY + 15);
-            
             doc.autoTable({
                 startY: finalY + 20,
                 head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Devolução', 'Dias', 'Contrato', 'Valor']],
@@ -360,7 +352,6 @@
                 styles: { fontSize: 8 }
             });
         }
-
         doc.save('relatorio_obras.pdf');
     }
 
@@ -438,7 +429,7 @@
         data.setMinutes(data.getMinutes() + data.getTimezoneOffset());
         if (unidade === 'Mês') data.setDate(data.getDate() + 30);
         else if (unidade === 'Quinzena') data.setDate(data.getDate() + 15);
-        else data.setDate(data.getDate() + 1);
+        else data.setDate(data.getDate() + 1); // Renova por +1 dia na diária
         const { error } = await client.from('locacoes').update({ data_fim: data.toISOString().split('T')[0] }).eq('id', id);
         if(!error) carregarDados();
     };
@@ -516,14 +507,17 @@
         });
     }
 
+    // --- CORREÇÃO DA DATA (V18) ---
     window.calcData = () => {
         const ini = document.getElementById('inicio').value;
         const uni = document.getElementById('unidade').value;
         if(!ini) return;
         const d = new Date(ini); d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+        
         if(uni === 'Mês') d.setDate(d.getDate() + 30);
         else if(uni === 'Quinzena') d.setDate(d.getDate() + 15);
-        else d.setDate(d.getDate() + 1);
+        else d.setDate(d.getDate()); // DIA = Mesma data (0 dias)
+        
         document.getElementById('fim').value = d.toISOString().split('T')[0];
     }
     
