@@ -38,7 +38,6 @@
         .btn-save { grid-column: 1 / -1; height: 54px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-save:hover { opacity: 0.9; transform: translateY(-1px); }
         
-        /* Estado de Edição */
         .btn-save.editing { background-color: var(--warning); color: #78350f; }
         .cancel-edit { display: none; margin-top: 10px; color: #ef4444; cursor: pointer; text-align: center; font-size: 0.9rem; text-decoration: underline; grid-column: 1 / -1; }
 
@@ -66,7 +65,7 @@
         .btn-icon:hover { transform: scale(1.1); }
         .action-renew { background: #e0f2fe; color: #0284c7; }
         .action-check { background: #dcfce7; color: #16a34a; }
-        .action-edit { background: #fef3c7; color: #d97706; } /* Botão Editar Amarelo */
+        .action-edit { background: #fef3c7; color: #d97706; }
         .action-trash { background: #f1f5f9; color: #94a3b8; }
         
         .footer-info { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-top: 50px; }
@@ -153,7 +152,7 @@
         <button class="btn-clear" onclick="limparFiltros()">Limpar Tudo</button>
     </div>
 
-    <h3 class="section-title">🟢 Locações Ativas</h3>
+    <h3 class="section-title">🟢 Locações Ativas (Ordenado por Urgência)</h3>
     <div class="table-container">
         <div class="scroll-wrapper">
             <table>
@@ -214,10 +213,8 @@
         const sel = document.getElementById(id);
         const valorAtual = sel.value; 
         if(!valorAtual) sel.innerHTML = '<option value="" disabled selected>Selecione...</option>';
-        else sel.innerHTML = ''; // Limpa para recriar se estiver editando, mas tenta manter valor
-        
+        else sel.innerHTML = ''; 
         if(!valorAtual) sel.innerHTML = '<option value="" disabled selected>Selecione...</option>';
-
         lista.forEach(item => { if(item) sel.add(new Option(item, item)); });
         if(valorAtual) sel.value = valorAtual;
     }
@@ -246,7 +243,8 @@
 
     // --- 3. LÓGICA DE DADOS ---
     async function carregarDados() {
-        const { data, error } = await client.from('locacoes').select('*').order('created_at', { ascending: false });
+        // Carrega tudo
+        const { data, error } = await client.from('locacoes').select('*');
         if (error) { console.error(error); return; }
         CACHE_DADOS = data; 
         carregarListas(data); 
@@ -276,8 +274,6 @@
     }
 
     // --- 4. CRUD ---
-    
-    // SALVAR / ATUALIZAR
     document.getElementById('rentalForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btnSubmit');
@@ -285,7 +281,7 @@
         btn.textContent = "Processando..."; btn.disabled = true;
 
         const editId = document.getElementById('editId').value;
-        const editStatus = document.getElementById('editStatus').value; // Recupera status original se for edição
+        const editStatus = document.getElementById('editStatus').value;
 
         const dadosForm = {
             obra: document.getElementById('obraSelect').value,      
@@ -296,18 +292,14 @@
             data_fim: document.getElementById('fim').value,
             contrato: document.getElementById('contrato').value || '-',
             valor: document.getElementById('valor').value,
-            // Se tiver editando, mantém o status original. Se for novo, é 'ativo'
             status: editId ? editStatus : 'ativo'
         };
 
         let error = null;
-
         if (editId) {
-            // ATUALIZAR
             const res = await client.from('locacoes').update(dadosForm).eq('id', editId);
             error = res.error;
         } else {
-            // CRIAR NOVO
             const res = await client.from('locacoes').insert([dadosForm]);
             error = res.error;
         }
@@ -315,19 +307,15 @@
         if(!error) {
             resetarFormulario();
             carregarDados();
-        } else { 
-            alert("Erro: " + error.message); 
-        }
+        } else { alert("Erro: " + error.message); }
         
         btn.textContent = originalText; btn.disabled = false;
     });
 
-    // EDITAR (Preenche o form)
     window.editar = function(id) {
         const item = CACHE_DADOS.find(i => i.id === id);
         if(!item) return;
 
-        // Preenche os campos
         document.getElementById('obraSelect').value = item.obra;
         document.getElementById('fornecedorSelect').value = item.fornecedor;
         document.getElementById('equipamento').value = item.equipamento;
@@ -336,18 +324,13 @@
         document.getElementById('fim').value = item.data_fim;
         document.getElementById('contrato').value = item.contrato;
         document.getElementById('valor').value = item.valor;
-
-        // Guarda ID e Status para usar no Save
         document.getElementById('editId').value = item.id;
         document.getElementById('editStatus').value = item.status;
 
-        // Muda visual do botão
         const btn = document.getElementById('btnSubmit');
         btn.textContent = "ATUALIZAR REGISTRO";
         btn.classList.add('editing');
         document.getElementById('btnCancel').style.display = 'block';
-
-        // Rola para o topo
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -355,14 +338,10 @@
         document.getElementById('rentalForm').reset();
         document.getElementById('editId').value = "";
         document.getElementById('editStatus').value = "";
-        
-        // Reseta Botão
         const btn = document.getElementById('btnSubmit');
         btn.textContent = "SALVAR REGISTRO";
         btn.classList.remove('editing');
         document.getElementById('btnCancel').style.display = 'none';
-        
-        // Limpa selects para o placeholder
         document.getElementById('obraSelect').value = "";
         document.getElementById('fornecedorSelect').value = "";
     }
@@ -392,7 +371,7 @@
         if(!error) carregarDados();
     };
 
-    // --- 5. RENDERIZAÇÃO ---
+    // --- 5. RENDERIZAÇÃO E ORDENAÇÃO ---
     function renderizar(lista) {
         const tbAtivos = document.getElementById('tabela-ativos');
         const tbHist = document.getElementById('tabela-historico');
@@ -400,48 +379,63 @@
 
         if(!lista) return;
 
-        lista.forEach(item => {
+        // Separa os dados
+        const ativos = lista.filter(i => i.status === 'ativo');
+        const historico = lista.filter(i => i.status !== 'ativo');
+
+        // Ordena ATIVOS: Data Fim Ascendente (Menor data = vence primeiro = Topo)
+        ativos.sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
+
+        // Ordena HISTÓRICO: Data Devolução Descendente (Mais recente = Topo)
+        historico.sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
+
+        // RENDERIZA ATIVOS
+        ativos.forEach(item => {
             const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
             const dataIn = fmtData(item.data_inicio);
             const contrato = item.contrato || '-';
 
-            if (item.status === 'ativo') {
-                const hoje = new Date(); hoje.setHours(0,0,0,0);
-                const venc = new Date(item.data_fim + 'T00:00:00');
-                const diff = Math.ceil((venc - hoje) / 86400000);
-                let badge = diff < 0 ? `<span class="badge bg-red">ATRASADO ${Math.abs(diff)}d</span>` : (diff <= 2 ? `<span class="badge bg-red">⚠️ Vence em ${diff}d</span>` : `<span class="badge bg-green">Em dia (${diff}d)</span>`);
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+            const venc = new Date(item.data_fim + 'T00:00:00');
+            const diff = Math.ceil((venc - hoje) / 86400000);
+            let badge = diff < 0 ? `<span class="badge bg-red">ATRASADO ${Math.abs(diff)}d</span>` : (diff <= 2 ? `<span class="badge bg-red">⚠️ Vence em ${diff}d</span>` : `<span class="badge bg-green">Em dia (${diff}d)</span>`);
 
-                tbAtivos.innerHTML += `
-                    <tr>
-                        <td><b>${item.obra}</b></td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
-                        <td>${dataIn}</td> <td>${fmtData(item.data_fim)}</td> <td>${badge}</td>
-                        <td>${contrato}</td> <td>${val}</td>
-                        <td style="text-align:center">
-                            <button class="btn-icon action-renew" onclick="renovar(${item.id}, '${item.data_fim}', '${item.unidade}')" title="Renovar">🔄</button>
-                            <button class="btn-icon action-check" onclick="devolver(${item.id})" title="Devolver">✅</button>
-                            <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
-                            <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Excluir">🗑️</button>
-                        </td>
-                    </tr>`;
-            } else {
-                // Cálculo dias
-                const start = new Date(item.data_inicio + 'T00:00:00');
-                const end = new Date(item.data_devolucao + 'T00:00:00');
-                const totalDias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-                const displayDias = totalDias < 0 ? 0 : totalDias;
+            tbAtivos.innerHTML += `
+                <tr>
+                    <td><b>${item.obra}</b></td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
+                    <td>${dataIn}</td> <td>${fmtData(item.data_fim)}</td> <td>${badge}</td>
+                    <td>${contrato}</td> <td>${val}</td>
+                    <td style="text-align:center">
+                        <button class="btn-icon action-renew" onclick="renovar(${item.id}, '${item.data_fim}', '${item.unidade}')" title="Renovar">🔄</button>
+                        <button class="btn-icon action-check" onclick="devolver(${item.id})" title="Devolver">✅</button>
+                        <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
+                        <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Excluir">🗑️</button>
+                    </td>
+                </tr>`;
+        });
 
-                tbHist.innerHTML += `
-                    <tr>
-                        <td>${item.obra}</td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
-                        <td>${dataIn}</td> <td><b>${fmtData(item.data_devolucao)}</b></td>
-                        <td><span class="badge bg-gray">${displayDias} dias</span></td>
-                        <td>${contrato}</td> <td>${val}</td>
-                        <td style="text-align:center">
-                            <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
-                            <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Apagar">🗑️</button>
-                        </td>
-                    </tr>`;
-            }
+        // RENDERIZA HISTÓRICO
+        historico.forEach(item => {
+            const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            const dataIn = fmtData(item.data_inicio);
+            const contrato = item.contrato || '-';
+            
+            const start = new Date(item.data_inicio + 'T00:00:00');
+            const end = new Date(item.data_devolucao + 'T00:00:00');
+            const totalDias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+            const displayDias = totalDias < 0 ? 0 : totalDias;
+
+            tbHist.innerHTML += `
+                <tr>
+                    <td>${item.obra}</td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
+                    <td>${dataIn}</td> <td><b>${fmtData(item.data_devolucao)}</b></td>
+                    <td><span class="badge bg-gray">${displayDias} dias</span></td>
+                    <td>${contrato}</td> <td>${val}</td>
+                    <td style="text-align:center">
+                        <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
+                        <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Apagar">🗑️</button>
+                    </td>
+                </tr>`;
         });
     }
 
