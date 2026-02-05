@@ -11,7 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* --- DESIGN SYSTEM (V20) --- */
+        /* --- DESIGN SYSTEM (V21) --- */
         :root { --primary: #2563eb; --bg-body: #f1f5f9; --bg-card: #ffffff; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --purple: #7c3aed; --text: #1e293b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); margin: 0; padding: 30px; color: var(--text); }
         .container { max-width: 1400px; margin: 0 auto; }
@@ -48,10 +48,47 @@
         .btn-clear { height: 48px; padding: 0 20px; background: white; border: 1px solid var(--border); color: #64748b; font-weight: 600; cursor: pointer; border-radius: 8px; }
         .btn-pdf { height: 48px; padding: 0 25px; background: #1e293b; color: white; border: none; font-weight: 600; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 8px; }
 
-        /* TABELAS */
-        .section-title { font-size: 1.2rem; margin-bottom: 15px; padding-left: 10px; border-left: 4px solid var(--primary); color: #334155; }
-        .table-container { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 50px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        /* TABELAS E SEÇÕES EXPANSÍVEIS */
+        .section-title { 
+            font-size: 1.2rem; 
+            margin-bottom: 0; /* Removido margem inferior pois o container pode fechar */
+            padding: 15px 10px; 
+            border-left: 4px solid var(--primary); 
+            color: #334155;
+            background: #fff;
+            border-radius: 8px;
+            cursor: pointer; /* Mãozinha */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-left-width: 4px;
+            margin-top: 40px;
+            user-select: none;
+            transition: 0.2s;
+        }
+        .section-title:hover { background: #f8fafc; }
+        
+        /* Ícone da seta */
+        .toggle-icon { transition: transform 0.3s ease; font-size: 0.9rem; color: #94a3b8; }
+        .collapsed .toggle-icon { transform: rotate(-90deg); } /* Gira quando fecha */
+
+        /* Container da tabela que abre e fecha */
+        .table-wrapper-collapsible {
+            transition: all 0.3s ease;
+            overflow: hidden;
+            background: white;
+            border-radius: 0 0 12px 12px;
+            border: 1px solid var(--border);
+            border-top: none;
+            margin-bottom: 20px;
+        }
+        
+        .table-wrapper-collapsible.hidden { display: none; } /* Classe para esconder */
+
+        .table-container { overflow: hidden; padding: 0; box-shadow: none; border: none; margin-bottom: 0; } /* Reset do estilo antigo */
         .scroll-wrapper { overflow-x: auto; }
+        
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         th { background: #f8fafc; text-align: left; padding: 16px; font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; border-bottom: 1px solid var(--border); }
         td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 0.95rem; vertical-align: middle; }
@@ -61,11 +98,8 @@
         .bg-green { background: #dcfce7; color: #166534; }
         .bg-red { background: #fee2e2; color: #991b1b; }
         .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-        .bg-purple { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
-        
-        /* ANIMAÇÃO */
-        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         .urgent { animation: pulse-red 2s infinite; background: #fee2e2; color: #ef4444; border: 1px solid #ef4444; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
         /* AÇÕES */
         .btn-icon { width: 34px; height: 34px; border: none; border-radius: 6px; cursor: pointer; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; transition: 0.2s; }
@@ -139,71 +173,87 @@
         </form>
     </div>
 
-    <h3 class="section-title">🔍 Filtrar e Relatório</h3>
-    <div class="filter-grid">
-        <div class="form-group">
-            <label>Filtrar por Obra</label>
-            <select id="filtroObra" onchange="filtrarTabela()">
-                <option value="">Todas as Obras</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Filtrar por Fornecedor</label>
-            <select id="filtroFornecedor" onchange="filtrarTabela()">
-                <option value="">Todos os Fornecedores</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Buscar Contrato</label>
-            <input type="text" id="filtroContrato" placeholder="Digite o nº..." onkeyup="filtrarTabela()">
-        </div>
-        <button class="btn-clear" onclick="limparFiltros()">Limpar Tudo</button>
-        <button class="btn-pdf" onclick="gerarPDF()">📄 Gerar PDF</button>
-    </div>
-
-    <h3 class="section-title">🟢 Locações Ativas (Aluguel)</h3>
-    <div class="table-container">
-        <div class="scroll-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th width="14%">Obra</th> <th width="14%">Fornecedor</th> <th width="14%">Equipamento</th> 
-                        <th>Início</th> <th>Fim Previsto</th> <th>Status</th> <th>Contrato</th> <th>Valor</th> <th style="text-align:center">Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="tabela-ativos"></tbody>
-            </table>
+    <h3 class="section-title" onclick="toggleSection('sec-filtros')" style="margin-top:0">
+        <span>🔍 Filtrar e Relatório</span> <span class="toggle-icon" id="icon-sec-filtros">▼</span>
+    </h3>
+    <div class="table-wrapper-collapsible" id="sec-filtros">
+        <div class="filter-grid" style="margin:0; border:none; border-radius:0;">
+            <div class="form-group">
+                <label>Filtrar por Obra</label>
+                <select id="filtroObra" onchange="filtrarTabela()">
+                    <option value="">Todas as Obras</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Filtrar por Fornecedor</label>
+                <select id="filtroFornecedor" onchange="filtrarTabela()">
+                    <option value="">Todos os Fornecedores</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Buscar Contrato</label>
+                <input type="text" id="filtroContrato" placeholder="Digite o nº..." onkeyup="filtrarTabela()">
+            </div>
+            <button class="btn-clear" onclick="limparFiltros()">Limpar Tudo</button>
+            <button class="btn-pdf" onclick="gerarPDF()">📄 Gerar PDF</button>
         </div>
     </div>
 
-    <h3 class="section-title" style="color:#64748b; border-color:#cbd5e1; margin-top:50px">📂 Histórico de Devoluções</h3>
-    <div class="table-container" style="opacity:0.9">
-        <div class="scroll-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th width="14%">Obra</th> <th width="14%">Fornecedor</th> <th width="16%">Equipamento</th> 
-                        <th>Início</th> <th>Devolução</th> <th>Dias</th> 
-                        <th>Contrato</th> <th>Valor</th> <th style="text-align:center">Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="tabela-historico"></tbody>
-            </table>
+    <h3 class="section-title" onclick="toggleSection('sec-ativos')">
+        <span>🟢 Locações Ativas (Aluguel)</span> <span class="toggle-icon" id="icon-sec-ativos">▼</span>
+    </h3>
+    <div class="table-wrapper-collapsible" id="sec-ativos">
+        <div class="table-container">
+            <div class="scroll-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="14%">Obra</th> <th width="14%">Fornecedor</th> <th width="14%">Equipamento</th> 
+                            <th>Início</th> <th>Fim Previsto</th> <th>Status</th> <th>Contrato</th> <th>Valor</th> <th style="text-align:center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-ativos"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <h3 class="section-title" style="color:#7c3aed; border-color:#7c3aed; margin-top:50px">🛠️ Ferramentas Próprias (Patrimônio)</h3>
-    <div class="table-container">
-        <div class="scroll-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th width="15%">Obra Atual</th> <th width="15%">Origem/Loja</th> <th width="20%">Equipamento</th> 
-                        <th>Data Compra</th> <th>Nota Fiscal</th> <th>Valor Compra</th> <th style="text-align:center">Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="tabela-proprios"></tbody>
-            </table>
+    <h3 class="section-title collapsed" onclick="toggleSection('sec-historico')" style="color:#64748b; border-color:#cbd5e1;">
+        <span>📂 Histórico de Devoluções</span> <span class="toggle-icon" id="icon-sec-historico">▼</span>
+    </h3>
+    <div class="table-wrapper-collapsible hidden" id="sec-historico">
+        <div class="table-container">
+            <div class="scroll-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="14%">Obra</th> <th width="14%">Fornecedor</th> <th width="16%">Equipamento</th> 
+                            <th>Início</th> <th>Devolução</th> <th>Dias</th> 
+                            <th>Contrato</th> <th>Valor</th> <th style="text-align:center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-historico"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="section-title collapsed" onclick="toggleSection('sec-proprios')" style="color:#7c3aed; border-color:#7c3aed;">
+        <span>🛠️ Ferramentas Próprias</span> <span class="toggle-icon" id="icon-sec-proprios">▼</span>
+    </h3>
+    <div class="table-wrapper-collapsible hidden" id="sec-proprios">
+        <div class="table-container">
+            <div class="scroll-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="15%">Obra Atual</th> <th width="15%">Origem/Loja</th> <th width="20%">Equipamento</th> 
+                            <th>Data Compra</th> <th>Nota Fiscal</th> <th>Valor Compra</th> <th style="text-align:center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-proprios"></tbody>
+                </table>
+            </div>
         </div>
     </div>
     
@@ -218,6 +268,25 @@
     let CACHE_DADOS = [];
     const PADRAO_OBRAS = ["Vinícola", "Sede Start Química", "Tamboré"];
     const PADRAO_FORN = ["TETO LOC.", "CASA DO CONSTRUTOR", "ALUFORT", "LEROY MERLIN", "MAGALU"];
+
+    // --- FUNÇÃO DE EXPANDIR/ENCOLHER (NOVA) ---
+    window.toggleSection = function(id) {
+        const wrapper = document.getElementById(id);
+        const title = wrapper.previousElementSibling; // O h3 antes da div
+        const icon = title.querySelector('.toggle-icon');
+
+        if (wrapper.classList.contains('hidden')) {
+            // Abrir
+            wrapper.classList.remove('hidden');
+            title.classList.remove('collapsed');
+            icon.style.transform = 'rotate(0deg)';
+        } else {
+            // Fechar
+            wrapper.classList.add('hidden');
+            title.classList.add('collapsed');
+            icon.style.transform = 'rotate(-90deg)';
+        }
+    }
 
     // --- LISTAS ---
     async function carregarListas(dados) {
@@ -307,19 +376,17 @@
 
         if(!lista) return;
 
-        // Separação em 3 grupos
-        const proprios = lista.filter(i => i.unidade === 'Proprio'); // Ferramentas Próprias
-        const alugados = lista.filter(i => i.unidade !== 'Proprio'); // Alugados
+        const proprios = lista.filter(i => i.unidade === 'Proprio');
+        const alugados = lista.filter(i => i.unidade !== 'Proprio');
 
         const ativos = alugados.filter(i => i.status === 'ativo');
         const historico = alugados.filter(i => i.status !== 'ativo');
 
-        // Ordenações
         ativos.sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
         historico.sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
         proprios.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio));
 
-        // 1. RENDERIZA ATIVOS (ALUGUEL)
+        // 1. ATIVOS
         ativos.forEach(item => {
             const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
             const dataIn = fmtData(item.data_inicio);
@@ -348,7 +415,7 @@
                 </tr>`;
         });
 
-        // 2. RENDERIZA HISTÓRICO
+        // 2. HISTÓRICO
         historico.forEach(item => {
             const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
             const dataIn = fmtData(item.data_inicio);
@@ -371,7 +438,7 @@
                 </tr>`;
         });
 
-        // 3. RENDERIZA PRÓPRIOS (NOVO)
+        // 3. PRÓPRIOS
         proprios.forEach(item => {
             const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
             const dataCompra = fmtData(item.data_inicio);
@@ -395,16 +462,12 @@
         const uni = document.getElementById('unidade').value;
         const fimInput = document.getElementById('fim');
         
-        // Se for Próprio, não tem data fim
         if (uni === 'Proprio') {
-            fimInput.value = '';
-            fimInput.disabled = true;
-            fimInput.style.backgroundColor = '#e2e8f0';
+            fimInput.value = ''; fimInput.disabled = true; fimInput.style.backgroundColor = '#e2e8f0';
             document.getElementById('lblInicio').innerText = "Data Compra/Entrada";
             return;
         } else {
-            fimInput.disabled = false;
-            fimInput.style.backgroundColor = '#f8fafc';
+            fimInput.disabled = false; fimInput.style.backgroundColor = '#f8fafc';
             document.getElementById('lblInicio').innerText = "Data Início";
         }
 
@@ -437,7 +500,6 @@
             equipamento: document.getElementById('equipamento').value,
             unidade: uni,
             data_inicio: document.getElementById('inicio').value,
-            // Se for próprio, mandamos a data de início também no fim só para não dar erro no banco, mas não usaremos
             data_fim: uni === 'Proprio' ? document.getElementById('inicio').value : document.getElementById('fim').value,
             contrato: document.getElementById('contrato').value || '-',
             valor: document.getElementById('valor').value,
@@ -466,14 +528,8 @@
         document.getElementById('equipamento').value = item.equipamento;
         document.getElementById('unidade').value = item.unidade;
         document.getElementById('inicio').value = item.data_inicio;
-        
-        // Ajuste visual se for proprio
-        calcData(); // Atualiza labels e inputs
-        
-        if (item.unidade !== 'Proprio') {
-            document.getElementById('fim').value = item.data_fim;
-        }
-
+        calcData(); 
+        if (item.unidade !== 'Proprio') { document.getElementById('fim').value = item.data_fim; }
         document.getElementById('contrato').value = item.contrato;
         document.getElementById('valor').value = item.valor;
         document.getElementById('editId').value = item.id;
@@ -495,7 +551,7 @@
         document.getElementById('btnCancel').style.display = 'none';
         document.getElementById('obraSelect').value = "";
         document.getElementById('fornecedorSelect').value = "";
-        calcData(); // Reseta estados visuais
+        calcData(); 
     }
 
     window.renovar = async (id, dataFimAtual, unidade) => {
@@ -527,12 +583,9 @@
     window.gerarPDF = function() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('l', 'mm', 'a4');
-        doc.setFontSize(18);
-        doc.text("Relatório Geral de Obras e Ferramentas", 14, 22);
-        doc.setFontSize(10);
-        doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 28);
+        doc.setFontSize(18); doc.text("Relatório Geral de Obras e Ferramentas", 14, 22);
+        doc.setFontSize(10); doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 28);
 
-        // Filtros Atuais
         const obraFiltro = document.getElementById('filtroObra').value;
         const fornFiltro = document.getElementById('filtroFornecedor').value;
         const contratoFiltro = document.getElementById('filtroContrato').value.trim().toLowerCase();
@@ -552,45 +605,23 @@
 
         let currentY = 35;
 
-        // 1. Tabela Ativos
         if(ativos.length > 0) {
             doc.text("Locações Ativas", 14, currentY);
-            doc.autoTable({
-                startY: currentY + 5,
-                head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Fim Prev.', 'Contrato', 'Valor']],
-                body: ativos.map(i => [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), fmtData(i.data_fim), i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]),
-                theme: 'grid', headStyles: { fillColor: [37, 99, 235] }, styles: { fontSize: 8 }
-            });
+            doc.autoTable({ startY: currentY + 5, head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Fim Prev.', 'Contrato', 'Valor']], body: ativos.map(i => [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), fmtData(i.data_fim), i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]), theme: 'grid', headStyles: { fillColor: [37, 99, 235] }, styles: { fontSize: 8 } });
             currentY = doc.lastAutoTable.finalY + 15;
         }
 
-        // 2. Tabela Histórico
         if(historico.length > 0) {
-            // Verifica se cabe na página
             if (currentY > 170) { doc.addPage(); currentY = 20; }
             doc.text("Histórico de Devoluções", 14, currentY);
-            doc.autoTable({
-                startY: currentY + 5,
-                head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Devolução', 'Dias', 'Contrato', 'Valor']],
-                body: historico.map(i => {
-                    const d = Math.ceil((new Date(i.data_devolucao) - new Date(i.data_inicio)) / 86400000);
-                    return [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), fmtData(i.data_devolucao), d>0?d:0, i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})];
-                }),
-                theme: 'grid', headStyles: { fillColor: [100, 116, 139] }, styles: { fontSize: 8 }
-            });
+            doc.autoTable({ startY: currentY + 5, head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Devolução', 'Dias', 'Contrato', 'Valor']], body: historico.map(i => { const d = Math.ceil((new Date(i.data_devolucao) - new Date(i.data_inicio)) / 86400000); return [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), fmtData(i.data_devolucao), d>0?d:0, i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]; }), theme: 'grid', headStyles: { fillColor: [100, 116, 139] }, styles: { fontSize: 8 } });
             currentY = doc.lastAutoTable.finalY + 15;
         }
 
-        // 3. Tabela Próprios
         if(proprios.length > 0) {
             if (currentY > 170) { doc.addPage(); currentY = 20; }
             doc.text("Ferramentas Próprias (Patrimônio)", 14, currentY);
-            doc.autoTable({
-                startY: currentY + 5,
-                head: [['Obra Atual', 'Origem/Loja', 'Equipamento', 'Data Compra', 'Nota Fiscal', 'Valor Pago']],
-                body: proprios.map(i => [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]),
-                theme: 'grid', headStyles: { fillColor: [124, 58, 237] }, styles: { fontSize: 8 }
-            });
+            doc.autoTable({ startY: currentY + 5, head: [['Obra Atual', 'Origem/Loja', 'Equipamento', 'Data Compra', 'Nota Fiscal', 'Valor Pago']], body: proprios.map(i => [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]), theme: 'grid', headStyles: { fillColor: [124, 58, 237] }, styles: { fontSize: 8 } });
         }
 
         doc.save('relatorio_completo.pdf');
