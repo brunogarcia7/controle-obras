@@ -10,7 +10,7 @@
 
     <style>
         /* --- DESIGN SYSTEM (PREMIUM) --- */
-        :root { --primary: #2563eb; --bg-body: #f1f5f9; --bg-card: #ffffff; --border: #e2e8f0; --success: #10b981; --text: #1e293b; }
+        :root { --primary: #2563eb; --bg-body: #f1f5f9; --bg-card: #ffffff; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --text: #1e293b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); margin: 0; padding: 30px; color: var(--text); }
         .container { max-width: 1400px; margin: 0 auto; }
         
@@ -35,24 +35,15 @@
         .btn-plus { height: 48px; width: 48px; background-color: var(--success); color: white; border: none; border-radius: 0 8px 8px 0; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
         .btn-plus:hover { background-color: #059669; }
 
-        .btn-save { grid-column: 1 / -1; height: 54px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 15px; }
+        .btn-save { grid-column: 1 / -1; height: 54px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-save:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        /* Estado de Edição */
+        .btn-save.editing { background-color: var(--warning); color: #78350f; }
+        .cancel-edit { display: none; margin-top: 10px; color: #ef4444; cursor: pointer; text-align: center; font-size: 0.9rem; text-decoration: underline; grid-column: 1 / -1; }
 
-        /* AREA DE FILTROS (ATUALIZADO PARA 4 COLUNAS) */
-        .filter-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr 1fr auto; /* Obra | Forn | Contrato | Botão */
-            gap: 15px; 
-            align-items: end; 
-            background: #f8fafc; 
-            padding: 20px; 
-            border-radius: 12px; 
-            border: 1px solid var(--border); 
-            margin-bottom: 30px; 
-        }
-        /* Ajuste para celular */
-        @media (max-width: 768px) { .filter-grid { grid-template-columns: 1fr; } }
-
+        /* AREA DE FILTROS */
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
         .btn-clear { height: 48px; padding: 0 20px; background: white; border: 1px solid var(--border); color: #64748b; font-weight: 600; cursor: pointer; border-radius: 8px; }
         .btn-clear:hover { background: #e2e8f0; color: #ef4444; border-color: #ef4444; }
 
@@ -75,6 +66,7 @@
         .btn-icon:hover { transform: scale(1.1); }
         .action-renew { background: #e0f2fe; color: #0284c7; }
         .action-check { background: #dcfce7; color: #16a34a; }
+        .action-edit { background: #fef3c7; color: #d97706; } /* Botão Editar Amarelo */
         .action-trash { background: #f1f5f9; color: #94a3b8; }
         
         .footer-info { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-top: 50px; }
@@ -87,6 +79,9 @@
 
     <div class="card">
         <form id="rentalForm">
+            <input type="hidden" id="editId" value="">
+            <input type="hidden" id="editStatus" value="">
+
             <div class="form-grid">
                 <div class="form-group">
                     <label>Obra</label>
@@ -130,7 +125,9 @@
                     <label>Valor (R$)</label>
                     <input type="number" id="valor" step="0.01" placeholder="0.00" required>
                 </div>
-                <button type="submit" class="btn-save">SALVAR REGISTRO</button>
+                
+                <button type="submit" id="btnSubmit" class="btn-save">SALVAR REGISTRO</button>
+                <div id="btnCancel" class="cancel-edit" onclick="resetarFormulario()">Cancelar Edição</div>
             </div>
         </form>
     </div>
@@ -149,12 +146,10 @@
                 <option value="">Todos os Fornecedores</option>
             </select>
         </div>
-        
         <div class="form-group">
             <label>Buscar Contrato</label>
             <input type="text" id="filtroContrato" placeholder="Digite o nº do contrato..." onkeyup="filtrarTabela()">
         </div>
-
         <button class="btn-clear" onclick="limparFiltros()">Limpar Tudo</button>
     </div>
 
@@ -218,9 +213,13 @@
     function preencherSelect(id, lista) {
         const sel = document.getElementById(id);
         const valorAtual = sel.value; 
-        sel.innerHTML = '<option value="" disabled selected>Selecione...</option>';
+        if(!valorAtual) sel.innerHTML = '<option value="" disabled selected>Selecione...</option>';
+        else sel.innerHTML = ''; // Limpa para recriar se estiver editando, mas tenta manter valor
+        
+        if(!valorAtual) sel.innerHTML = '<option value="" disabled selected>Selecione...</option>';
+
         lista.forEach(item => { if(item) sel.add(new Option(item, item)); });
-        if(valorAtual && lista.includes(valorAtual)) sel.value = valorAtual;
+        if(valorAtual) sel.value = valorAtual;
     }
 
     function preencherSelectFiltro(id, lista) {
@@ -254,20 +253,16 @@
         filtrarTabela(); 
     }
 
-    // FILTRAGEM (Atualizada com Contrato)
     window.filtrarTabela = function() {
         const obraFiltro = document.getElementById('filtroObra').value;
         const fornFiltro = document.getElementById('filtroFornecedor').value;
-        const contratoFiltro = document.getElementById('filtroContrato').value.trim().toLowerCase(); // Pega texto minúsculo
+        const contratoFiltro = document.getElementById('filtroContrato').value.trim().toLowerCase();
 
         const dadosFiltrados = CACHE_DADOS.filter(item => {
             const matchObra = obraFiltro ? item.obra === obraFiltro : true;
             const matchForn = fornFiltro ? item.fornecedor === fornFiltro : true;
-            
-            // Lógica do contrato: Se digitou algo, verifica se contém. Se não digitou, ignora.
             const itemContrato = item.contrato ? String(item.contrato).toLowerCase() : '';
             const matchContrato = contratoFiltro ? itemContrato.includes(contratoFiltro) : true;
-
             return matchObra && matchForn && matchContrato;
         });
         renderizar(dadosFiltrados);
@@ -276,17 +271,23 @@
     window.limparFiltros = function() {
         document.getElementById('filtroObra').value = "";
         document.getElementById('filtroFornecedor').value = "";
-        document.getElementById('filtroContrato').value = ""; // Limpa contrato
+        document.getElementById('filtroContrato').value = "";
         filtrarTabela();
     }
 
     // --- 4. CRUD ---
+    
+    // SALVAR / ATUALIZAR
     document.getElementById('rentalForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = document.querySelector('.btn-save');
-        btn.textContent = "Salvando..."; btn.disabled = true;
+        const btn = document.getElementById('btnSubmit');
+        const originalText = btn.textContent;
+        btn.textContent = "Processando..."; btn.disabled = true;
 
-        const novo = {
+        const editId = document.getElementById('editId').value;
+        const editStatus = document.getElementById('editStatus').value; // Recupera status original se for edição
+
+        const dadosForm = {
             obra: document.getElementById('obraSelect').value,      
             fornecedor: document.getElementById('fornecedorSelect').value, 
             equipamento: document.getElementById('equipamento').value,
@@ -295,18 +296,76 @@
             data_fim: document.getElementById('fim').value,
             contrato: document.getElementById('contrato').value || '-',
             valor: document.getElementById('valor').value,
-            status: 'ativo'
+            // Se tiver editando, mantém o status original. Se for novo, é 'ativo'
+            status: editId ? editStatus : 'ativo'
         };
 
-        const { error } = await client.from('locacoes').insert([novo]);
+        let error = null;
+
+        if (editId) {
+            // ATUALIZAR
+            const res = await client.from('locacoes').update(dadosForm).eq('id', editId);
+            error = res.error;
+        } else {
+            // CRIAR NOVO
+            const res = await client.from('locacoes').insert([dadosForm]);
+            error = res.error;
+        }
+
         if(!error) {
-            document.getElementById('rentalForm').reset();
-            document.getElementById('obraSelect').value = "";
-            document.getElementById('fornecedorSelect').value = "";
+            resetarFormulario();
             carregarDados();
-        } else { alert("Erro: " + error.message); }
-        btn.textContent = "SALVAR REGISTRO"; btn.disabled = false;
+        } else { 
+            alert("Erro: " + error.message); 
+        }
+        
+        btn.textContent = originalText; btn.disabled = false;
     });
+
+    // EDITAR (Preenche o form)
+    window.editar = function(id) {
+        const item = CACHE_DADOS.find(i => i.id === id);
+        if(!item) return;
+
+        // Preenche os campos
+        document.getElementById('obraSelect').value = item.obra;
+        document.getElementById('fornecedorSelect').value = item.fornecedor;
+        document.getElementById('equipamento').value = item.equipamento;
+        document.getElementById('unidade').value = item.unidade;
+        document.getElementById('inicio').value = item.data_inicio;
+        document.getElementById('fim').value = item.data_fim;
+        document.getElementById('contrato').value = item.contrato;
+        document.getElementById('valor').value = item.valor;
+
+        // Guarda ID e Status para usar no Save
+        document.getElementById('editId').value = item.id;
+        document.getElementById('editStatus').value = item.status;
+
+        // Muda visual do botão
+        const btn = document.getElementById('btnSubmit');
+        btn.textContent = "ATUALIZAR REGISTRO";
+        btn.classList.add('editing');
+        document.getElementById('btnCancel').style.display = 'block';
+
+        // Rola para o topo
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    window.resetarFormulario = function() {
+        document.getElementById('rentalForm').reset();
+        document.getElementById('editId').value = "";
+        document.getElementById('editStatus').value = "";
+        
+        // Reseta Botão
+        const btn = document.getElementById('btnSubmit');
+        btn.textContent = "SALVAR REGISTRO";
+        btn.classList.remove('editing');
+        document.getElementById('btnCancel').style.display = 'none';
+        
+        // Limpa selects para o placeholder
+        document.getElementById('obraSelect').value = "";
+        document.getElementById('fornecedorSelect').value = "";
+    }
 
     window.renovar = async (id, dataFimAtual, unidade) => {
         if(!confirm("Renovar por mais um período?")) return;
@@ -360,10 +419,12 @@
                         <td style="text-align:center">
                             <button class="btn-icon action-renew" onclick="renovar(${item.id}, '${item.data_fim}', '${item.unidade}')" title="Renovar">🔄</button>
                             <button class="btn-icon action-check" onclick="devolver(${item.id})" title="Devolver">✅</button>
+                            <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
                             <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Excluir">🗑️</button>
                         </td>
                     </tr>`;
             } else {
+                // Cálculo dias
                 const start = new Date(item.data_inicio + 'T00:00:00');
                 const end = new Date(item.data_devolucao + 'T00:00:00');
                 const totalDias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
@@ -376,6 +437,7 @@
                         <td><span class="badge bg-gray">${displayDias} dias</span></td>
                         <td>${contrato}</td> <td>${val}</td>
                         <td style="text-align:center">
+                            <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
                             <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Apagar">🗑️</button>
                         </td>
                     </tr>`;
