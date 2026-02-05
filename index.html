@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Obras - Clean Light</title>
+    <title>Gestão de Obras - Premium</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,10 +11,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* --- DESIGN SYSTEM CLEAN LIGHT (V24) --- */
+        /* --- DESIGN SYSTEM (V25 - Fundo Creme) --- */
         :root {
-            /* Fundo CLARO (Cinza Suave) */
-            --bg-body: #f1f5f9;       /* Slate 100 - Fundo claro moderno */
+            /* Fundo BASE (A cor que você escolheu) */
+            --bg-body: #FFFCE0;       
             
             /* Componentes */
             --bg-card: #ffffff;       /* Branco Absoluto */
@@ -22,9 +22,9 @@
             --border: #e2e8f0;        /* Bordas claras */
             
             /* Cores de Texto */
-            --text-title-page: #1e293b; /* Título escuro para fundo claro */
-            --text-main: #334155;       /* Texto principal */
-            --text-muted: #64748b;      /* Texto secundário */
+            --text-title-page: #1e293b; 
+            --text-main: #334155;       
+            --text-muted: #64748b;      
             
             /* Cores de Ação */
             --primary: #2563eb;       
@@ -52,7 +52,7 @@
             justify-content: space-between;
             margin-bottom: 40px;
             padding-bottom: 20px;
-            border-bottom: 1px solid var(--border); /* Borda mais sutil */
+            border-bottom: 1px solid rgba(0,0,0, 0.05);
         }
         
         .app-title {
@@ -99,7 +99,7 @@
         
         /* INPUTS & SELECTS */
         input, select {
-            height: 50px; /* Altura fixa */
+            height: 50px;
             padding: 0 16px;
             background: var(--bg-input);
             border: 1px solid #cbd5e1;
@@ -107,7 +107,7 @@
             color: var(--text-main);
             font-size: 0.95rem;
             transition: all 0.2s;
-            width: 100%; box-sizing: border-box; /* Garante largura correta */
+            width: 100%; box-sizing: border-box;
         }
         input:focus, select:focus {
             outline: none;
@@ -117,31 +117,31 @@
         input::placeholder { color: #94a3b8; }
         input[readonly] { background: #f8fafc; color: #94a3b8; cursor: not-allowed; border-color: #e2e8f0; }
 
-        /* --- CORREÇÃO DE ALINHAMENTO DOS BOTÕES + --- */
+        /* ALINHAMENTO DO BOTÃO + */
         .input-group {
             display: flex;
             width: 100%;
-            align-items: stretch; /* Garante que ambos tenham a mesma altura */
+            align-items: stretch;
         }
         .input-group select {
-            flex: 1; /* Ocupa o espaço restante */
+            flex: 1;
             border-top-right-radius: 0;
             border-bottom-right-radius: 0;
-            border-right: none; /* Evita borda dupla */
-            height: 50px; /* Altura forçada */
+            border-right: none;
+            height: 50px;
         }
         .btn-plus {
-            height: 50px; /* Altura forçada igual ao select */
+            height: 50px;
             width: 50px;
-            flex-shrink: 0; /* Não deixa o botão esmagar */
+            flex-shrink: 0;
             background-color: #f1f5f9;
             color: var(--success);
             border: 1px solid #cbd5e1;
-            border-radius: 0 8px 8px 0; /* Arredonda só a direita */
+            border-radius: 0 8px 8px 0;
             font-size: 1.4rem; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             transition: 0.2s;
-            padding: 0; /* Remove padding interno */
+            padding: 0;
         }
         .btn-plus:hover { background-color: var(--success); color: white; border-color: var(--success); }
 
@@ -160,7 +160,7 @@
         
         .cancel-edit { display: none; margin-top: 15px; color: var(--danger); cursor: pointer; text-align: center; font-size: 0.9rem; text-decoration: underline; grid-column: 1 / -1; font-weight: 600; }
 
-        /* HEADER EXPANSÍVEL */
+        /* TITULOS EXPANSÍVEIS */
         .section-title {
             font-size: 1.1rem;
             padding: 20px 25px;
@@ -187,7 +187,7 @@
         .toggle-icon { transition: transform 0.3s ease; color: var(--text-muted); font-size: 0.8rem; }
         .collapsed .toggle-icon { transform: rotate(-90deg); }
 
-        /* Container Colapsável */
+        /* CONTAINER COLAPSÁVEL */
         .table-wrapper-collapsible {
             transition: all 0.3s ease;
             overflow: hidden;
@@ -199,7 +199,7 @@
         }
         .table-wrapper-collapsible.hidden { display: none; }
 
-        /* ÁREA DE FILTROS */
+        /* FILTROS */
         .filter-grid {
             display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 15px; align-items: end;
             padding: 25px; margin-bottom: 30px;
@@ -212,7 +212,7 @@
         .btn-pdf { height: 50px; padding: 0 25px; background: #1e293b; color: white; border: none; font-weight: 600; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-pdf:hover { background: #0f172a; transform: translateY(-1px); }
 
-        /* TABELA */
+        /* TABELAS */
         .scroll-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         
@@ -397,6 +397,7 @@
 </div>
 
 <script>
+    // --- 1. CONFIGURAÇÃO SUPABASE ---
     const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
