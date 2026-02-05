@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Obras - Premium</title>
+    <title>Gestão de Obras - Cinza</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,15 +11,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* --- DESIGN SYSTEM (V25 - Fundo Creme) --- */
+        /* --- DESIGN SYSTEM (V26 - Fundo #D3D3D3) --- */
         :root {
-            /* Fundo BASE (A cor que você escolheu) */
-            --bg-body: #FFFCE0;       
+            /* ALTERAÇÃO DE COR AQUI */
+            --bg-body: #D3D3D3;       /* Cinza Claro Solicitado */
             
             /* Componentes */
             --bg-card: #ffffff;       /* Branco Absoluto */
             --bg-input: #ffffff;      
-            --border: #e2e8f0;        /* Bordas claras */
+            --border: #cbd5e1;        /* Bordas levemente mais escuras para contraste */
             
             /* Cores de Texto */
             --text-title-page: #1e293b; 
@@ -52,7 +52,7 @@
             justify-content: space-between;
             margin-bottom: 40px;
             padding-bottom: 20px;
-            border-bottom: 1px solid rgba(0,0,0, 0.05);
+            border-bottom: 1px solid rgba(0,0,0, 0.1);
         }
         
         .app-title {
@@ -73,6 +73,7 @@
             padding: 4px 10px;
             border-radius: 20px;
             border: 1px solid rgba(37, 99, 235, 0.2);
+            background: #fff; /* Fundo branco no badge para destaque no cinza */
         }
 
         /* CARDS (Brancos) */
@@ -80,7 +81,7 @@
             background: var(--bg-card);
             padding: 35px;
             border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             margin-bottom: 30px;
             border: 1px solid var(--border);
         }
@@ -117,7 +118,7 @@
         input::placeholder { color: #94a3b8; }
         input[readonly] { background: #f8fafc; color: #94a3b8; cursor: not-allowed; border-color: #e2e8f0; }
 
-        /* ALINHAMENTO DO BOTÃO + */
+        /* ALINHAMENTO DO BOTÃO + (Mantido o fix) */
         .input-group {
             display: flex;
             width: 100%;
@@ -134,7 +135,7 @@
             height: 50px;
             width: 50px;
             flex-shrink: 0;
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
             color: var(--success);
             border: 1px solid #cbd5e1;
             border-radius: 0 8px 8px 0;
@@ -174,7 +175,7 @@
             transition: 0.2s;
             color: var(--text-main);
             font-weight: 600;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
         .section-title:hover { border-color: var(--primary); transform: translateX(5px); }
         .section-title.collapsed { border-radius: 12px; opacity: 0.8; }
@@ -195,7 +196,7 @@
             border-radius: 0 0 12px 12px;
             border: 1px solid var(--border);
             border-top: none;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         .table-wrapper-collapsible.hidden { display: none; }
 
@@ -245,7 +246,7 @@
         .action-edit { background: #fef3c7; color: #d97706; }
         .action-trash { background: #f1f5f9; color: #94a3b8; }
         
-        .footer-info { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 50px; opacity: 0.8; }
+        .footer-info { text-align: center; font-size: 0.8rem; color: #475569; margin-top: 50px; opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -397,7 +398,6 @@
 </div>
 
 <script>
-    // --- 1. CONFIGURAÇÃO SUPABASE ---
     const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
