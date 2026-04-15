@@ -9,7 +9,7 @@
     
     <style>
         /* --- ESTILO MOBILE FIRST --- */
-        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; --badge-color: #0ea5e9; }
+        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; --badge: #f59e0b; }
         body { font-family: 'Inter', sans-serif; background-color: #333; margin: 0; display: flex; justify-content: center; }
         .mobile-container { width: 100%; max-width: 420px; height: 100vh; background-color: var(--bg-app); position: relative; overflow-y: auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
         
@@ -17,38 +17,46 @@
         .header { background-color: var(--header); color: white; padding: 25px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .header p { margin: 5px 0 0 0; color: #cbd5e1; font-size: 0.85rem; }
-        .badge-v6 { background: var(--badge-color); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; }
+        .badge-v7 { background: var(--badge); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; color: black; font-weight: 800;}
         
         .content { padding: 20px; flex: 1; }
         
         /* SELEÇÃO DE OBRA */
         .form-group { margin-bottom: 20px; }
         label { font-size: 0.8rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; }
-        select { width: 100%; height: 50px; border-radius: 12px; border: 2px solid #cbd5e1; padding: 0 15px; font-size: 1rem; margin-top: 5px; background: white; font-family: 'Inter', sans-serif;}
+        select, input[type="text"], input[type="number"] { width: 100%; height: 45px; border-radius: 10px; border: 2px solid #cbd5e1; padding: 0 15px; font-size: 1rem; margin-top: 5px; background: white; font-family: 'Inter', sans-serif; box-sizing: border-box;}
 
-        /* BOTÕES */
-        .btn-action { width: 100%; background: var(--card); border: 2px solid transparent; border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 15px; margin-bottom: 15px; cursor: pointer; text-align: left; }
-        .icon-box { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; }
-        .btn-text h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: var(--text); }
-        .btn-text p { margin: 0; font-size: 0.8rem; color: var(--text-light); }
-
-        .btn-entrada { border-color: rgba(16, 185, 129, 0.3); }
-        .btn-entrada .icon-box { background: #dcfce7; color: var(--success); }
+        /* BOTOES DUPLOS DE ENTRADA */
+        .grid-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .btn-acao { background: var(--card); border: 2px solid transparent; border-radius: 16px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05);}
+        .btn-acao .icon-box { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; margin-bottom: 10px; }
+        .btn-acao h3 { margin: 0; font-size: 1rem; color: var(--text); }
+        .btn-acao p { margin: 5px 0 0 0; font-size: 0.75rem; color: var(--text-light); line-height: 1.2;}
+        
+        .btn-compra { border-color: rgba(16, 185, 129, 0.3); }
+        .btn-compra .icon-box { background: #dcfce7; color: var(--success); }
+        .btn-aluguel { border-color: rgba(37, 99, 235, 0.3); }
+        .btn-aluguel .icon-box { background: #dbeafe; color: var(--primary); }
         
         input[type="file"] { display: none; }
 
         /* MODAL DA IA */
-        #ai-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.98); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; padding: 20px; box-sizing: border-box; }
-        .loader { border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid var(--success); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        #ai-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.98); display: none; flex-direction: column; justify-content: flex-start; align-items: center; color: white; z-index: 100; padding: 40px 20px; box-sizing: border-box; overflow-y: auto;}
+        .loader { border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid var(--success); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; flex-shrink: 0;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #modal-text { font-size: 1.2rem; font-weight: 700; text-align: center; margin-bottom: 10px; }
+        #modal-text { font-size: 1.2rem; font-weight: 700; text-align: center; margin-bottom: 20px; }
         
         /* RESULTADO DA IA */
-        #resultado-ia { background: white; color: var(--text); padding: 15px; border-radius: 12px; width: 100%; max-height: 50vh; overflow-y: auto; display: none; font-size: 0.9rem;}
-        .item-lido { border-bottom: 1px solid #e2e8f0; padding: 10px 0; }
-        .item-lido:last-child { border-bottom: none; }
-        .btn-confirmar { background: var(--success); color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 700; margin-top: 15px; display: none; }
-        .btn-cancelar { background: transparent; color: white; border: 1px solid white; padding: 10px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 600; margin-top: 10px; }
+        #resultado-ia { background: white; color: var(--text); padding: 15px; border-radius: 12px; width: 100%; display: none; font-size: 0.9rem; margin-bottom: 20px;}
+        .item-lido { border-bottom: 2px solid #e2e8f0; padding: 15px 0; }
+        .item-lido:last-child { border-bottom: none; padding-bottom: 0;}
+        
+        /* CAMPOS MANUAIS (FALLBACK) */
+        .fallback-box { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 10px; }
+        .fallback-box label { font-size: 0.7rem; color: #475569; display: block; margin-top: 8px; }
+        
+        .btn-confirmar { background: var(--success); color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 700; display: none; margin-bottom: 10px; flex-shrink: 0;}
+        .btn-cancelar { background: transparent; color: white; border: 1px solid white; padding: 10px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 600; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -56,7 +64,7 @@
 <div class="mobile-container">
     <div class="header">
         <h1>👷 Almoxarifado</h1>
-        <p>Leitor com IA Gemini <span class="badge-v6">v6</span></p>
+        <p>Leitor com IA Gemini <span class="badge-v7">v7</span></p>
     </div>
 
     <div class="content">
@@ -67,15 +75,23 @@
             </select>
         </div>
 
-        <label>2. Registre o Material</label>
+        <label>2. Como o material está entrando?</label>
+        
+        <div class="grid-botoes">
+            <button class="btn-acao btn-compra" onclick="iniciarLeitura('compra')">
+                <div class="icon-box">🛒</div>
+                <h3>NF de Compra</h3>
+                <p>Salva como Próprio</p>
+            </button>
+            
+            <button class="btn-acao btn-aluguel" onclick="iniciarLeitura('aluguel')">
+                <div class="icon-box">📄</div>
+                <h3>Contrato de Locação</h3>
+                <p>Salva como Alugado</p>
+            </button>
+        </div>
+
         <input type="file" id="cam-entrada" accept="image/*" capture="environment" onchange="processarFoto(event)">
-        <button class="btn-action btn-entrada" onclick="document.getElementById('cam-entrada').click()">
-            <div class="icon-box">📸</div>
-            <div class="btn-text">
-                <h3>Ler Nota Fiscal</h3>
-                <p>A IA extrai os itens para você</p>
-            </div>
-        </button>
     </div>
 
     <div id="ai-modal">
@@ -90,20 +106,20 @@
 
 <script>
     // =====================================================================
-    // TRUQUE ANTI-ROBÔ APLICADO COM SUCESSO (CHAVE NOVA)
+    // COLE SUAS CHAVES AQUI
     // =====================================================================
-    const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
+    const SUPABASE_URL = 'COLE_AQUI_A_URL_DO_SUPABASE'; 
+    const SUPABASE_KEY = 'COLE_AQUI_A_CHAVE_DO_SUPABASE';
     
-    // Chave cortada ao meio para não cair na malha fina do GitHub
-    const GEMINI_PARTE_1 = 'AIzaSyD_yorwczN1p3Wc'; 
-    const GEMINI_PARTE_2 = 'asUrfVYChF8w6E4QvP0'; 
+    const GEMINI_PARTE_1 = 'COLE_A_PRIMEIRA_METADE_DA_CHAVE_NOVA'; 
+    const GEMINI_PARTE_2 = 'COLE_A_SEGUNDA_METADE_DA_CHAVE_NOVA'; 
     
     const GEMINI_API_KEY = GEMINI_PARTE_1 + GEMINI_PARTE_2;
     // =====================================================================
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let itensLidosPelaIA = [];
+    let modoAtual = ''; // Vai guardar se é 'compra' ou 'aluguel'
 
     async function carregarObras() {
         const { data, error } = await client.from('locacoes').select('obra');
@@ -119,14 +135,21 @@
     }
     carregarObras();
 
-    async function processarFoto(event) {
+    // 1. Função que decide qual botão foi clicado e abre a câmera
+    function iniciarLeitura(modo) {
         const obraSelecionada = document.getElementById('obraSelect').value;
         if(!obraSelecionada) { alert("Por favor, selecione a obra primeiro!"); return; }
+        
+        modoAtual = modo;
+        document.getElementById('cam-entrada').click();
+    }
 
+    async function processarFoto(event) {
         const file = event.target.files[0];
         if (!file) return;
 
-        abrirModal("Comprimindo a imagem para envio rápido...");
+        let textoModal = modoAtual === 'compra' ? "Analisando Nota Fiscal (Patrimônio)..." : "Analisando Contrato de Locação...";
+        abrirModal(textoModal);
 
         const img = new Image();
         img.src = URL.createObjectURL(file);
@@ -134,7 +157,6 @@
             const canvas = document.createElement('canvas');
             const MAX_WIDTH = 1200; 
             const scaleSize = MAX_WIDTH / img.width;
-            
             canvas.width = MAX_WIDTH;
             canvas.height = img.height * scaleSize;
 
@@ -142,8 +164,6 @@
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
             const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-            
-            document.getElementById('modal-text').innerText = "Enviando para o Gemini 2.5 Flash...";
             chamarGeminiAPI(base64Image);
         };
     }
@@ -151,45 +171,45 @@
     async function chamarGeminiAPI(base64Image) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
-        const promptTexto = `Você é um leitor de notas fiscais de construção civil. 
-        Leia esta imagem. Retorne APENAS um objeto JSON válido (sem textos extras ou \`\`\`json) contendo um array chamado "itens". 
-        Cada item deve ter as chaves exatamente assim: 
-        "equipamento" (nome do material/ferramenta extraido), 
-        "fornecedor" (nome da loja, se não achar coloque "Não identificado"),
-        "valor" (apenas o número do valor unitário).`;
+        // 2. Os Dois "Cérebros" (Prompts diferentes)
+        let promptTexto = "";
+        
+        if (modoAtual === 'compra') {
+            promptTexto = `Você é um leitor de notas fiscais. Extraia os materiais comprados. 
+            Retorne APENAS um objeto JSON válido contendo um array chamado "itens". Cada item deve ter: 
+            "equipamento", "fornecedor" (se não achar coloque "Não identificado"), "valor" (apenas o número).`;
+        } else {
+            promptTexto = `Você é um leitor de contratos de locação e aluguel de equipamentos. 
+            Retorne APENAS um objeto JSON válido contendo um array chamado "itens". Cada item deve ter: 
+            "equipamento", 
+            "fornecedor" (locadora), 
+            "contrato_numero" (se tiver na folha, senão deixe vazio),
+            "periodo" (obrigatoriamente escreva "Dia", "Quinzena" ou "Mês". Se não souber, deixe vazio),
+            "valor" (apenas o número do valor total da locação).`;
+        }
 
-        const corpoRequisicao = {
-            contents: [{
-                parts: [
-                    { text: promptTexto },
-                    { inlineData: { mimeType: "image/jpeg", data: base64Image } }
-                ]
-            }]
-        };
+        const corpoRequisicao = { contents: [{ parts: [{ text: promptTexto }, { inlineData: { mimeType: "image/jpeg", data: base64Image } }] }] };
 
         try {
             const resposta = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpoRequisicao) });
             const dados = await resposta.json();
             
-            if (!resposta.ok) {
-                throw new Error(dados.error ? dados.error.message : "Erro desconhecido na API do Google");
-            }
+            if (!resposta.ok) throw new Error(dados.error ? dados.error.message : "Erro na API");
 
             let textoResposta = dados.candidates[0].content.parts[0].text;
             textoResposta = textoResposta.replace(/```json/g, '').replace(/```/g, '').trim(); 
             
             const jsonExtraido = JSON.parse(textoResposta);
             itensLidosPelaIA = jsonExtraido.itens || [];
-            
             mostrarResultadoNaTela();
 
         } catch (erro) {
             document.getElementById('ai-loader').style.display = 'none';
-            document.getElementById('modal-text').innerText = "❌ Falha técnica: " + erro.message;
-            console.error("ERRO DETALHADO:", erro);
+            document.getElementById('modal-text').innerText = "❌ Falha na leitura: " + erro.message;
         }
     }
 
+    // 3. Montar a Tela Inteligente com Caixas de Texto
     function mostrarResultadoNaTela() {
         document.getElementById('ai-loader').style.display = 'none';
         
@@ -198,47 +218,113 @@
             return;
         }
 
-        document.getElementById('modal-text').innerText = "Materiais Encontrados:";
-        
+        document.getElementById('modal-text').innerText = "Revise os Dados:";
         const divResultado = document.getElementById('resultado-ia');
         divResultado.style.display = 'block';
         document.getElementById('btn-salvar').style.display = 'block';
 
         divResultado.innerHTML = '';
-        itensLidosPelaIA.forEach(item => {
+        
+        itensLidosPelaIA.forEach((item, index) => {
+            let htmlFormularioExtra = '';
+            
+            // Se for locação, a gente exibe as caixas de texto para preencher os buracos
+            if (modoAtual === 'aluguel') {
+                let ctr = item.contrato_numero || '';
+                let val = item.valor || '';
+                let per = item.periodo || '';
+
+                htmlFormularioExtra = `
+                    <div class="fallback-box">
+                        <span style="font-size:0.75rem; color:#f59e0b; font-weight:bold;">⚠️ Verifique os dados da locação:</span>
+                        
+                        <label>Nº do Contrato</label>
+                        <input type="text" id="man-contrato-${index}" value="${ctr}" placeholder="Digite o nº do contrato">
+                        
+                        <label>Período (Frequência)</label>
+                        <select id="man-periodo-${index}">
+                            <option value="Mês" ${per === 'Mês' ? 'selected' : ''}>Mês (30 dias)</option>
+                            <option value="Quinzena" ${per === 'Quinzena' ? 'selected' : ''}>Quinzena (15 dias)</option>
+                            <option value="Dia" ${per === 'Dia' ? 'selected' : ''}>Diária</option>
+                        </select>
+
+                        <label>Valor da Locação (R$)</label>
+                        <input type="number" id="man-valor-${index}" value="${val}" placeholder="Ex: 150.00">
+                    </div>
+                `;
+            } else {
+                // Se for compra, só mostra o valor normal
+                htmlFormularioExtra = `<span style="color:#10b981; font-size:0.85rem; font-weight:bold;">R$ ${item.valor || '0.00'}</span>`;
+            }
+
             divResultado.innerHTML += `
                 <div class="item-lido">
-                    <strong>${item.equipamento}</strong><br>
-                    <span style="color:#64748b; font-size:0.8rem;">Loja: ${item.fornecedor} | R$ ${item.valor || '0.00'}</span>
+                    <strong style="font-size:1.1rem; color:var(--primary);">${item.equipamento}</strong><br>
+                    <span style="color:#64748b; font-size:0.8rem;">Loja: ${item.fornecedor}</span><br>
+                    ${htmlFormularioExtra}
                 </div>
             `;
         });
     }
 
+    // 4. Lógica de Salvar Separado (O que vai pra cada Tabela)
     async function salvarNoBanco() {
         const obra = document.getElementById('obraSelect').value;
-        const hoje = new Date().toISOString().split('T')[0];
+        const hojeObj = new Date();
+        const hojeIso = hojeObj.toISOString().split('T')[0];
         
         document.getElementById('modal-text').innerText = "Salvando no sistema...";
         document.getElementById('resultado-ia').style.display = 'none';
         document.getElementById('btn-salvar').style.display = 'none';
         document.getElementById('ai-loader').style.display = 'block';
 
-        const dadosParaSalvar = itensLidosPelaIA.map(item => ({
-            obra: obra,
-            fornecedor: item.fornecedor,
-            equipamento: item.equipamento,
-            unidade: 'Proprio',
-            data_inicio: hoje,
-            contrato: 'NF via IA App',
-            valor: parseFloat(item.valor) || 0,
-            status: 'ativo'
-        }));
+        let dadosParaSalvar = [];
+
+        for (let i = 0; i < itensLidosPelaIA.length; i++) {
+            let item = itensLidosPelaIA[i];
+            
+            if (modoAtual === 'compra') {
+                dadosParaSalvar.push({
+                    obra: obra,
+                    fornecedor: item.fornecedor,
+                    equipamento: item.equipamento,
+                    unidade: 'Proprio', // Vai para tabela de Patrimônio
+                    data_inicio: hojeIso, // A data final será bloqueada no desktop
+                    data_fim: hojeIso, 
+                    contrato: 'NF via IA App',
+                    valor: parseFloat(item.valor) || 0,
+                    status: 'ativo'
+                });
+            } else {
+                // Locação: Puxa o que a pessoa digitou nas caixinhas manuais
+                let contratoManual = document.getElementById(`man-contrato-${i}`).value || 'Sem Contrato';
+                let periodoManual = document.getElementById(`man-periodo-${i}`).value;
+                let valorManual = parseFloat(document.getElementById(`man-valor-${i}`).value) || 0;
+                
+                // Calcula a Data de Fim automaticamente baseado no período escolhido
+                let dataFim = new Date(hojeObj);
+                if (periodoManual === 'Mês') dataFim.setDate(dataFim.getDate() + 30);
+                else if (periodoManual === 'Quinzena') dataFim.setDate(dataFim.getDate() + 15);
+                else if (periodoManual === 'Dia') dataFim.setDate(dataFim.getDate() + 1);
+
+                dadosParaSalvar.push({
+                    obra: obra,
+                    fornecedor: item.fornecedor,
+                    equipamento: item.equipamento,
+                    unidade: periodoManual, // Mês, Quinzena ou Dia
+                    data_inicio: hojeIso,
+                    data_fim: dataFim.toISOString().split('T')[0], // Vai alertar se atrasar!
+                    contrato: contratoManual,
+                    valor: valorManual,
+                    status: 'ativo'
+                });
+            }
+        }
 
         const { error } = await client.from('locacoes').insert(dadosParaSalvar);
 
         if (!error) {
-            alert("✅ Estoque atualizado com sucesso!");
+            alert("✅ Cadastrado com sucesso no sistema!");
             fecharModal();
         } else {
             document.getElementById('modal-text').innerText = "Erro ao salvar no banco: " + error.message;
