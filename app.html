@@ -9,7 +9,7 @@
     
     <style>
         /* --- ESTILO MOBILE FIRST --- */
-        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; }
+        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; --purple: #7c3aed; }
         body { font-family: 'Inter', sans-serif; background-color: #333; margin: 0; display: flex; justify-content: center; }
         .mobile-container { width: 100%; max-width: 420px; height: 100vh; background-color: var(--bg-app); position: relative; overflow-y: auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
         
@@ -17,7 +17,7 @@
         .header { background-color: var(--header); color: white; padding: 25px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .header p { margin: 5px 0 0 0; color: #cbd5e1; font-size: 0.85rem; }
-        .badge-v3 { background: var(--primary); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; }
+        .badge-v4 { background: var(--purple); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; }
         
         .content { padding: 20px; flex: 1; }
         
@@ -56,7 +56,7 @@
 <div class="mobile-container">
     <div class="header">
         <h1>👷 Almoxarifado</h1>
-        <p>Leitor com IA Gemini <span class="badge-v3">v3</span></p>
+        <p>Leitor com IA Gemini <span class="badge-v4">v4</span></p>
     </div>
 
     <div class="content">
@@ -135,14 +135,14 @@
 
             const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
             
-            document.getElementById('modal-text').innerText = "Enviando para o Gemini v3...";
+            document.getElementById('modal-text').innerText = "Enviando para o Gemini 2.5 Flash...";
             chamarGeminiAPI(base64Image);
         };
     }
 
     async function chamarGeminiAPI(base64Image) {
-        // NOME EXATO DO MODELO: gemini-1.5-flash
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // SOLUÇÃO: URL ATUALIZADA PARA O NOVO GEMINI 2.5 FLASH
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
         const promptTexto = `Você é um leitor de notas fiscais de construção civil. 
         Leia esta imagem. Retorne APENAS um objeto JSON válido (sem textos extras ou \`\`\`json) contendo um array chamado "itens". 
