@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root { --bg: #f8fafc; --text: #1e293b; --text-light: #64748b; --primary: #2563eb; --white: #ffffff; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
+        :root { --bg: #f8fafc; --text: #1e293b; --text-light: #64748b; --primary: #2563eb; --white: #ffffff; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; }
         
         /* MENU LATERAL */
@@ -19,9 +19,16 @@
 
         /* CONTEÚDO PRINCIPAL */
         .main-content { flex: 1; padding: 40px; box-sizing: border-box; max-width: 1200px; margin: 0 auto; }
-        .header { margin-bottom: 30px; }
+        .header { margin-bottom: 20px; }
         .header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; }
         .header p { margin: 5px 0 0 0; color: var(--text-light); }
+
+        /* BARRA DE CONTROLES (Filtros e Relatório) */
+        .top-controls { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid var(--border); margin-bottom: 30px; }
+        .filter-group { display: flex; align-items: center; gap: 15px; }
+        .filter-group select { height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-family: 'Inter'; font-weight: 600; color: var(--text); outline: none; cursor: pointer; }
+        .btn-print { background: var(--text); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-print:hover { background: #000; }
 
         /* TABELA MODERNA */
         .card-table { background: var(--white); padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 30px; overflow-x: auto; }
@@ -41,14 +48,27 @@
         .price-tag { font-weight: 800; color: #0f172a; }
         .indeniz-tag { font-size: 0.7rem; color: var(--danger); background: #fef2f2; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; font-weight: 600; border: 1px solid #fca5a5; }
         
+        /* BOTÕES DE AÇÃO NA TABELA */
         .btn-anexo { background: #f1f5f9; color: var(--text-light); padding: 8px 12px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--border); transition: 0.2s; }
         .btn-anexo:hover { background: #e2e8f0; color: var(--text); border-color: #cbd5e1; }
         
-        .btn-delete { background: #fee2e2; color: var(--danger); border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-delete:hover { background: #fca5a5; color: white; }
+        .action-buttons { display: flex; gap: 8px; }
+        .btn-renovar { background: #e0f2fe; color: #0284c7; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 35px; height: 35px;}
+        .btn-renovar:hover { background: #bae6fd; }
+        .btn-delete { background: #fee2e2; color: var(--danger); border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 35px; height: 35px;}
+        .btn-delete:hover { background: #fca5a5; }
 
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* MODO IMPRESSÃO (Esconde o que não precisa sair no papel) */
+        @media print {
+            .sidebar, .top-controls, .btn-anexo, td:last-child, th:last-child { display: none !important; }
+            .main-content { padding: 0; margin: 0; max-width: 100%; }
+            body { background: white; }
+            .card-table { box-shadow: none; border: none; padding: 0; margin-bottom: 40px; }
+            .indeniz-tag { border: 1px solid #000; color: #000; background: transparent; }
+        }
     </style>
 </head>
 <body>
@@ -65,6 +85,16 @@
             <p>Controle de patrimônio próprio e locações ativas.</p>
         </div>
 
+        <div class="top-controls">
+            <div class="filter-group">
+                <label style="font-weight:700; color:var(--text-light); text-transform:uppercase; font-size:0.8rem;">Filtrar Obra:</label>
+                <select id="filtroObra" onchange="carregarDados()">
+                    <option value="todas">🏢 Mostrar Todas as Obras</option>
+                </select>
+            </div>
+            <button class="btn-print" onclick="window.print()">🖨️ Imprimir Relatório PDF</button>
+        </div>
+
         <div class="card-table">
             <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
             <div id="loader-loc" class="loader"></div>
@@ -76,7 +106,7 @@
                         <th>Período</th>
                         <th>Valores do Contrato</th>
                         <th>Comprovante</th>
-                        <th>Ação</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="body-locacoes"></tbody>
@@ -94,7 +124,7 @@
                         <th>Data de Compra</th>
                         <th>Valores da NF</th>
                         <th>Comprovante</th>
-                        <th>Ação</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="body-compras"></tbody>
@@ -118,10 +148,32 @@
             return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
+        // CARREGA AS OBRAS PARA O FILTRO
+        async function carregarFiltro() {
+            const { data } = await client.from('locacoes').select('obra');
+            if(data) {
+                const obrasUnicas = [...new Set(data.map(i => i.obra))].filter(Boolean).sort();
+                const sel = document.getElementById('filtroObra');
+                obrasUnicas.forEach(o => sel.add(new Option(o, o)));
+            }
+        }
+
+        // CARREGA A TABELA
         async function carregarDados() {
+            document.getElementById('loader-loc').style.display = 'block';
+            document.getElementById('loader-comp').style.display = 'block';
+            document.getElementById('tabela-locacoes').style.display = 'none';
+            document.getElementById('tabela-compras').style.display = 'none';
+
             try {
-                const { data, error } = await client.from('locacoes').select('*').eq('status', 'ativo').order('data_inicio', { ascending: false });
+                let query = client.from('locacoes').select('*').eq('status', 'ativo').order('data_inicio', { ascending: false });
                 
+                const filtro = document.getElementById('filtroObra').value;
+                if (filtro !== 'todas') {
+                    query = query.eq('obra', filtro);
+                }
+
+                const { data, error } = await query;
                 if (error) throw error;
 
                 const bodyLocacoes = document.getElementById('body-locacoes');
@@ -133,14 +185,20 @@
                 let temCompra = false;
 
                 data.forEach(item => {
-                    // Monta o HTML da linha agrupando informações
                     const btnAnexo = item.url_anexo 
-                        ? `<a href="${item.url_anexo}" target="_blank" class="btn-anexo">📎 Ver Documento</a>` 
+                        ? `<a href="${item.url_anexo}" target="_blank" class="btn-anexo">📎 Ver Doc</a>` 
                         : `<span class="sub-txt">Sem anexo</span>`;
 
                     const tagIndenizacao = item.valor_indenizacao && item.valor_indenizacao > 0
                         ? `<div class="indeniz-tag">Indenização: ${formatarMoeda(item.valor_indenizacao)}</div>`
                         : '';
+
+                    // Botoes de Ação
+                    let botoesAcao = '';
+                    if (item.unidade !== 'Proprio') {
+                        botoesAcao += `<button class="btn-renovar" title="Renovar Contrato" onclick="renovarItem(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄</button>`;
+                    }
+                    botoesAcao += `<button class="btn-delete" title="Apagar Registro" onclick="excluirItem(${item.id})">🗑️</button>`;
 
                     const linhaHTML = `
                         <tr>
@@ -154,7 +212,7 @@
                             <td>
                                 <div class="group-info">
                                     <span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>
-                                    ${item.unidade !== 'Proprio' ? `<span class="sub-txt">Vence: ${formatarData(item.data_fim)}</span>` : ''}
+                                    ${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${formatarData(item.data_fim)}</span>` : ''}
                                 </div>
                             </td>
                             <td>
@@ -165,12 +223,11 @@
                             </td>
                             <td>${btnAnexo}</td>
                             <td>
-                                <button class="btn-delete" onclick="excluirItem(${item.id})">🗑️</button>
+                                <div class="action-buttons">${botoesAcao}</div>
                             </td>
                         </tr>
                     `;
 
-                    // Separa nas tabelas corretas
                     if (item.unidade === 'Proprio') {
                         bodyCompras.innerHTML += linhaHTML;
                         temCompra = true;
@@ -186,24 +243,46 @@
                 document.getElementById('tabela-locacoes').style.display = temLocacao ? 'table' : 'none';
                 document.getElementById('tabela-compras').style.display = temCompra ? 'table' : 'none';
 
-                if (!temLocacao) bodyLocacoes.parentElement.insertAdjacentHTML('afterend', '<p style="color:#64748b;">Nenhuma locação ativa encontrada.</p>');
-                if (!temCompra) bodyCompras.parentElement.insertAdjacentHTML('afterend', '<p style="color:#64748b;">Nenhuma compra registrada.</p>');
-
             } catch (err) {
                 console.error("Erro ao carregar:", err);
                 alert("Erro ao carregar dados do banco.");
             }
         }
 
-        async function excluirItem(id) {
+        // RENOVAR CONTRATO (Soma dias dependendo da unidade)
+        window.renovarItem = async (id, fim, uni) => {
+            if(!confirm(`Deseja renovar este contrato por mais 1 ${uni}?`)) return;
+            
+            let d = new Date(fim);
+            d.setMinutes(d.getMinutes() + d.getTimezoneOffset()); // Corrige o fuso horário
+            
+            if(uni.includes('Mês')) d.setDate(d.getDate() + 30); 
+            else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15);
+            else d.setDate(d.getDate() + 1);
+
+            const novaData = d.toISOString().split('T')[0];
+            
+            const { error } = await client.from('locacoes').update({ data_fim: novaData }).eq('id', id);
+            
+            if(!error) {
+                alert("Contrato renovado com sucesso para: " + formatarData(novaData));
+                carregarDados();
+            } else {
+                alert("Erro ao renovar: " + error.message);
+            }
+        };
+
+        // EXCLUIR ITEM
+        window.excluirItem = async (id) => {
             if (confirm("Tem certeza que deseja apagar este registro do sistema?")) {
                 await client.from('locacoes').delete().eq('id', id);
                 carregarDados();
             }
         }
 
-        // Inicia a página carregando os dados
-        carregarDados();
+        // Inicia a página
+        carregarFiltro().then(() => carregarDados());
+
     </script>
 </body>
 </html>
