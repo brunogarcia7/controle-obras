@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Almoxarife - Leitor IA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* --- ESTILO MOBILE FIRST --- */
+        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; }
+        body { font-family: 'Inter', sans-serif; background-color: #333; margin: 0; display: flex; justify-content: center; }
+        .mobile-container { width: 100%; max-width: 420px; height: 100vh; background-color: var(--bg-app); position: relative; overflow-y: auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
+        
+        /* CABEÇALHO */
+        .header { background-color: var(--header); color: white; padding: 25px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+        .header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .header p { margin: 5px 0 0 0; color: #cbd5e1; font-size: 0.85rem; }
+        
+        .content { padding: 20px; flex: 1; }
+        
+        /* SELEÇÃO DE OBRA */
+        .form-group { margin-bottom: 20px; }
+        label { font-size: 0.8rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; }
+        select { width: 100%; height: 50px; border-radius: 12px; border: 2px solid #cbd5e1; padding: 0 15px; font-size: 1rem; margin-top: 5px; background: white; font-family: 'Inter', sans-serif;}
+
+        /* BOTÕES */
+        .btn-action { width: 100%; background: var(--card); border: 2px solid transparent; border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 15px; margin-bottom: 15px; cursor: pointer; text-align: left; }
+        .icon-box { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; }
+        .btn-text h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: var(--text); }
+        .btn-text p { margin: 0; font-size: 0.8rem; color: var(--text-light); }
+
+        .btn-entrada { border-color: rgba(16, 185, 129, 0.3); }
+        .btn-entrada .icon-box { background: #dcfce7; color: var(--success); }
+        
+        input[type="file"] { display: none; }
+
+        /* MODAL DA IA */
+        #ai-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; padding: 20px; box-sizing: border-box; }
+        .loader { border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid var(--success); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #modal-text { font-size: 1.2rem; font-weight: 700; text-align: center; margin-bottom: 10px; }
+        
+        /* RESULTADO DA IA */
+        #resultado-ia { background: white; color: var(--text); padding: 15px; border-radius: 12px; width: 100%; max-height: 50vh; overflow-y: auto; display: none; font-size: 0.9rem;}
+        .item-lido { border-bottom: 1px solid #e2e8f0; padding: 10px 0; }
+        .item-lido:last-child { border-bottom: none; }
+        .btn-confirmar { background: var(--success); color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 700; margin-top: 15px; display: none; }
+        .btn-cancelar { background: transparent; color: white; border: 1px solid white; padding: 10px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 600; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="mobile-container">
+    <div class="header">
+        <h1>👷 Almoxarifado</h1>
+        <p>Leitor com IA Gemini</p>
+    </div>
+
+    <div class="content">
+        <div class="form-group">
+            <label>1. Selecione a Obra Atual</label>
+            <select id="obraSelect">
+                <option value="" disabled selected>Carregando obras...</option>
+            </select>
+        </div>
+
+        <label>2. Registre o Material</label>
+        <input type="file" id="cam-entrada" accept="image/*" capture="environment" onchange="processarFoto(event)">
+        <button class="btn-action btn-entrada" onclick="document.getElementById('cam-entrada').click()">
+            <div class="icon-box">📸</div>
+            <div class="btn-text">
+                <h3>Ler Nota Fiscal</h3>
+                <p>A IA extrai os itens para você</p>
+            </div>
+        </button>
+    </div>
+
+    <div id="ai-modal">
+        <div class="loader" id="ai-loader"></div>
+        <div id="modal-text">Enviando foto para o Gemini...</div>
+        
+        <div id="resultado-ia"></div>
+        <button class="btn-confirmar" id="btn-salvar" onclick="salvarNoBanco()">✅ Confirmar e Salvar Estoque</button>
+        <button class="btn-cancelar" onclick="fecharModal()">Cancelar Operação</button>
+    </div>
+</div>
+
+<script>
+    // =====================================================================
+    // CHAVES JÁ INSERIDAS AUTOMATICAMENTE
+    // =====================================================================
+    const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
+    const GEMINI_API_KEY = 'AIzaSyCv4BqXSXvvh1B46QGdEhT0hbgCINFtJPw'; 
+    // =====================================================================
+
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let itensLidosPelaIA = [];
+
+    // 1. Puxar obras do banco de dados ao abrir o App
+    async function carregarObras() {
+        const { data, error } = await client.from('locacoes').select('obra');
+        const sel = document.getElementById('obraSelect');
+        if (error) { sel.innerHTML = '<option>Erro ao carregar</option>'; return; }
+        
+        const obrasNoBanco = [...new Set(data.map(item => item.obra))].filter(Boolean);
+        const padrao = ["Vinícola", "Sede Start Química", "Tamboré"];
+        const listaFinal = [...new Set([...padrao, ...obrasNoBanco])].sort();
+        
+        sel.innerHTML = '<option value="" disabled selected>Selecione a obra...</option>';
+        listaFinal.forEach(obra => sel.add(new Option(obra, obra)));
+    }
+    carregarObras();
+
+    // 2. Processar a Foto tirada
+    async function processarFoto(event) {
+        const obraSelecionada = document.getElementById('obraSelect').value;
+        if(!obraSelecionada) { alert("Selecione a obra primeiro!"); return; }
+
+        const file = event.target.files[0];
+        if (!file) return;
+
+        abrirModal("Lendo Nota Fiscal...");
+
+        // Converter foto para Base64 (Formato que o Gemini entende)
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async function () {
+            const base64Image = reader.result.split(',')[1]; 
+            chamarGeminiAPI(base64Image);
+        };
+    }
+
+    // 3. Comunicação com a IA do Google Gemini
+    async function chamarGeminiAPI(base64Image) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+        
+        // O Prompt (A ordem que damos para a IA)
+        const promptTexto = `Você é um leitor de notas fiscais de construção civil. 
+        Leia esta imagem. Retorne APENAS um objeto JSON válido (sem blocos de código markdown como \`\`\`json) contendo um array chamado "itens". 
+        Cada item deve ter: 
+        "equipamento" (nome do material/ferramenta), 
+        "fornecedor" (nome da loja da nota fiscal, se não achar coloque "Não identificado"),
+        "valor" (valor unitário em número, sem R$).`;
+
+        const corpoRequisicao = {
+            contents: [{
+                parts: [
+                    { text: promptTexto },
+                    { inlineData: { mimeType: "image/jpeg", data: base64Image } }
+                ]
+            }]
+        };
+
+        try {
+            const resposta = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpoRequisicao) });
+            const dados = await resposta.json();
+            
+            // Tratando a resposta da IA
+            let textoResposta = dados.candidates[0].content.parts[0].text;
+            textoResposta = textoResposta.replace(/```json/g, '').replace(/```/g, '').trim(); // Limpar a resposta
+            
+            const jsonExtraido = JSON.parse(textoResposta);
+            itensLidosPelaIA = jsonExtraido.itens || [];
+            
+            mostrarResultadoNaTela();
+
+        } catch (erro) {
+            document.getElementById('ai-loader').style.display = 'none';
+            document.getElementById('modal-text').innerText = "Erro ao ler a imagem. Tente uma foto mais clara.";
+            console.error(erro);
+        }
+    }
+
+    // 4. Mostrar os itens para o Almoxarife confirmar
+    function mostrarResultadoNaTela() {
+        document.getElementById('ai-loader').style.display = 'none';
+        document.getElementById('modal-text').innerText = "Materiais Encontrados:";
+        
+        const divResultado = document.getElementById('resultado-ia');
+        divResultado.style.display = 'block';
+        document.getElementById('btn-salvar').style.display = 'block';
+
+        divResultado.innerHTML = '';
+        itensLidosPelaIA.forEach(item => {
+            divResultado.innerHTML += `
+                <div class="item-lido">
+                    <strong>${item.equipamento}</strong><br>
+                    <span style="color:#64748b; font-size:0.8rem;">Loja: ${item.fornecedor} | R$ ${item.valor || '0.00'}</span>
+                </div>
+            `;
+        });
+    }
+
+    // 5. Salvar na Caixa D'água (Supabase)
+    async function salvarNoBanco() {
+        const obra = document.getElementById('obraSelect').value;
+        const hoje = new Date().toISOString().split('T')[0];
+        
+        document.getElementById('modal-text').innerText = "Salvando no sistema...";
+        document.getElementById('resultado-ia').style.display = 'none';
+        document.getElementById('btn-salvar').style.display = 'none';
+        document.getElementById('ai-loader').style.display = 'block';
+
+        // Prepara os dados do jeito que a tabela 'locacoes' aceita
+        const dadosParaSalvar = itensLidosPelaIA.map(item => ({
+            obra: obra,
+            fornecedor: item.fornecedor,
+            equipamento: item.equipamento,
+            unidade: 'Proprio', // Entrando como material da empresa
+            data_inicio: hoje,
+            contrato: 'NF via App',
+            valor: parseFloat(item.valor) || 0,
+            status: 'ativo'
+        }));
+
+        const { error } = await client.from('locacoes').insert(dadosParaSalvar);
+
+        if (!error) {
+            alert("✅ Estoque atualizado com sucesso!");
+            fecharModal();
+        } else {
+            alert("Erro ao salvar: " + error.message);
+            fecharModal();
+        }
+    }
+
+    function abrirModal(texto) {
+        document.getElementById('ai-modal').style.display = 'flex';
+        document.getElementById('ai-loader').style.display = 'block';
+        document.getElementById('resultado-ia').style.display = 'none';
+        document.getElementById('btn-salvar').style.display = 'none';
+        document.getElementById('modal-text').innerText = texto;
+    }
+
+    function fecharModal() {
+        document.getElementById('ai-modal').style.display = 'none';
+        document.getElementById('cam-entrada').value = '';
+    }
+</script>
+</body>
+</html>
