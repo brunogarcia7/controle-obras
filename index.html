@@ -3,33 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>Controle de Ferramentas Elétricas</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏗️</text></svg>">
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* --- DESIGN SYSTEM RESTAURADO (V28 - Fundo #D3D3D3) --- */
+        /* --- DESIGN SYSTEM MODERNO (V29) --- */
         :root {
-            /* CORREÇÃO DO ERRO AQUI: Definição correta das variáveis */
-            --bg-body: #D3D3D3;       /* Cinza Claro Solicitado */
-            
-            /* Componentes */
-            --bg-card: #ffffff;       /* Branco Absoluto */
+            --bg-body: #D3D3D3; /* Cinza solicitado */
+            --bg-card: #ffffff;
             --bg-input: #ffffff;      
-            --border: #cbd5e1;        /* Bordas */
-            
-            /* Cores de Texto */
-            --text-title-page: #1e293b; 
+            --border: #e2e8f0;
+            --text-title-page: #0f172a; 
             --text-main: #334155;       
             --text-muted: #64748b;      
-            
-            /* Cores de Ação */
             --primary: #2563eb;       
             --primary-hover: #1d4ed8;
             --success: #10b981;
@@ -38,229 +29,92 @@
             --purple: #7c3aed;
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-body);
-            color: var(--text-main);
-            margin: 0;
-            padding: 40px 20px;
-        }
-
+        body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; padding: 40px 20px; }
         .container { max-width: 1400px; margin: 0 auto; }
         
         /* CABEÇALHO */
-        .app-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(0,0,0, 0.1);
-        }
-        
-        .app-title {
-            color: var(--text-title-page);
-            margin: 0;
-            font-size: 1.8rem;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            text-transform: uppercase; /* Força letras maiúsculas no título visual */
-        }
-        
-        .app-badge {
-            background: rgba(37, 99, 235, 0.1);
-            color: var(--primary);
-            font-size: 0.8rem;
-            padding: 4px 10px;
-            border-radius: 20px;
-            border: 1px solid rgba(37, 99, 235, 0.2);
-            background: #fff;
-            text-transform: none; 
-        }
+        .app-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(0,0,0, 0.1); }
+        .app-title { color: var(--text-title-page); margin: 0; font-size: 1.8rem; display: flex; align-items: center; gap: 15px; font-weight: 800; letter-spacing: -0.03em; }
+        .app-badge { background: #ffffff; color: var(--primary); font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(37, 99, 235, 0.3); font-weight: 600;}
 
         /* CARDS */
-        .card {
-            background: var(--bg-card);
-            padding: 35px;
-            border-radius: 16px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-            border: 1px solid var(--border);
-        }
+        .card { background: var(--bg-card); padding: 35px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 30px; border: 1px solid #ffffff; }
         
         /* FORMULÁRIO */
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 25px; align-items: end; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; align-items: end; }
         .form-group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
         
-        label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        /* INPUTS & SELECTS */
-        input, select {
-            height: 50px;
-            padding: 0 16px;
-            background: var(--bg-input);
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            color: var(--text-main);
-            font-size: 0.95rem;
-            transition: all 0.2s;
-            width: 100%; box-sizing: border-box;
-        }
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-        }
-        input::placeholder { color: #94a3b8; }
-        input[readonly] { background: #f8fafc; color: #94a3b8; cursor: not-allowed; border-color: #e2e8f0; }
+        input, select { height: 48px; padding: 0 16px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.95rem; transition: 0.2s; width: 100%; box-sizing: border-box; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+        input[readonly] { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }
 
         /* ALINHAMENTO DO BOTÃO + */
-        .input-group {
-            display: flex;
-            width: 100%;
-            align-items: stretch;
-        }
-        .input-group select {
-            flex: 1;
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
-            border-right: none;
-            height: 50px;
-        }
-        .btn-plus {
-            height: 50px;
-            width: 50px;
-            flex-shrink: 0;
-            background-color: #f8fafc;
-            color: var(--success);
-            border: 1px solid #cbd5e1;
-            border-radius: 0 8px 8px 0;
-            font-size: 1.4rem; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: 0.2s;
-            padding: 0;
-        }
-        .btn-plus:hover { background-color: var(--success); color: white; border-color: var(--success); }
+        .input-group { display: flex; width: 100%; }
+        .input-group select { flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; height: 48px; }
+        .btn-plus { height: 48px; width: 48px; flex-shrink: 0; background-color: var(--success); color: white; border: none; border-radius: 0 8px 8px 0; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-plus:hover { opacity: 0.9; }
 
         /* BOTÃO SALVAR */
-        .btn-save {
-            grid-column: 1 / -1; height: 56px;
-            background: var(--primary);
-            color: white; border: none; border-radius: 8px;
-            font-weight: 700; font-size: 1rem; cursor: pointer;
-            margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
-        }
-        .btn-save:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4); }
-        .btn-save.editing { background-color: var(--warning); color: #fff; box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3); }
-        
+        .btn-save { grid-column: 1 / -1; height: 56px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 10px; transition: 0.2s; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); }
+        .btn-save:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn-save.editing { background-color: var(--warning); color: white; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2); }
         .cancel-edit { display: none; margin-top: 15px; color: var(--danger); cursor: pointer; text-align: center; font-size: 0.9rem; text-decoration: underline; grid-column: 1 / -1; font-weight: 600; }
 
         /* TITULOS EXPANSÍVEIS */
-        .section-title {
-            font-size: 1.1rem;
-            padding: 20px 25px;
-            background: var(--bg-card);
-            border-radius: 12px;
-            cursor: pointer;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid var(--border);
-            margin-top: 30px;
-            user-select: none;
-            transition: 0.2s;
-            color: var(--text-main);
-            font-weight: 600;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
-        .section-title:hover { border-color: var(--primary); transform: translateX(5px); }
-        .section-title.collapsed { border-radius: 12px; opacity: 0.8; }
-        
-        .border-green { border-left: 5px solid var(--success); }
-        .border-gray { border-left: 5px solid var(--text-muted); }
-        .border-purple { border-left: 5px solid var(--purple); }
-        .border-blue { border-left: 5px solid var(--primary); }
+        .section-title { font-size: 1.1rem; padding: 20px 25px; background: var(--bg-card); border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-top: 30px; user-select: none; transition: 0.2s; font-weight: 700; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .section-title.collapsed { opacity: 0.8; }
+        .border-green { border-left: 6px solid var(--success); }
+        .border-gray { border-left: 6px solid var(--text-muted); }
+        .border-purple { border-left: 6px solid var(--purple); }
+        .border-blue { border-left: 6px solid var(--primary); }
 
         .toggle-icon { transition: transform 0.3s ease; color: var(--text-muted); font-size: 0.8rem; }
         .collapsed .toggle-icon { transform: rotate(-90deg); }
 
-        /* CONTAINER COLAPSÁVEL */
-        .table-wrapper-collapsible {
-            transition: all 0.3s ease;
-            overflow: hidden;
-            background: var(--bg-card);
-            border-radius: 0 0 12px 12px;
-            border: 1px solid var(--border);
-            border-top: none;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
+        .table-wrapper-collapsible { transition: all 0.3s ease; overflow: hidden; background: var(--bg-card); border-radius: 0 0 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
         .table-wrapper-collapsible.hidden { display: none; }
 
         /* FILTROS */
-        .filter-grid {
-            display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 15px; align-items: end;
-            padding: 25px; margin-bottom: 30px;
-        }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 15px; align-items: end; padding: 25px; margin-bottom: 30px; }
         @media (max-width: 1000px) { .filter-grid { grid-template-columns: 1fr; } }
-
-        .btn-clear { height: 50px; padding: 0 20px; background: white; border: 1px solid #cbd5e1; color: var(--text-muted); font-weight: 600; cursor: pointer; border-radius: 8px; transition: 0.2s; }
+        .btn-clear { height: 48px; padding: 0 20px; background: white; border: 1px solid var(--border); color: var(--text-muted); font-weight: 600; cursor: pointer; border-radius: 8px; transition: 0.2s; }
         .btn-clear:hover { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
-
-        .btn-pdf { height: 50px; padding: 0 25px; background: #1e293b; color: white; border: none; font-weight: 600; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
-        .btn-pdf:hover { background: #0f172a; transform: translateY(-1px); }
+        .btn-pdf { height: 48px; padding: 0 25px; background: #1e293b; color: white; border: none; font-weight: 600; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-pdf:hover { background: #0f172a; }
 
         /* TABELAS */
         .scroll-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
-        
-        th {
-            background: #f8fafc;
-            text-align: left; padding: 18px;
-            font-size: 0.75rem; color: var(--text-muted);
-            text-transform: uppercase; font-weight: 700;
-            border-bottom: 2px solid var(--border);
-        }
-        td { padding: 18px; border-bottom: 1px solid var(--border); font-size: 0.95rem; vertical-align: middle; color: var(--text-main); }
-        tr:last-child td { border-bottom: none; }
+        th { background: #f8fafc; text-align: left; padding: 18px; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; border-bottom: 1px solid var(--border); }
+        td { padding: 18px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; vertical-align: middle; color: var(--text-main); font-weight: 500; }
         tr:hover { background: #f8fafc; }
 
         /* BADGES */
-        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; display: inline-block; }
         .bg-green { background: #dcfce7; color: #166534; }
         .bg-red { background: #fee2e2; color: #991b1b; }
-        .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .bg-gray { background: #f1f5f9; color: #475569; }
         .bg-purple { background: #f3e8ff; color: #6b21a8; }
-
         .urgent { animation: pulse-red 2s infinite; background: #fee2e2; color: #ef4444; border: 1px solid #ef4444; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* AÇÕES */
-        .btn-icon { width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; margin-left: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.2s; }
-        .btn-icon:hover { transform: scale(1.15); }
+        /* AÇÕES REINTEGRADAS */
+        .btn-icon { width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; transition: 0.2s; }
+        .btn-icon:hover { transform: scale(1.1); filter: brightness(0.9); }
         .action-renew { background: #e0f2fe; color: #0284c7; }
         .action-check { background: #dcfce7; color: #16a34a; }
         .action-edit { background: #fef3c7; color: #d97706; }
         .action-trash { background: #f1f5f9; color: #94a3b8; }
         
-        .footer-info { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 50px; opacity: 0.8; }
+        .footer-info { text-align: center; font-size: 0.8rem; color: #64748b; margin-top: 50px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="app-header">
-        <h1 class="app-title">
-            🏗️ CONTROLE DE FERRAMENTAS ELETRICAS <span class="app-badge">Online</span>
-        </h1>
+        <h1 class="app-title">🏗️ CONTROLE DE FERRAMENTAS ELETRICAS <span class="app-badge">Gestão Web</span></h1>
     </div>
 
     <div class="card">
@@ -337,7 +191,7 @@
                 <input type="text" id="filtroContrato" placeholder="Digite o nº..." onkeyup="filtrarTabela()">
             </div>
             <button class="btn-clear" onclick="limparFiltros()">Limpar Tudo</button>
-            <button class="btn-pdf" onclick="gerarPDF()">📄 PDF</button>
+            <button class="btn-pdf" onclick="gerarPDF()">📄 Gerar PDF</button>
         </div>
     </div>
 
@@ -399,10 +253,11 @@
         </div>
     </div>
     
-    <div class="footer-info">Sistema conectado ao Supabase</div>
+    <div class="footer-info">Sistema conectado ao Supabase | Versão Web</div>
 </div>
 
 <script>
+    // Conexão Supabase
     const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -411,7 +266,6 @@
     const PADRAO_OBRAS = ["Vinícola", "Sede Start Química", "Tamboré"];
     const PADRAO_FORN = ["TETO LOC.", "CASA DO CONSTRUTOR", "ALUFORT", "LEROY MERLIN", "MAGALU"];
 
-    // --- EXPANDIR/ENCOLHER ---
     window.toggleSection = function(id) {
         const wrapper = document.getElementById(id);
         const title = wrapper.previousElementSibling;
@@ -424,7 +278,6 @@
         }
     }
 
-    // --- LISTAS ---
     async function carregarListas(dados) {
         const obrasNoBanco = [...new Set(dados.map(item => item.obra))];
         const fornNoBanco = [...new Set(dados.map(item => item.fornecedor))];
@@ -440,9 +293,7 @@
     function preencherSelect(id, lista) {
         const sel = document.getElementById(id);
         const valorAtual = sel.value; 
-        if(!valorAtual) sel.innerHTML = '<option value="" disabled selected>Selecione...</option>';
-        else sel.innerHTML = ''; 
-        if(!valorAtual) sel.innerHTML = '<option value="" disabled selected>Selecione...</option>';
+        sel.innerHTML = '<option value="" disabled selected>Selecione...</option>';
         lista.forEach(item => { if(item) sel.add(new Option(item, item)); });
         if(valorAtual) sel.value = valorAtual;
     }
@@ -467,7 +318,6 @@
         }
     }
 
-    // --- DADOS ---
     async function carregarDados() {
         const { data, error } = await client.from('locacoes').select('*');
         if (error) { console.error(error); return; }
@@ -498,31 +348,23 @@
         filtrarTabela();
     }
 
-    // --- RENDERIZAÇÃO ---
     function renderizar(lista) {
         const tbAtivos = document.getElementById('tabela-ativos');
         const tbHist = document.getElementById('tabela-historico');
         const tbProprios = document.getElementById('tabela-proprios');
         
         tbAtivos.innerHTML = ''; tbHist.innerHTML = ''; tbProprios.innerHTML = '';
-
         if(!lista) return;
 
         const proprios = lista.filter(i => i.unidade === 'Proprio');
         const alugados = lista.filter(i => i.unidade !== 'Proprio');
 
-        const ativos = alugados.filter(i => i.status === 'ativo');
-        const historico = alugados.filter(i => i.status !== 'ativo');
-
-        ativos.sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
-        historico.sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
+        const ativos = alugados.filter(i => i.status === 'ativo').sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
+        const historico = alugados.filter(i => i.status !== 'ativo').sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
         proprios.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio));
 
-        // ATIVOS
         ativos.forEach(item => {
             const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-            const dataIn = fmtData(item.data_inicio);
-            const contrato = item.contrato || '-';
             const hoje = new Date(); hoje.setHours(0,0,0,0);
             const venc = new Date(item.data_fim + 'T00:00:00');
             const diff = Math.ceil((venc - hoje) / 86400000);
@@ -536,9 +378,9 @@
             tbAtivos.innerHTML += `
                 <tr>
                     <td><b>${item.obra}</b></td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
-                    <td>${dataIn}</td> <td>${fmtData(item.data_fim)}</td> <td>${badge}</td>
-                    <td>${contrato}</td> <td>${val}</td>
-                    <td style="text-align:center">
+                    <td>${fmtData(item.data_inicio)}</td> <td>${fmtData(item.data_fim)}</td> <td>${badge}</td>
+                    <td>${item.contrato || '-'}</td> <td>${val}</td>
+                    <td style="text-align:center; white-space:nowrap;">
                         <button class="btn-icon action-renew" onclick="renovar(${item.id}, '${item.data_fim}', '${item.unidade}')" title="Renovar">🔄</button>
                         <button class="btn-icon action-check" onclick="devolver(${item.id})" title="Devolver">✅</button>
                         <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
@@ -547,40 +389,32 @@
                 </tr>`;
         });
 
-        // HISTÓRICO
         historico.forEach(item => {
             const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-            const dataIn = fmtData(item.data_inicio);
-            const contrato = item.contrato || '-';
             const start = new Date(item.data_inicio + 'T00:00:00');
             const end = new Date(item.data_devolucao + 'T00:00:00');
             const totalDias = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-            const displayDias = totalDias < 0 ? 0 : totalDias;
 
             tbHist.innerHTML += `
                 <tr>
                     <td>${item.obra}</td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
-                    <td>${dataIn}</td> <td><b>${fmtData(item.data_devolucao)}</b></td>
-                    <td><span class="badge bg-gray">${displayDias} dias</span></td>
-                    <td>${contrato}</td> <td>${val}</td>
-                    <td style="text-align:center">
+                    <td>${fmtData(item.data_inicio)}</td> <td><b>${fmtData(item.data_devolucao)}</b></td>
+                    <td><span class="badge bg-gray">${totalDias > 0 ? totalDias : 0} dias</span></td>
+                    <td>${item.contrato || '-'}</td> <td>${val}</td>
+                    <td style="text-align:center; white-space:nowrap;">
                         <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
                         <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Apagar">🗑️</button>
                     </td>
                 </tr>`;
         });
 
-        // PRÓPRIOS
         proprios.forEach(item => {
             const val = parseFloat(item.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-            const dataCompra = fmtData(item.data_inicio);
-            const nota = item.contrato || '-';
-
             tbProprios.innerHTML += `
                 <tr>
                     <td><b>${item.obra}</b></td> <td>${item.fornecedor}</td> <td>${item.equipamento}</td>
-                    <td>${dataCompra}</td> <td>${nota}</td> <td><b>${val}</b></td>
-                    <td style="text-align:center">
+                    <td>${fmtData(item.data_inicio)}</td> <td>${item.contrato || '-'}</td> <td><b>${val}</b></td>
+                    <td style="text-align:center; white-space:nowrap;">
                         <button class="btn-icon action-edit" onclick="editar(${item.id})" title="Editar">✏️</button>
                         <button class="btn-icon action-trash" onclick="excluir(${item.id})" title="Excluir">🗑️</button>
                     </td>
@@ -588,7 +422,6 @@
         });
     }
 
-    // --- DATAS E UX ---
     window.calcData = () => {
         const ini = document.getElementById('inicio').value;
         const uni = document.getElementById('unidade').value;
@@ -605,17 +438,15 @@
 
         if(!ini) return;
         const d = new Date(ini); d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-        
         if(uni === 'Mês') d.setDate(d.getDate() + 30);
         else if(uni === 'Quinzena') d.setDate(d.getDate() + 15);
         else if(uni === 'Dia') d.setDate(d.getDate());
-        
         fimInput.value = d.toISOString().split('T')[0];
     }
     
     function fmtData(d) { if(!d) return '-'; return d.split('-').reverse().join('/'); }
 
-    // --- CRUD ---
+    // CRUD
     document.getElementById('rentalForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btnSubmit');
@@ -661,28 +492,25 @@
         document.getElementById('unidade').value = item.unidade;
         document.getElementById('inicio').value = item.data_inicio;
         calcData(); 
-        if (item.unidade !== 'Proprio') { document.getElementById('fim').value = item.data_fim; }
+        if (item.unidade !== 'Proprio') document.getElementById('fim').value = item.data_fim;
         document.getElementById('contrato').value = item.contrato;
         document.getElementById('valor').value = item.valor;
         document.getElementById('editId').value = item.id;
         document.getElementById('editStatus').value = item.status;
+        
         const btn = document.getElementById('btnSubmit');
-        btn.textContent = "ATUALIZAR REGISTRO";
-        btn.classList.add('editing');
+        btn.textContent = "ATUALIZAR REGISTRO"; btn.classList.add('editing');
         document.getElementById('btnCancel').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     window.resetarFormulario = function() {
         document.getElementById('rentalForm').reset();
-        document.getElementById('editId').value = "";
-        document.getElementById('editStatus').value = "";
+        document.getElementById('editId').value = ""; document.getElementById('editStatus').value = "";
         const btn = document.getElementById('btnSubmit');
-        btn.textContent = "SALVAR REGISTRO";
-        btn.classList.remove('editing');
+        btn.textContent = "SALVAR REGISTRO"; btn.classList.remove('editing');
         document.getElementById('btnCancel').style.display = 'none';
-        document.getElementById('obraSelect').value = "";
-        document.getElementById('fornecedorSelect').value = "";
+        document.getElementById('obraSelect').value = ""; document.getElementById('fornecedorSelect').value = "";
         calcData(); 
     }
 
@@ -693,70 +521,45 @@
         if (unidade === 'Mês') data.setDate(data.getDate() + 30);
         else if (unidade === 'Quinzena') data.setDate(data.getDate() + 15);
         else data.setDate(data.getDate());
-        const { error } = await client.from('locacoes').update({ data_fim: data.toISOString().split('T')[0] }).eq('id', id);
-        if(!error) carregarDados();
+        await client.from('locacoes').update({ data_fim: data.toISOString().split('T')[0] }).eq('id', id);
+        carregarDados();
     };
 
     window.devolver = async (id) => {
         const hoje = new Date().toISOString().split('T')[0];
         const dataReal = prompt("Data da Devolução:", hoje);
         if(!dataReal) return;
-        const { error } = await client.from('locacoes').update({ status: 'devolvido', data_devolucao: dataReal }).eq('id', id);
-        if(!error) carregarDados();
+        await client.from('locacoes').update({ status: 'devolvido', data_devolucao: dataReal }).eq('id', id);
+        carregarDados();
     };
 
     window.excluir = async (id) => {
         if(!confirm("Tem certeza que deseja apagar?")) return;
-        const { error } = await client.from('locacoes').delete().eq('id', id);
-        if(!error) carregarDados();
+        await client.from('locacoes').delete().eq('id', id);
+        carregarDados();
     };
 
-    // --- PDF ---
+    // PDF
     window.gerarPDF = function() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4');
-        doc.setFontSize(18); doc.text("Relatório Geral de Obras e Ferramentas", 14, 22);
+        const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
+        doc.setFontSize(18); doc.text("Relatório Geral de Obras", 14, 22);
         doc.setFontSize(10); doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 28);
 
-        const obraFiltro = document.getElementById('filtroObra').value;
-        const fornFiltro = document.getElementById('filtroFornecedor').value;
-        const contratoFiltro = document.getElementById('filtroContrato').value.trim().toLowerCase();
-
         const dadosAtuais = CACHE_DADOS.filter(item => {
-            const matchObra = obraFiltro ? item.obra === obraFiltro : true;
-            const matchForn = fornFiltro ? item.fornecedor === fornFiltro : true;
-            const itemContrato = item.contrato ? String(item.contrato).toLowerCase() : '';
-            const matchContrato = contratoFiltro ? itemContrato.includes(contratoFiltro) : true;
-            return matchObra && matchForn && matchContrato;
+            const mObra = document.getElementById('filtroObra').value ? item.obra === document.getElementById('filtroObra').value : true;
+            const mForn = document.getElementById('filtroFornecedor').value ? item.fornecedor === document.getElementById('filtroFornecedor').value : true;
+            const txt = document.getElementById('filtroContrato').value.trim().toLowerCase();
+            const mCont = txt ? (item.contrato || '').toLowerCase().includes(txt) : true;
+            return mObra && mForn && mCont;
         });
 
-        const proprios = dadosAtuais.filter(i => i.unidade === 'Proprio').sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio));
-        const alugados = dadosAtuais.filter(i => i.unidade !== 'Proprio');
-        const ativos = alugados.filter(i => i.status === 'ativo').sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
-        const historico = alugados.filter(i => i.status !== 'ativo').sort((a, b) => new Date(b.data_devolucao) - new Date(a.data_devolucao));
-
+        const ativos = dadosAtuais.filter(i => i.unidade !== 'Proprio' && i.status === 'ativo').sort((a,b)=>new Date(a.data_fim)-new Date(b.data_fim));
         let currentY = 35;
-
         if(ativos.length > 0) {
             doc.text("Locações Ativas", 14, currentY);
-            doc.autoTable({ startY: currentY + 5, head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Fim Prev.', 'Contrato', 'Valor']], body: ativos.map(i => [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), fmtData(i.data_fim), i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]), theme: 'grid', headStyles: { fillColor: [37, 99, 235] }, styles: { fontSize: 8 } });
-            currentY = doc.lastAutoTable.finalY + 15;
+            doc.autoTable({ startY: currentY+5, head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Fim Prev.', 'Contrato', 'Valor']], body: ativos.map(i => [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), fmtData(i.data_fim), i.contrato||'-', parseFloat(i.valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})]), theme: 'grid', headStyles: { fillColor: [37, 99, 235] }, styles: { fontSize: 8 }});
         }
-
-        if(historico.length > 0) {
-            if (currentY > 170) { doc.addPage(); currentY = 20; }
-            doc.text("Histórico de Devoluções", 14, currentY);
-            doc.autoTable({ startY: currentY + 5, head: [['Obra', 'Fornecedor', 'Equipamento', 'Início', 'Devolução', 'Dias', 'Contrato', 'Valor']], body: historico.map(i => { const d = Math.ceil((new Date(i.data_devolucao) - new Date(i.data_inicio)) / 86400000); return [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), fmtData(i.data_devolucao), d>0?d:0, i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]; }), theme: 'grid', headStyles: { fillColor: [100, 116, 139] }, styles: { fontSize: 8 } });
-            currentY = doc.lastAutoTable.finalY + 15;
-        }
-
-        if(proprios.length > 0) {
-            if (currentY > 170) { doc.addPage(); currentY = 20; }
-            doc.text("Ferramentas Próprias (Patrimônio)", 14, currentY);
-            doc.autoTable({ startY: currentY + 5, head: [['Obra Atual', 'Origem/Loja', 'Equipamento', 'Data Compra', 'Nota Fiscal', 'Valor Pago']], body: proprios.map(i => [i.obra, i.fornecedor, i.equipamento, fmtData(i.data_inicio), i.contrato || '-', parseFloat(i.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]), theme: 'grid', headStyles: { fillColor: [124, 58, 237] }, styles: { fontSize: 8 } });
-        }
-
-        doc.save('relatorio_completo.pdf');
+        doc.save('relatorio.pdf');
     }
 
     carregarDados();
