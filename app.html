@@ -15,7 +15,7 @@
         .header { background-color: var(--header); color: white; padding: 25px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .header p { margin: 5px 0 0 0; color: #cbd5e1; font-size: 0.85rem; }
-        .badge-v11 { background: var(--success); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; }
+        .badge-v12 { background: var(--primary); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; }
         
         .content { padding: 20px; flex: 1; }
         
@@ -54,7 +54,6 @@
         .btn-cancelar { background: transparent; color: white; border: 1px solid white; padding: 10px; border-radius: 12px; width: 100%; font-size: 1rem; flex-shrink: 0;}
         input[type="file"] { display: none; }
         
-        /* Caixa de erro vermelha */
         #erro-box { display: none; background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 20px; width: 100%; border: 1px solid #f87171; }
     </style>
 </head>
@@ -62,7 +61,7 @@
 
 <div class="mobile-container">
     <div class="header">
-        <h1>👷 Almoxarifado <span class="badge-v11">v11</span></h1>
+        <h1>👷 Almoxarifado <span class="badge-v12">v12</span></h1>
         <p>Leitor Inteligente de NFs e Contratos</p>
     </div>
 
@@ -165,13 +164,9 @@
     }
 
     async function chamarGeminiAPI(base64Image) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // CORRIGIDO: Voltando para o motor 2.5 que funciona com sua chave!
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
-        // Estrutura EXATA do JSON que queremos
-        let jsonSchema = modoAtual === 'compra' 
-            ? '{"type": "object", "properties": {"itens": {"type": "array", "items": {"type": "object", "properties": {"equipamento": {"type": "string"}, "fornecedor": {"type": "string"}, "valor": {"type": "number"}}}}}}}'
-            : '{"type": "object", "properties": {"itens": {"type": "array", "items": {"type": "object", "properties": {"equipamento": {"type": "string"}, "fornecedor": {"type": "string"}, "contrato_numero": {"type": "string"}, "periodo": {"type": "string"}, "valor": {"type": "number"}}}}}}}';
-
         let promptTexto = modoAtual === 'compra' 
             ? "Extraia os materiais comprados desta nota fiscal. Se não achar o fornecedor, coloque 'Não identificado'."
             : "Extraia os dados deste aluguel/locação. Em período, coloque apenas Mês, Quinzena ou Dia.";
@@ -183,7 +178,7 @@
                     { inlineData: { mimeType: "image/jpeg", data: base64Image } }
                 ]
             }],
-            // ISSO AQUI É A TRAVA MÁGICA: OBRIGA O GOOGLE A MANDAR SÓ O JSON PURO!
+            // A TRAVA MÁGICA CONTINUA AQUI PARA GARANTIR OS DADOS PUROS
             generationConfig: {
                 responseMimeType: "application/json",
             }
@@ -202,7 +197,6 @@
                 throw new Error(dados.error ? dados.error.message : "Erro na API do Google");
             }
 
-            // Como usamos a trava, a resposta já é 100% um JSON limpo
             const jsonTexto = dados.candidates[0].content.parts[0].text;
             const jsonExtraido = JSON.parse(jsonTexto);
             
