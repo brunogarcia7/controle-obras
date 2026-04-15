@@ -148,7 +148,8 @@
 
     // 3. Comunicação com a IA do Google Gemini
     async function chamarGeminiAPI(base64Image) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+        // 🚀 CORREÇÃO AQUI: Mudamos de gemini-1.5-pro para gemini-1.5-flash
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
         const promptTexto = `Você é um leitor de notas fiscais de construção civil. 
         Leia esta imagem. Retorne APENAS um objeto JSON válido (sem textos extras ou \`\`\`json) contendo um array chamado "itens". 
