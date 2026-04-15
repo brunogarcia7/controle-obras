@@ -37,7 +37,7 @@
         input[type="file"] { display: none; }
 
         /* MODAL DA IA */
-        #ai-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; padding: 20px; box-sizing: border-box; }
+        #ai-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.98); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; padding: 20px; box-sizing: border-box; }
         .loader { border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid var(--success); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #modal-text { font-size: 1.2rem; font-weight: 700; text-align: center; margin-bottom: 10px; }
@@ -79,7 +79,7 @@
 
     <div id="ai-modal">
         <div class="loader" id="ai-loader"></div>
-        <div id="modal-text">Enviando foto para o Gemini...</div>
+        <div id="modal-text">Preparando imagem...</div>
         
         <div id="resultado-ia"></div>
         <button class="btn-confirmar" id="btn-salvar" onclick="salvarNoBanco()">✅ Confirmar e Salvar Estoque</button>
@@ -89,7 +89,7 @@
 
 <script>
     // =====================================================================
-    // CHAVES JÁ INSERIDAS AUTOMATICAMENTE
+    // CHAVES JÁ INSERIDAS - PRONTAS PARA USO
     // =====================================================================
     const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
@@ -99,7 +99,7 @@
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let itensLidosPelaIA = [];
 
-    // 1. Puxar obras do banco de dados ao abrir o App
+    // 1. Puxar obras do banco de dados
     async function carregarObras() {
         const { data, error } = await client.from('locacoes').select('obra');
         const sel = document.getElementById('obraSelect');
@@ -114,21 +114,34 @@
     }
     carregarObras();
 
-    // 2. Processar a Foto tirada
+    // 2. Comprimir a foto e enviar para a IA
     async function processarFoto(event) {
         const obraSelecionada = document.getElementById('obraSelect').value;
-        if(!obraSelecionada) { alert("Selecione a obra primeiro!"); return; }
+        if(!obraSelecionada) { alert("Por favor, selecione a obra primeiro!"); return; }
 
         const file = event.target.files[0];
         if (!file) return;
 
-        abrirModal("Lendo Nota Fiscal...");
+        abrirModal("Comprimindo a imagem para envio rápido...");
 
-        // Converter foto para Base64 (Formato que o Gemini entende)
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async function () {
-            const base64Image = reader.result.split(',')[1]; 
+        // Compressor de Imagem (Reduz peso para leitura rápida na obra)
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 1200; // Tamanho ideal para leitura OCR
+            const scaleSize = MAX_WIDTH / img.width;
+            
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Converte para Base64 leve
+            const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+            
+            document.getElementById('modal-text').innerText = "Enviando para o Gemini (Pode levar alguns segundos)...";
             chamarGeminiAPI(base64Image);
         };
     }
@@ -137,13 +150,12 @@
     async function chamarGeminiAPI(base64Image) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
         
-        // O Prompt (A ordem que damos para a IA)
         const promptTexto = `Você é um leitor de notas fiscais de construção civil. 
-        Leia esta imagem. Retorne APENAS um objeto JSON válido (sem blocos de código markdown como \`\`\`json) contendo um array chamado "itens". 
-        Cada item deve ter: 
-        "equipamento" (nome do material/ferramenta), 
-        "fornecedor" (nome da loja da nota fiscal, se não achar coloque "Não identificado"),
-        "valor" (valor unitário em número, sem R$).`;
+        Leia esta imagem. Retorne APENAS um objeto JSON válido (sem textos extras ou \`\`\`json) contendo um array chamado "itens". 
+        Cada item deve ter as chaves exatamente assim: 
+        "equipamento" (nome do material/ferramenta extraido), 
+        "fornecedor" (nome da loja, se não achar coloque "Não identificado"),
+        "valor" (apenas o número do valor unitário).`;
 
         const corpoRequisicao = {
             contents: [{
@@ -158,9 +170,13 @@
             const resposta = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpoRequisicao) });
             const dados = await resposta.json();
             
-            // Tratando a resposta da IA
+            // Tratamento de erro
+            if (!resposta.ok) {
+                throw new Error(dados.error ? dados.error.message : "Erro desconhecido na API do Google");
+            }
+
             let textoResposta = dados.candidates[0].content.parts[0].text;
-            textoResposta = textoResposta.replace(/```json/g, '').replace(/```/g, '').trim(); // Limpar a resposta
+            textoResposta = textoResposta.replace(/```json/g, '').replace(/```/g, '').trim(); 
             
             const jsonExtraido = JSON.parse(textoResposta);
             itensLidosPelaIA = jsonExtraido.itens || [];
@@ -169,14 +185,20 @@
 
         } catch (erro) {
             document.getElementById('ai-loader').style.display = 'none';
-            document.getElementById('modal-text').innerText = "Erro ao ler a imagem. Tente uma foto mais clara.";
-            console.error(erro);
+            document.getElementById('modal-text').innerText = "❌ Falha técnica: " + erro.message;
+            console.error("ERRO DETALHADO:", erro);
         }
     }
 
-    // 4. Mostrar os itens para o Almoxarife confirmar
+    // 4. Mostrar os itens na tela
     function mostrarResultadoNaTela() {
         document.getElementById('ai-loader').style.display = 'none';
+        
+        if (itensLidosPelaIA.length === 0) {
+            document.getElementById('modal-text').innerText = "Nenhum material encontrado na foto.";
+            return;
+        }
+
         document.getElementById('modal-text').innerText = "Materiais Encontrados:";
         
         const divResultado = document.getElementById('resultado-ia');
@@ -194,7 +216,7 @@
         });
     }
 
-    // 5. Salvar na Caixa D'água (Supabase)
+    // 5. Salvar no Supabase
     async function salvarNoBanco() {
         const obra = document.getElementById('obraSelect').value;
         const hoje = new Date().toISOString().split('T')[0];
@@ -204,14 +226,13 @@
         document.getElementById('btn-salvar').style.display = 'none';
         document.getElementById('ai-loader').style.display = 'block';
 
-        // Prepara os dados do jeito que a tabela 'locacoes' aceita
         const dadosParaSalvar = itensLidosPelaIA.map(item => ({
             obra: obra,
             fornecedor: item.fornecedor,
             equipamento: item.equipamento,
-            unidade: 'Proprio', // Entrando como material da empresa
+            unidade: 'Proprio',
             data_inicio: hoje,
-            contrato: 'NF via App',
+            contrato: 'NF via IA App',
             valor: parseFloat(item.valor) || 0,
             status: 'ativo'
         }));
@@ -222,8 +243,8 @@
             alert("✅ Estoque atualizado com sucesso!");
             fecharModal();
         } else {
-            alert("Erro ao salvar: " + error.message);
-            fecharModal();
+            document.getElementById('modal-text').innerText = "Erro ao salvar no banco: " + error.message;
+            document.getElementById('ai-loader').style.display = 'none';
         }
     }
 
