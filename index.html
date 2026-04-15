@@ -1,58 +1,209 @@
-<style>
-    /* Estilo Moderno para Tabela Densiva */
-    .table-modern { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
-    .table-modern th { padding: 12px; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; text-align: left; }
-    .table-modern tr { background: white; transition: 0.2s; }
-    .table-modern tr:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .table-modern td { padding: 16px 12px; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; }
-    .table-modern td:first-child { border-left: 1px solid #f1f5f9; border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
-    .table-modern td:last-child { border-right: 1px solid #f1f5f9; border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
-
-    .group-info { display: flex; flex-direction: column; }
-    .main-txt { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
-    .sub-txt { font-size: 0.75rem; color: #94a3b8; }
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Obras - Painel Web</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    .price-tag { font-family: 'Inter', sans-serif; font-weight: 800; color: #0f172a; }
-    .indeniz-tag { font-size: 0.7rem; color: #ef4444; background: #fef2f2; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
-    
-    .btn-anexo { background: #f1f5f9; color: #64748b; padding: 8px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; }
-    .btn-anexo:hover { background: #e2e8f0; color: #1e293b; }
-</style>
+    <style>
+        :root { --bg: #f8fafc; --text: #1e293b; --text-light: #64748b; --primary: #2563eb; --white: #ffffff; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; }
+        
+        /* MENU LATERAL */
+        .sidebar { width: 260px; background: #0f172a; min-height: 100vh; padding: 30px 20px; color: white; box-sizing: border-box; }
+        .sidebar h2 { margin: 0 0 30px 0; font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .menu-item { padding: 12px 15px; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
+        .menu-item:hover { background: var(--primary); }
 
-<script>
-    // Exemplo de como gerar a linha na tabela moderna
-    function criarLinhaTabela(item) {
-        return `
-            <tr>
-                <td>
-                    <div class="group-info">
-                        <span class="main-txt">${item.obra}</span>
-                        <span class="sub-txt">${item.fornecedor}</span>
-                    </div>
-                </td>
-                <td>
-                    <span class="main-txt">${item.equipamento}</span>
-                </td>
-                <td>
-                    <div class="group-info">
-                        <span class="main-txt">${formatarData(item.data_inicio)}</span>
-                        <span class="sub-txt">Vence: ${formatarData(item.data_fim)}</span>
-                    </div>
-                </td>
-                <td>
-                    <div class="price-tag">R$ ${item.valor.toLocaleString('pt-BR')}</div>
-                    ${item.valor_indenizacao ? `<div class="indeniz-tag">Indenização: R$ ${item.valor_indenizacao.toLocaleString('pt-BR')}</div>` : ''}
-                </td>
-                <td>
-                    ${item.url_anexo ? `
-                        <a href="${item.url_anexo}" target="_blank" class="btn-anexo">
-                            📎 Ver Contrato
-                        </a>
-                    ` : '<span class="sub-txt">Sem anexo</span>'}
-                </td>
-                <td>
-                    </td>
-            </tr>
-        `;
-    }
-</script>
+        /* CONTEÚDO PRINCIPAL */
+        .main-content { flex: 1; padding: 40px; box-sizing: border-box; max-width: 1200px; margin: 0 auto; }
+        .header { margin-bottom: 30px; }
+        .header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; }
+        .header p { margin: 5px 0 0 0; color: var(--text-light); }
+
+        /* TABELA MODERNA */
+        .card-table { background: var(--white); padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 30px; overflow-x: auto; }
+        .card-table h3 { margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text); border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        
+        .table-modern { width: 100%; border-collapse: collapse; min-width: 800px; }
+        .table-modern th { padding: 12px; color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; text-align: left; border-bottom: 1px solid var(--border); }
+        .table-modern tr { transition: 0.2s; border-bottom: 1px solid #f1f5f9; }
+        .table-modern tr:hover { background: #f8fafc; }
+        .table-modern td { padding: 16px 12px; vertical-align: middle; }
+        
+        /* AGRUPAMENTO DE INFORMAÇÕES */
+        .group-info { display: flex; flex-direction: column; }
+        .main-txt { font-weight: 700; color: var(--text); font-size: 0.95rem; }
+        .sub-txt { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+        
+        .price-tag { font-weight: 800; color: #0f172a; }
+        .indeniz-tag { font-size: 0.7rem; color: var(--danger); background: #fef2f2; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; font-weight: 600; border: 1px solid #fca5a5; }
+        
+        .btn-anexo { background: #f1f5f9; color: var(--text-light); padding: 8px 12px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--border); transition: 0.2s; }
+        .btn-anexo:hover { background: #e2e8f0; color: var(--text); border-color: #cbd5e1; }
+        
+        .btn-delete { background: #fee2e2; color: var(--danger); border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-delete:hover { background: #fca5a5; color: white; }
+
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>🏗️ ControleObras</h2>
+        <div class="menu-item">📊 Visão Geral</div>
+        <div class="menu-item" style="background: var(--primary);">🛠️ Equipamentos</div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Gestão de Equipamentos</h1>
+            <p>Controle de patrimônio próprio e locações ativas.</p>
+        </div>
+
+        <div class="card-table">
+            <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
+            <div id="loader-loc" class="loader"></div>
+            <table class="table-modern" id="tabela-locacoes" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>Obra / Locadora</th>
+                        <th>Equipamento</th>
+                        <th>Período</th>
+                        <th>Valores do Contrato</th>
+                        <th>Comprovante</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="body-locacoes"></tbody>
+            </table>
+        </div>
+
+        <div class="card-table">
+            <h3 style="color: var(--success);">🛒 Ferramentas Próprias (Patrimônio)</h3>
+            <div id="loader-comp" class="loader"></div>
+            <table class="table-modern" id="tabela-compras" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>Obra / Loja</th>
+                        <th>Equipamento</th>
+                        <th>Data de Compra</th>
+                        <th>Valores da NF</th>
+                        <th>Comprovante</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="body-compras"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // CONEXÃO COM O BANCO DE DADOS
+        const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function formatarData(dataString) {
+            if (!dataString) return '--';
+            const partes = dataString.split('-');
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
+        function formatarMoeda(valor) {
+            return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        async function carregarDados() {
+            try {
+                const { data, error } = await client.from('locacoes').select('*').eq('status', 'ativo').order('data_inicio', { ascending: false });
+                
+                if (error) throw error;
+
+                const bodyLocacoes = document.getElementById('body-locacoes');
+                const bodyCompras = document.getElementById('body-compras');
+                bodyLocacoes.innerHTML = '';
+                bodyCompras.innerHTML = '';
+
+                let temLocacao = false;
+                let temCompra = false;
+
+                data.forEach(item => {
+                    // Monta o HTML da linha agrupando informações
+                    const btnAnexo = item.url_anexo 
+                        ? `<a href="${item.url_anexo}" target="_blank" class="btn-anexo">📎 Ver Documento</a>` 
+                        : `<span class="sub-txt">Sem anexo</span>`;
+
+                    const tagIndenizacao = item.valor_indenizacao && item.valor_indenizacao > 0
+                        ? `<div class="indeniz-tag">Indenização: ${formatarMoeda(item.valor_indenizacao)}</div>`
+                        : '';
+
+                    const linhaHTML = `
+                        <tr>
+                            <td>
+                                <div class="group-info">
+                                    <span class="main-txt">${item.obra}</span>
+                                    <span class="sub-txt">Forn: ${item.fornecedor}</span>
+                                </div>
+                            </td>
+                            <td><span class="main-txt">${item.equipamento}</span></td>
+                            <td>
+                                <div class="group-info">
+                                    <span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>
+                                    ${item.unidade !== 'Proprio' ? `<span class="sub-txt">Vence: ${formatarData(item.data_fim)}</span>` : ''}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="group-info">
+                                    <span class="price-tag">${formatarMoeda(item.valor)}</span>
+                                    ${tagIndenizacao}
+                                </div>
+                            </td>
+                            <td>${btnAnexo}</td>
+                            <td>
+                                <button class="btn-delete" onclick="excluirItem(${item.id})">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+
+                    // Separa nas tabelas corretas
+                    if (item.unidade === 'Proprio') {
+                        bodyCompras.innerHTML += linhaHTML;
+                        temCompra = true;
+                    } else {
+                        bodyLocacoes.innerHTML += linhaHTML;
+                        temLocacao = true;
+                    }
+                });
+
+                document.getElementById('loader-loc').style.display = 'none';
+                document.getElementById('loader-comp').style.display = 'none';
+                
+                document.getElementById('tabela-locacoes').style.display = temLocacao ? 'table' : 'none';
+                document.getElementById('tabela-compras').style.display = temCompra ? 'table' : 'none';
+
+                if (!temLocacao) bodyLocacoes.parentElement.insertAdjacentHTML('afterend', '<p style="color:#64748b;">Nenhuma locação ativa encontrada.</p>');
+                if (!temCompra) bodyCompras.parentElement.insertAdjacentHTML('afterend', '<p style="color:#64748b;">Nenhuma compra registrada.</p>');
+
+            } catch (err) {
+                console.error("Erro ao carregar:", err);
+                alert("Erro ao carregar dados do banco.");
+            }
+        }
+
+        async function excluirItem(id) {
+            if (confirm("Tem certeza que deseja apagar este registro do sistema?")) {
+                await client.from('locacoes').delete().eq('id', id);
+                carregarDados();
+            }
+        }
+
+        // Inicia a página carregando os dados
+        carregarDados();
+    </script>
+</body>
+</html>
