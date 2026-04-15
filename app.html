@@ -15,7 +15,7 @@
         .header { background-color: var(--header); color: white; padding: 25px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .header p { margin: 5px 0 0 0; color: #cbd5e1; font-size: 0.85rem; }
-        .badge-v14 { background: var(--warning); color: black; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; }
+        .badge-v15 { background: var(--success); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; }
         
         .content { padding: 20px; flex: 1; }
         
@@ -61,7 +61,7 @@
 
 <div class="mobile-container">
     <div class="header">
-        <h1>👷 Almoxarifado <span class="badge-v14">v14</span></h1>
+        <h1>👷 Almoxarifado <span class="badge-v15">v15</span></h1>
         <p>Leitor Inteligente de NFs e Contratos</p>
     </div>
 
@@ -164,13 +164,12 @@
     }
 
     async function chamarGeminiAPI(base64Image) {
-        // MOTOR ESTÁVEL E LIBERADO: gemini-1.5-flash
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // CORREÇÃO MESTRA: Usando a URL oficial V1 definitiva!
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
-        // PROMPT MAIS MALEÁVEL (Sem forçar a barra pra IA não travar)
         let promptTexto = modoAtual === 'compra' 
-            ? `Extraia os materiais desta nota fiscal. Retorne um JSON estrito com um array "itens". Cada item deve ter: "equipamento" (nome), "fornecedor" (nome da loja), "valor" (apenas numero decimal).`
-            : `Extraia os equipamentos deste contrato de locação. Retorne um JSON estrito com um array "itens". Cada item deve ter: "equipamento", "fornecedor" (locadora), "contrato_numero" (ex: 011359/A), "periodo" (texto como estava na folha), "valor" (numero decimal, valor da locação do item).`;
+            ? `Você é um robô leitor de notas fiscais. Retorne estritamente um JSON com a seguinte estrutura: { "itens": [ {"equipamento": "nome", "fornecedor": "loja", "valor": 0.00} ] }. Não escreva mais nada além do JSON.`
+            : `Você é um robô leitor de contratos de locação. Retorne estritamente um JSON com a seguinte estrutura: { "itens": [ {"equipamento": "nome do equipamento", "fornecedor": "nome da locadora no topo da pagina", "contrato_numero": "numero do contrato", "periodo": "periodo escrito no documento", "valor": 0.00} ] }. Não escreva mais nada além do JSON.`;
 
         const corpoRequisicao = {
             contents: [{
@@ -197,7 +196,9 @@
                 throw new Error(dados.error ? dados.error.message : "Erro na API do Google");
             }
 
-            const jsonTexto = dados.candidates[0].content.parts[0].text;
+            // Puxa o texto e garante que está limpo
+            let jsonTexto = dados.candidates[0].content.parts[0].text;
+            jsonTexto = jsonTexto.replace(/```json/g, '').replace(/```/g, '').trim();
             const jsonExtraido = JSON.parse(jsonTexto);
             
             itensLidosPelaIA = jsonExtraido.itens || [];
@@ -219,7 +220,7 @@
         if (itensLidosPelaIA.length === 0) {
             const erroBox = document.getElementById('erro-box');
             erroBox.style.display = 'block';
-            erroBox.innerText = "A IA processou a imagem, mas não encontrou uma tabela de equipamentos.";
+            erroBox.innerText = "A IA processou a imagem, mas não encontrou uma tabela de equipamentos. Tente focar apenas na tabela.";
             document.getElementById('modal-text').innerText = "Nada encontrado";
             return;
         }
@@ -238,20 +239,19 @@
                 let ctr = item.contrato_numero || '';
                 let val = item.valor || '';
                 
-                // O aplicativo lê o que a IA mandou e tenta marcar a caixinha certa sozinho
+                // Leitura inteligente de "MENSAL - 28 DIAS"
                 let txtPeriodo = (item.periodo || '').toLowerCase();
                 let selMes = txtPeriodo.includes('mês') || txtPeriodo.includes('mensal') ? 'selected' : '';
                 let selQuinzena = txtPeriodo.includes('quinzena') ? 'selected' : '';
-                let selDia = txtPeriodo.includes('dia') && !txtPeriodo.includes('28 dia') ? 'selected' : ''; // Se for "28 dias", joga pro mês
+                let selDia = txtPeriodo.includes('dia') && !txtPeriodo.includes('28 dia') && !txtPeriodo.includes('30 dia') ? 'selected' : '';
 
-                // Se ele não achar nada óbvio, joga pro Mês por padrão
                 if(!selMes && !selQuinzena && !selDia) selMes = 'selected';
 
                 htmlFormularioExtra = `
                     <div class="fallback-box">
                         <label>Nº do Contrato</label>
                         <input type="text" id="man-contrato-${index}" value="${ctr}">
-                        <label>Período (Verifique!)</label>
+                        <label>Período (Identificado: ${item.periodo || 'N/A'})</label>
                         <select id="man-periodo-${index}">
                             <option value="Mês" ${selMes}>Mês (Padrão 30 dias)</option>
                             <option value="Quinzena" ${selQuinzena}>Quinzena (15 dias)</option>
@@ -275,7 +275,7 @@
             divResultado.innerHTML += `
                 <div class="item-lido">
                     <strong style="font-size:1.1rem; color:var(--primary);">${item.equipamento}</strong><br>
-                    <span style="color:#64748b; font-size:0.8rem;">Locadora/Loja: ${item.fornecedor || 'Não identificado'}</span>
+                    <span style="color:#64748b; font-size:0.8rem;">Fornecedor: ${item.fornecedor || 'Não identificado'}</span>
                     ${htmlFormularioExtra}
                 </div>
             `;
@@ -368,7 +368,7 @@
         await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id);
         alert("Período renovado com sucesso!"); 
         toggleAtivos();
-    };
+    }
 
     function abrirModal(texto) {
         document.getElementById('ai-modal').style.display = 'flex';
