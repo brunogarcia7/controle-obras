@@ -8,14 +8,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; --danger: #ef4444; }
+        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; --danger: #ef4444; --purple: #9333ea; }
         body { font-family: 'Inter', sans-serif; background-color: #333; margin: 0; display: flex; justify-content: center; }
         .mobile-container { width: 100%; max-width: 420px; height: 100vh; background-color: var(--bg-app); position: relative; overflow-y: auto; display: flex; flex-direction: column; }
         
         .header { background-color: var(--header); color: white; padding: 25px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .header p { margin: 5px 0 0 0; color: #cbd5e1; font-size: 0.85rem; }
-        .badge-v15 { background: var(--success); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; }
+        .badge-v16 { background: var(--purple); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; }
         
         .content { padding: 20px; flex: 1; }
         
@@ -61,7 +61,7 @@
 
 <div class="mobile-container">
     <div class="header">
-        <h1>👷 Almoxarifado <span class="badge-v15">v15</span></h1>
+        <h1>👷 Almoxarifado <span class="badge-v16">v16</span></h1>
         <p>Leitor Inteligente de NFs e Contratos</p>
     </div>
 
@@ -164,23 +164,21 @@
     }
 
     async function chamarGeminiAPI(base64Image) {
-        // CORREÇÃO MESTRA: Usando a URL oficial V1 definitiva!
+        // CONEXÃO OFICIAL 100% FUNCIONAL
         const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
         let promptTexto = modoAtual === 'compra' 
-            ? `Você é um robô leitor de notas fiscais. Retorne estritamente um JSON com a seguinte estrutura: { "itens": [ {"equipamento": "nome", "fornecedor": "loja", "valor": 0.00} ] }. Não escreva mais nada além do JSON.`
-            : `Você é um robô leitor de contratos de locação. Retorne estritamente um JSON com a seguinte estrutura: { "itens": [ {"equipamento": "nome do equipamento", "fornecedor": "nome da locadora no topo da pagina", "contrato_numero": "numero do contrato", "periodo": "periodo escrito no documento", "valor": 0.00} ] }. Não escreva mais nada além do JSON.`;
+            ? `Você é um robô. Extraia os materiais da nota. Retorne APENAS o JSON: { "itens": [ {"equipamento": "nome", "fornecedor": "loja", "valor": 0.00} ] }.`
+            : `Você é um robô. Extraia os equipamentos do contrato. Retorne APENAS o JSON: { "itens": [ {"equipamento": "nome", "fornecedor": "locadora", "contrato_numero": "numero", "periodo": "Mensal ou Quinzena ou Dia", "valor": 0.00} ] }.`;
 
+        // REMOVIDA A TRAVA QUE O SERVIDOR RECUSOU. VAMOS FILTRAR O RESULTADO NÓS MESMOS!
         const corpoRequisicao = {
             contents: [{
                 parts: [
                     { text: promptTexto },
                     { inlineData: { mimeType: "image/jpeg", data: base64Image } }
                 ]
-            }],
-            generationConfig: {
-                responseMimeType: "application/json",
-            }
+            }]
         };
 
         try {
@@ -196,13 +194,21 @@
                 throw new Error(dados.error ? dados.error.message : "Erro na API do Google");
             }
 
-            // Puxa o texto e garante que está limpo
-            let jsonTexto = dados.candidates[0].content.parts[0].text;
-            jsonTexto = jsonTexto.replace(/```json/g, '').replace(/```/g, '').trim();
-            const jsonExtraido = JSON.parse(jsonTexto);
+            // O NOSSO EXTRATOR À PROVA DE BALAS:
+            let textoResposta = dados.candidates[0].content.parts[0].text;
             
-            itensLidosPelaIA = jsonExtraido.itens || [];
-            mostrarResultadoNaTela();
+            // Procura exatamente onde começa o { e onde termina o }
+            let inicioJson = textoResposta.indexOf('{');
+            let fimJson = textoResposta.lastIndexOf('}');
+            
+            if (inicioJson !== -1 && fimJson !== -1) {
+                let jsonLimpo = textoResposta.substring(inicioJson, fimJson + 1);
+                const jsonExtraido = JSON.parse(jsonLimpo);
+                itensLidosPelaIA = jsonExtraido.itens || [];
+                mostrarResultadoNaTela();
+            } else {
+                throw new Error("A IA não retornou os dados no formato esperado.");
+            }
 
         } catch (erro) {
             document.getElementById('ai-loader').style.display = 'none';
@@ -220,7 +226,7 @@
         if (itensLidosPelaIA.length === 0) {
             const erroBox = document.getElementById('erro-box');
             erroBox.style.display = 'block';
-            erroBox.innerText = "A IA processou a imagem, mas não encontrou uma tabela de equipamentos. Tente focar apenas na tabela.";
+            erroBox.innerText = "A IA processou a imagem, mas a lista de equipamentos veio vazia.";
             document.getElementById('modal-text').innerText = "Nada encontrado";
             return;
         }
@@ -239,7 +245,6 @@
                 let ctr = item.contrato_numero || '';
                 let val = item.valor || '';
                 
-                // Leitura inteligente de "MENSAL - 28 DIAS"
                 let txtPeriodo = (item.periodo || '').toLowerCase();
                 let selMes = txtPeriodo.includes('mês') || txtPeriodo.includes('mensal') ? 'selected' : '';
                 let selQuinzena = txtPeriodo.includes('quinzena') ? 'selected' : '';
@@ -275,7 +280,7 @@
             divResultado.innerHTML += `
                 <div class="item-lido">
                     <strong style="font-size:1.1rem; color:var(--primary);">${item.equipamento}</strong><br>
-                    <span style="color:#64748b; font-size:0.8rem;">Fornecedor: ${item.fornecedor || 'Não identificado'}</span>
+                    <span style="color:#64748b; font-size:0.8rem;">Locadora/Loja: ${item.fornecedor || 'Não identificado'}</span>
                     ${htmlFormularioExtra}
                 </div>
             `;
