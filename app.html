@@ -17,6 +17,7 @@
         .header { background-color: var(--header); color: white; padding: 25px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .header p { margin: 5px 0 0 0; color: #cbd5e1; font-size: 0.85rem; }
+        .badge-v2 { background: var(--success); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; }
         
         .content { padding: 20px; flex: 1; }
         
@@ -55,7 +56,7 @@
 <div class="mobile-container">
     <div class="header">
         <h1>👷 Almoxarifado</h1>
-        <p>Leitor com IA Gemini</p>
+        <p>Leitor com IA Gemini <span class="badge-v2">v2</span></p>
     </div>
 
     <div class="content">
@@ -88,18 +89,14 @@
 </div>
 
 <script>
-    // =====================================================================
-    // CHAVES JÁ INSERIDAS - PRONTAS PARA USO
-    // =====================================================================
+    // CHAVES CONFIRMADAS
     const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
     const GEMINI_API_KEY = 'AIzaSyCv4BqXSXvvh1B46QGdEhT0hbgCINFtJPw'; 
-    // =====================================================================
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let itensLidosPelaIA = [];
 
-    // 1. Puxar obras do banco de dados
     async function carregarObras() {
         const { data, error } = await client.from('locacoes').select('obra');
         const sel = document.getElementById('obraSelect');
@@ -114,7 +111,6 @@
     }
     carregarObras();
 
-    // 2. Comprimir a foto e enviar para a IA
     async function processarFoto(event) {
         const obraSelecionada = document.getElementById('obraSelect').value;
         if(!obraSelecionada) { alert("Por favor, selecione a obra primeiro!"); return; }
@@ -124,12 +120,11 @@
 
         abrirModal("Comprimindo a imagem para envio rápido...");
 
-        // Compressor de Imagem (Reduz peso para leitura rápida na obra)
         const img = new Image();
         img.src = URL.createObjectURL(file);
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 1200; // Tamanho ideal para leitura OCR
+            const MAX_WIDTH = 1200; 
             const scaleSize = MAX_WIDTH / img.width;
             
             canvas.width = MAX_WIDTH;
@@ -138,18 +133,16 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            // Converte para Base64 leve
             const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
             
-            document.getElementById('modal-text').innerText = "Enviando para o Gemini (Pode levar alguns segundos)...";
+            document.getElementById('modal-text').innerText = "Enviando para o Gemini v2...";
             chamarGeminiAPI(base64Image);
         };
     }
 
-    // 3. Comunicação com a IA do Google Gemini
     async function chamarGeminiAPI(base64Image) {
-        // 🚀 CORREÇÃO AQUI: Mudamos de gemini-1.5-pro para gemini-1.5-flash
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // MODELO ATUALIZADO E GARANTIDO
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
         
         const promptTexto = `Você é um leitor de notas fiscais de construção civil. 
         Leia esta imagem. Retorne APENAS um objeto JSON válido (sem textos extras ou \`\`\`json) contendo um array chamado "itens". 
@@ -171,7 +164,6 @@
             const resposta = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpoRequisicao) });
             const dados = await resposta.json();
             
-            // Tratamento de erro
             if (!resposta.ok) {
                 throw new Error(dados.error ? dados.error.message : "Erro desconhecido na API do Google");
             }
@@ -191,7 +183,6 @@
         }
     }
 
-    // 4. Mostrar os itens na tela
     function mostrarResultadoNaTela() {
         document.getElementById('ai-loader').style.display = 'none';
         
@@ -217,7 +208,6 @@
         });
     }
 
-    // 5. Salvar no Supabase
     async function salvarNoBanco() {
         const obra = document.getElementById('obraSelect').value;
         const hoje = new Date().toISOString().split('T')[0];
