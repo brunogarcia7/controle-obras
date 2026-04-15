@@ -9,32 +9,52 @@
     
     <style>
         :root { --bg: #f8fafc; --text: #1e293b; --text-light: #64748b; --primary: #2563eb; --white: #ffffff; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; overflow-x: hidden; }
         
-        /* MENU LATERAL */
-        .sidebar { width: 260px; background: #0f172a; min-height: 100vh; padding: 30px 20px; color: white; box-sizing: border-box; }
-        .sidebar h2 { margin: 0 0 30px 0; font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-        .menu-item { padding: 12px 15px; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
-        .menu-item:hover { background: var(--primary); }
+        /* MENU LATERAL EXPANSÍVEL */
+        .sidebar { width: 260px; background: #0f172a; min-height: 100vh; padding: 20px; color: white; display: flex; flex-direction: column; transition: width 0.3s ease; flex-shrink: 0; box-sizing: border-box; z-index: 10;}
+        .sidebar.collapsed { width: 85px; align-items: center; }
+        .sidebar.collapsed .text-hide { display: none; }
+        .sidebar.collapsed h2 { justify-content: center; }
+        
+        .btn-toggle-menu { background: rgba(255,255,255,0.1); border: none; color: white; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; align-self: flex-end; transition: 0.2s;}
+        .sidebar.collapsed .btn-toggle-menu { align-self: center; }
+        .btn-toggle-menu:hover { background: var(--primary); }
+
+        .sidebar h2 { margin: 0 0 30px 0; font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 10px; width: 100%; white-space: nowrap;}
+        
+        .menu-item { display: flex; align-items: center; gap: 15px; padding: 12px 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; white-space: nowrap; width: 100%; box-sizing: border-box;}
+        .sidebar.collapsed .menu-item { justify-content: center; padding: 12px 0; }
+        .menu-item.active { background: var(--primary); }
+        .menu-item:hover:not(.active) { background: rgba(255,255,255,0.15); }
+        .menu-item .icon { font-size: 1.2rem; }
 
         /* CONTEÚDO PRINCIPAL */
-        .main-content { flex: 1; padding: 40px; box-sizing: border-box; max-width: 1200px; margin: 0 auto; }
+        .main-content { flex: 1; padding: 30px; box-sizing: border-box; width: 100%; transition: 0.3s; }
         .header { margin-bottom: 20px; }
         .header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; }
         .header p { margin: 5px 0 0 0; color: var(--text-light); }
 
         /* BARRA DE CONTROLES (Filtros e Relatório) */
-        .top-controls { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid var(--border); margin-bottom: 30px; }
-        .filter-group { display: flex; align-items: center; gap: 15px; }
-        .filter-group select { height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-family: 'Inter'; font-weight: 600; color: var(--text); outline: none; cursor: pointer; }
-        .btn-print { background: var(--text); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .top-controls { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid var(--border); margin-bottom: 30px; flex-wrap: wrap; gap: 15px;}
+        .filter-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1;}
+        .filter-group select { height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 10px; font-family: 'Inter'; font-weight: 600; color: var(--text); outline: none; cursor: pointer; min-width: 180px;}
+        .btn-print { background: var(--text); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-print:hover { background: #000; }
 
-        /* TABELA MODERNA */
-        .card-table { background: var(--white); padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 30px; overflow-x: auto; }
-        .card-table h3 { margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text); border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        /* TABELA E ANIMAÇÕES */
+        .secao-tabela { display: none; } /* Oculto por padrão, ativado pelo JS */
         
-        .table-modern { width: 100%; border-collapse: collapse; min-width: 800px; }
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-show { display: block; animation: fadeInScale 0.4s ease-out forwards; }
+
+        .card-table { background: var(--white); padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 30px; overflow-x: auto; }
+        .card-table h3 { margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text); border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 10px;}
+        
+        .table-modern { width: 100%; border-collapse: collapse; min-width: 900px; }
         .table-modern th { padding: 12px; color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; text-align: left; border-bottom: 1px solid var(--border); }
         .table-modern tr { transition: 0.2s; border-bottom: 1px solid #f1f5f9; }
         .table-modern tr:hover { background: #f8fafc; }
@@ -44,9 +64,10 @@
         .group-info { display: flex; flex-direction: column; }
         .main-txt { font-weight: 700; color: var(--text); font-size: 0.95rem; }
         .sub-txt { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+        .highlight-txt { font-size: 0.75rem; color: var(--primary); font-weight: 700; margin-bottom: 2px;}
         
         .price-tag { font-weight: 800; color: #0f172a; }
-        .indeniz-tag { font-size: 0.7rem; color: var(--danger); background: #fef2f2; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; font-weight: 600; border: 1px solid #fca5a5; }
+        .indeniz-tag { font-size: 0.7rem; color: var(--danger); background: #fef2f2; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; font-weight: 600; border: 1px solid #fca5a5; width: fit-content;}
         
         /* BOTÕES DE AÇÃO NA TABELA */
         .btn-anexo { background: #f1f5f9; color: var(--text-light); padding: 8px 12px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--border); transition: 0.2s; }
@@ -61,74 +82,91 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* MODO IMPRESSÃO (Esconde o que não precisa sair no papel) */
+        /* MODO IMPRESSÃO */
         @media print {
             .sidebar, .top-controls, .btn-anexo, td:last-child, th:last-child { display: none !important; }
             .main-content { padding: 0; margin: 0; max-width: 100%; }
             body { background: white; }
             .card-table { box-shadow: none; border: none; padding: 0; margin-bottom: 40px; }
             .indeniz-tag { border: 1px solid #000; color: #000; background: transparent; }
+            .secao-tabela { display: block !important; } /* Imprime as duas tabelas juntas */
         }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <h2>🏗️ ControleObras</h2>
-        <div class="menu-item">📊 Visão Geral</div>
-        <div class="menu-item" style="background: var(--primary);">🛠️ Equipamentos</div>
+    <div class="sidebar" id="sidebar">
+        <button class="btn-toggle-menu" onclick="toggleSidebar()">☰</button>
+        <h2><span class="icon">🏗️</span> <span class="text-hide">ControleObras</span></h2>
+        
+        <div class="menu-item active" id="menu-loc" onclick="mudarAba('locacoes')">
+            <span class="icon">📄</span> <span class="text-hide">Locações Ativas</span>
+        </div>
+        
+        <div class="menu-item" id="menu-comp" onclick="mudarAba('compras')">
+            <span class="icon">🛒</span> <span class="text-hide">Patrimônio Próprio</span>
+        </div>
     </div>
 
     <div class="main-content">
         <div class="header">
             <h1>Gestão de Equipamentos</h1>
-            <p>Controle de patrimônio próprio e locações ativas.</p>
+            <p>Selecione a categoria no menu lateral para visualizar os itens.</p>
         </div>
 
         <div class="top-controls">
             <div class="filter-group">
-                <label style="font-weight:700; color:var(--text-light); text-transform:uppercase; font-size:0.8rem;">Filtrar Obra:</label>
                 <select id="filtroObra" onchange="carregarDados()">
-                    <option value="todas">🏢 Mostrar Todas as Obras</option>
+                    <option value="todas">🏢 Todas as Obras</option>
+                </select>
+                <select id="filtroForn" onchange="carregarDados()">
+                    <option value="todos">🚚 Todos os Fornecedores</option>
+                </select>
+                <select id="filtroContrato" onchange="carregarDados()">
+                    <option value="todos">📑 Todos os Contratos</option>
                 </select>
             </div>
-            <button class="btn-print" onclick="window.print()">🖨️ Imprimir Relatório PDF</button>
+            <button class="btn-print" onclick="window.print()">🖨️ Imprimir PDF</button>
         </div>
 
-        <div class="card-table">
-            <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
-            <div id="loader-loc" class="loader"></div>
-            <table class="table-modern" id="tabela-locacoes" style="display:none;">
-                <thead>
-                    <tr>
-                        <th>Obra / Locadora</th>
-                        <th>Equipamento</th>
-                        <th>Período</th>
-                        <th>Valores do Contrato</th>
-                        <th>Comprovante</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="body-locacoes"></tbody>
-            </table>
+        <div id="secao-locacoes" class="secao-tabela animate-show">
+            <div class="card-table">
+                <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
+                <div id="loader-loc" class="loader"></div>
+                <table class="table-modern" id="tabela-locacoes" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th>Obra / Locadora</th>
+                            <th>Equipamento</th>
+                            <th>Período de Aluguel</th>
+                            <th>Valores / Contrato</th>
+                            <th>Comprovante</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-locacoes"></tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="card-table">
-            <h3 style="color: var(--success);">🛒 Ferramentas Próprias (Patrimônio)</h3>
-            <div id="loader-comp" class="loader"></div>
-            <table class="table-modern" id="tabela-compras" style="display:none;">
-                <thead>
-                    <tr>
-                        <th>Obra / Loja</th>
-                        <th>Equipamento</th>
-                        <th>Data de Compra</th>
-                        <th>Valores da NF</th>
-                        <th>Comprovante</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="body-compras"></tbody>
-            </table>
+        <div id="secao-compras" class="secao-tabela">
+            <div class="card-table">
+                <h3 style="color: var(--success);">🛒 Ferramentas Próprias (Patrimônio)</h3>
+                <div id="loader-comp" class="loader"></div>
+                <table class="table-modern" id="tabela-compras" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th>Obra / Loja</th>
+                            <th>Equipamento</th>
+                            <th>Data de Compra</th>
+                            <th>Valores Pagos</th>
+                            <th>Comprovante</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-compras"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -138,6 +176,29 @@
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // FUNÇÕES DE INTERFACE (Menu e Sidebar)
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        function mudarAba(aba) {
+            // Remove classes ativas
+            document.getElementById('menu-loc').classList.remove('active');
+            document.getElementById('menu-comp').classList.remove('active');
+            document.getElementById('secao-locacoes').classList.remove('animate-show');
+            document.getElementById('secao-compras').classList.remove('animate-show');
+            
+            // Ativa a escolhida
+            if(aba === 'locacoes') {
+                document.getElementById('menu-loc').classList.add('active');
+                document.getElementById('secao-locacoes').classList.add('animate-show');
+            } else {
+                document.getElementById('menu-comp').classList.add('active');
+                document.getElementById('secao-compras').classList.add('animate-show');
+            }
+        }
+
+        // FUNÇÕES DE DADOS
         function formatarData(dataString) {
             if (!dataString) return '--';
             const partes = dataString.split('-');
@@ -148,17 +209,23 @@
             return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
-        // CARREGA AS OBRAS PARA O FILTRO
-        async function carregarFiltro() {
-            const { data } = await client.from('locacoes').select('obra');
+        async function carregarFiltros() {
+            const { data } = await client.from('locacoes').select('obra, fornecedor, contrato');
             if(data) {
-                const obrasUnicas = [...new Set(data.map(i => i.obra))].filter(Boolean).sort();
-                const sel = document.getElementById('filtroObra');
-                obrasUnicas.forEach(o => sel.add(new Option(o, o)));
+                const obras = [...new Set(data.map(i => i.obra))].filter(Boolean).sort();
+                const forns = [...new Set(data.map(i => i.fornecedor))].filter(Boolean).sort();
+                const conts = [...new Set(data.map(i => i.contrato))].filter(c => c && c !== 'NF via IA App' && c !== 'NF Compra').sort();
+
+                const selObra = document.getElementById('filtroObra');
+                const selForn = document.getElementById('filtroForn');
+                const selCont = document.getElementById('filtroContrato');
+
+                obras.forEach(o => selObra.add(new Option(o, o)));
+                forns.forEach(f => selForn.add(new Option(f, f)));
+                conts.forEach(c => selCont.add(new Option(`Contrato Nº ${c}`, c)));
             }
         }
 
-        // CARREGA A TABELA
         async function carregarDados() {
             document.getElementById('loader-loc').style.display = 'block';
             document.getElementById('loader-comp').style.display = 'block';
@@ -168,10 +235,13 @@
             try {
                 let query = client.from('locacoes').select('*').eq('status', 'ativo').order('data_inicio', { ascending: false });
                 
-                const filtro = document.getElementById('filtroObra').value;
-                if (filtro !== 'todas') {
-                    query = query.eq('obra', filtro);
-                }
+                const filtroObra = document.getElementById('filtroObra').value;
+                const filtroForn = document.getElementById('filtroForn').value;
+                const filtroCont = document.getElementById('filtroContrato').value;
+                
+                if (filtroObra !== 'todas') query = query.eq('obra', filtroObra);
+                if (filtroForn !== 'todos') query = query.eq('fornecedor', filtroForn);
+                if (filtroCont !== 'todos') query = query.eq('contrato', filtroCont);
 
                 const { data, error } = await query;
                 if (error) throw error;
@@ -193,7 +263,11 @@
                         ? `<div class="indeniz-tag">Indenização: ${formatarMoeda(item.valor_indenizacao)}</div>`
                         : '';
 
-                    // Botoes de Ação
+                    // Exibição do Contrato (Se houver)
+                    const numContrato = item.contrato && item.contrato !== 'NF via IA App' && item.contrato !== 'NF Compra' && item.contrato !== 'Sem Contrato'
+                        ? `<span class="highlight-txt">Contrato: ${item.contrato}</span>`
+                        : '';
+
                     let botoesAcao = '';
                     if (item.unidade !== 'Proprio') {
                         botoesAcao += `<button class="btn-renovar" title="Renovar Contrato" onclick="renovarItem(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄</button>`;
@@ -217,6 +291,7 @@
                             </td>
                             <td>
                                 <div class="group-info">
+                                    ${numContrato}
                                     <span class="price-tag">${formatarMoeda(item.valor)}</span>
                                     ${tagIndenizacao}
                                 </div>
@@ -244,35 +319,24 @@
                 document.getElementById('tabela-compras').style.display = temCompra ? 'table' : 'none';
 
             } catch (err) {
-                console.error("Erro ao carregar:", err);
+                console.error("Erro:", err);
                 alert("Erro ao carregar dados do banco.");
             }
         }
 
-        // RENOVAR CONTRATO (Soma dias dependendo da unidade)
         window.renovarItem = async (id, fim, uni) => {
             if(!confirm(`Deseja renovar este contrato por mais 1 ${uni}?`)) return;
-            
             let d = new Date(fim);
-            d.setMinutes(d.getMinutes() + d.getTimezoneOffset()); // Corrige o fuso horário
-            
+            d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
             if(uni.includes('Mês')) d.setDate(d.getDate() + 30); 
             else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15);
             else d.setDate(d.getDate() + 1);
-
             const novaData = d.toISOString().split('T')[0];
-            
             const { error } = await client.from('locacoes').update({ data_fim: novaData }).eq('id', id);
-            
-            if(!error) {
-                alert("Contrato renovado com sucesso para: " + formatarData(novaData));
-                carregarDados();
-            } else {
-                alert("Erro ao renovar: " + error.message);
-            }
+            if(!error) { alert("Contrato renovado!"); carregarDados(); } 
+            else { alert("Erro ao renovar: " + error.message); }
         };
 
-        // EXCLUIR ITEM
         window.excluirItem = async (id) => {
             if (confirm("Tem certeza que deseja apagar este registro do sistema?")) {
                 await client.from('locacoes').delete().eq('id', id);
@@ -280,8 +344,8 @@
             }
         }
 
-        // Inicia a página
-        carregarFiltro().then(() => carregarDados());
+        // Inicializa a página
+        carregarFiltros().then(() => carregarDados());
 
     </script>
 </body>
