@@ -62,14 +62,16 @@
         .main-txt { font-weight: 700; color: var(--text); font-size: 0.95rem; }
         .sub-txt { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
         .highlight-txt { font-size: 0.75rem; color: var(--primary); font-weight: 700; margin-bottom: 2px;}
+        .qtd-badge { background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; margin-right: 5px; }
         
         .price-tag { font-weight: 800; color: #0f172a; }
         .indeniz-tag { font-size: 0.7rem; color: var(--danger); background: #fef2f2; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; font-weight: 600; border: 1px solid #fca5a5; width: fit-content;}
         .status-badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; background: #e2e8f0; color: #475569; width: fit-content; margin-top: 4px;}
         
         /* BOTÕES DE AÇÃO */
-        .btn-anexo { background: #f1f5f9; color: var(--text-light); padding: 8px 12px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--border); transition: 0.2s; }
-        .btn-anexo:hover { background: #e2e8f0; color: var(--text); border-color: #cbd5e1; }
+        .btn-anexo { background: #eff6ff; color: var(--primary); padding: 8px 12px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; border: 1px solid #bfdbfe; transition: 0.2s; }
+        .btn-anexo:hover { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+        .btn-sem-anexo { color: #94a3b8; font-size: 0.8rem; font-style: italic; }
         
         .action-buttons { display: flex; gap: 5px; }
         .btn-action-small { background: #f1f5f9; color: #475569; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
@@ -208,6 +210,9 @@
                 
                 <label>Nome do Equipamento</label>
                 <input type="text" id="edit-equip">
+
+                <label>Quantidade</label>
+                <input type="number" id="edit-qtd" step="1">
                 
                 <label>Nº do Contrato (Para locações)</label>
                 <input type="text" id="edit-contrato">
@@ -230,7 +235,7 @@
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let dadosGlobais = []; // Cache para edição
+        let dadosGlobais = [];
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
 
@@ -278,12 +283,12 @@
                 
                 if (filtroObra !== 'todas') query = query.eq('obra', filtroObra);
                 if (filtroForn !== 'todos') query = query.eq('fornecedor', filtroForn);
-                if (filtroCont !== '') query = query.ilike('contrato', `%${filtroCont}%`); // Busca livre
+                if (filtroCont !== '') query = query.ilike('contrato', `%${filtroCont}%`);
 
                 const { data, error } = await query;
                 if (error) throw error;
                 
-                dadosGlobais = data; // Salva para o modal de edição
+                dadosGlobais = data;
 
                 const bodyLocacoes = document.getElementById('body-locacoes');
                 const bodyCompras = document.getElementById('body-compras');
@@ -294,9 +299,15 @@
                 let countLoc = 0, countComp = 0, countHist = 0;
 
                 data.forEach(item => {
-                    const btnAnexo = item.url_anexo 
-                        ? `<a href="${item.url_anexo}" target="_blank" class="btn-anexo">📎 Ver Doc</a>` 
-                        : `<span class="sub-txt">Sem anexo</span>`;
+                    // A MÁGICA DO ANEXO ACONTECE AQUI
+                    const btnAnexo = item.anexo 
+                        ? `<a href="${item.anexo}" target="_blank" class="btn-anexo">📎 Ver Foto</a>` 
+                        : `<span class="btn-sem-anexo">Sem anexo</span>`;
+
+                    // A MÁGICA DA QUANTIDADE ACONTECE AQUI
+                    const badgeQtd = item.quantidade && item.quantidade > 1 
+                        ? `<span class="qtd-badge">${item.quantidade}x</span>` 
+                        : '';
 
                     const numContrato = item.contrato && item.contrato !== 'NF via IA App' && item.contrato !== 'NF Compra' && item.contrato !== 'Sem Contrato'
                         ? `<span class="highlight-txt">Contrato: ${item.contrato}</span>` : '';
@@ -304,7 +315,6 @@
                     const tagIndenizacao = item.valor_indenizacao && item.valor_indenizacao > 0
                         ? `<div class="indeniz-tag">Indenização: ${formatarMoeda(item.valor_indenizacao)}</div>` : '';
 
-                    // LIXEIRA INTELIGENTE: Muda status para Inativo em vez de apagar
                     let botoesAcao = '';
                     if (item.status === 'ativo') {
                         botoesAcao += `<button class="btn-action-small btn-editar" title="Editar" onclick="abrirEdicao(${item.id})">✏️</button>`;
@@ -324,7 +334,7 @@
                                     <span class="sub-txt">Forn: ${item.fornecedor}</span>
                                 </div>
                             </td>
-                            <td><span class="main-txt">${item.equipamento}</span></td>
+                            <td><span class="main-txt">${badgeQtd}${item.equipamento}</span></td>
                             <td>
                                 <div class="group-info">
                                     <span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>
@@ -364,13 +374,13 @@
             } catch (err) { alert("Erro ao carregar dados."); }
         }
 
-        // SISTEMA DE EDIÇÃO RÁPIDA
         function abrirEdicao(id) {
             const item = dadosGlobais.find(i => i.id === id);
             if(!item) return;
             
             document.getElementById('edit-id').value = item.id;
             document.getElementById('edit-equip').value = item.equipamento || '';
+            document.getElementById('edit-qtd').value = item.quantidade || 1;
             document.getElementById('edit-contrato').value = item.contrato || '';
             document.getElementById('edit-valor').value = item.valor || 0;
             document.getElementById('edit-indenizacao').value = item.valor_indenizacao || 0;
@@ -385,12 +395,13 @@
         async function salvarEdicao() {
             const id = document.getElementById('edit-id').value;
             const equipamento = document.getElementById('edit-equip').value;
+            const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1;
             const contrato = document.getElementById('edit-contrato').value;
             const valor = parseFloat(document.getElementById('edit-valor').value) || 0;
             const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
 
             const { error } = await client.from('locacoes').update({ 
-                equipamento, contrato, valor, valor_indenizacao 
+                equipamento, quantidade, contrato, valor, valor_indenizacao 
             }).eq('id', id);
 
             if(!error) {
@@ -399,7 +410,6 @@
             } else { alert("Erro ao atualizar!"); }
         }
 
-        // LIXEIRA INTELIGENTE (ARQUIVAR)
         window.arquivarItem = async (id) => {
             if (confirm("Deseja marcar este item como devolvido/arquivado? Ele irá para a aba Histórico.")) {
                 await client.from('locacoes').update({ status: 'inativo' }).eq('id', id);
