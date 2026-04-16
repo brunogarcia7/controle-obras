@@ -63,24 +63,24 @@
         .sub-txt { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
         .highlight-txt { font-size: 0.75rem; color: var(--primary); font-weight: 700; margin-bottom: 2px;}
         
-        /* DESTAQUE DA QUANTIDADE */
         .qtd-badge { background: var(--primary); color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 800; margin-right: 10px; }
         
         .price-tag { font-weight: 800; color: #0f172a; }
         .indeniz-tag { font-size: 0.7rem; color: var(--danger); background: #fef2f2; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; font-weight: 600; border: 1px solid #fca5a5; width: fit-content;}
-        .status-badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; background: #e2e8f0; color: #475569; width: fit-content; margin-top: 4px;}
+        .status-badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; background: #e2e8f0; color: #475569; width: fit-content; }
         
         /* BOTÕES DE AÇÃO */
         .btn-anexo { background: #eff6ff; color: var(--primary); padding: 8px 12px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; border: 1px solid #bfdbfe; transition: 0.2s; }
         .btn-anexo:hover { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
         .btn-sem-anexo { color: #94a3b8; font-size: 0.8rem; font-style: italic; }
         
-        .action-buttons { display: flex; gap: 5px; }
+        .action-buttons { display: flex; align-items: center; gap: 5px; }
         .btn-action-small { background: #f1f5f9; color: #475569; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
         .btn-action-small:hover { background: #e2e8f0; }
         .btn-renovar { color: #0284c7; background: #e0f2fe; } .btn-renovar:hover { background: #bae6fd; }
         .btn-editar { color: #d97706; background: #fef3c7; } .btn-editar:hover { background: #fde68a; }
         .btn-delete { color: var(--danger); background: #fee2e2; } .btn-delete:hover { background: #fca5a5; }
+        .btn-desfazer { color: var(--success); background: #dcfce7; } .btn-desfazer:hover { background: #bbf7d0; }
 
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -195,7 +195,7 @@
                             <th>Data Base</th>
                             <th>Valores</th>
                             <th>Comprovante</th>
-                            <th>Status</th>
+                            <th>Status / Ação</th>
                         </tr>
                     </thead>
                     <tbody id="body-historico"></tbody>
@@ -301,12 +301,10 @@
                 let countLoc = 0, countComp = 0, countHist = 0;
 
                 data.forEach(item => {
-                    // A MÁGICA DO ANEXO ACONTECE AQUI
                     const btnAnexo = item.anexo 
                         ? `<a href="${item.anexo}" target="_blank" class="btn-anexo">📸 Ver Foto</a>` 
                         : `<span class="btn-sem-anexo">Sem anexo</span>`;
 
-                    // A MÁGICA DA QUANTIDADE DESTACADA EM AZUL ACONTECE AQUI
                     const qtdDisplay = item.quantidade || 1;
                     const badgeQtd = `<span class="qtd-badge">${qtdDisplay} UN</span>`;
 
@@ -316,6 +314,7 @@
                     const tagIndenizacao = item.valor_indenizacao && item.valor_indenizacao > 0
                         ? `<div class="indeniz-tag">Indenização: ${formatarMoeda(item.valor_indenizacao)}</div>` : '';
 
+                    // LIXEIRA E BOTÃO DESFAZER (RESTAURAR)
                     let botoesAcao = '';
                     if (item.status === 'ativo') {
                         botoesAcao += `<button class="btn-action-small btn-editar" title="Editar" onclick="abrirEdicao(${item.id})">✏️</button>`;
@@ -324,7 +323,11 @@
                         }
                         botoesAcao += `<button class="btn-action-small btn-delete" title="Arquivar / Devolver" onclick="arquivarItem(${item.id})">🗑️</button>`;
                     } else {
-                        botoesAcao = `<span class="status-badge">Arquivado</span>`;
+                        // NOVO BOTÃO DE DESFAZER PARA ITENS INATIVOS
+                        botoesAcao = `
+                            <span class="status-badge" style="margin-right: 8px;">Arquivado</span>
+                            <button class="btn-action-small btn-desfazer" title="Desfazer exclusão (Restaurar para a lista)" onclick="restaurarItem(${item.id})">↩️</button>
+                        `;
                     }
 
                     const linhaHTML = `
@@ -414,6 +417,14 @@
         window.arquivarItem = async (id) => {
             if (confirm("Deseja marcar este item como devolvido/arquivado? Ele irá para a aba Histórico.")) {
                 await client.from('locacoes').update({ status: 'inativo' }).eq('id', id);
+                carregarDados();
+            }
+        }
+
+        // FUNÇÃO PARA RESTAURAR O ITEM ARQUIVADO (DESFAZER)
+        window.restaurarItem = async (id) => {
+            if (confirm("Deseja desfazer a exclusão e restaurar este item para a aba principal?")) {
+                await client.from('locacoes').update({ status: 'ativo' }).eq('id', id);
                 carregarDados();
             }
         }
