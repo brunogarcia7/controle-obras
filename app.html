@@ -8,14 +8,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; --danger: #ef4444; }
+        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; --danger: #ef4444; --v18: #1e3a8a; }
         body { font-family: 'Inter', sans-serif; background-color: #333; margin: 0; display: flex; justify-content: center; }
         .mobile-container { width: 100%; max-width: 420px; height: 100vh; background-color: var(--bg-app); position: relative; overflow-y: auto; display: flex; flex-direction: column; }
         
         .header { background-color: var(--header); color: white; padding: 25px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .header p { margin: 5px 0 0 0; color: #cbd5e1; font-size: 0.85rem; }
-        .badge-v17 { background: var(--warning); color: black; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; }
+        .badge-v18 { background: var(--v18); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; border: 1px solid #60a5fa;}
         
         .content { padding: 20px; flex: 1; }
         
@@ -61,7 +61,7 @@
 
 <div class="mobile-container">
     <div class="header">
-        <h1>👷 Almoxarifado <span class="badge-v17">v17</span></h1>
+        <h1>👷 Almoxarifado <span class="badge-v18">v18</span></h1>
         <p>Leitor Inteligente de NFs e Contratos</p>
     </div>
 
@@ -109,7 +109,7 @@
 </div>
 
 <script>
-    // CHAVES CORTADAS E EMBUTIDAS
+    // CHAVES BLINDADAS
     const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
     
@@ -120,6 +120,7 @@
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let itensLidosPelaIA = [];
     let modoAtual = '';
+    let arquivoFotoOriginal = null; // Variável para guardar o arquivo da foto!
 
     async function carregarObras() {
         const sel = document.getElementById('obraSelect');
@@ -147,6 +148,8 @@
         const file = event.target.files[0];
         if (!file) return;
         
+        arquivoFotoOriginal = file; // Guarda a foto original para fazer o upload depois!
+        
         let textoModal = modoAtual === 'compra' ? "Lendo Nota Fiscal de Compra..." : "Lendo Contrato de Locação...";
         abrirModal(textoModal);
         
@@ -164,7 +167,6 @@
     }
 
     async function chamarGeminiAPI(base64Image) {
-        // MOTOR 2.5 DE VOLTA (O que funciona 100% com a sua chave)
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
         let promptTexto = modoAtual === 'compra' 
@@ -172,37 +174,22 @@
             : `Você é um robô. Extraia os equipamentos do contrato. Retorne APENAS o JSON: { "itens": [ {"equipamento": "nome", "fornecedor": "locadora", "contrato_numero": "numero", "periodo": "Mensal - 28 Dias", "valor": 0.00} ] }.`;
 
         const corpoRequisicao = {
-            contents: [{
-                parts: [
-                    { text: promptTexto },
-                    { inlineData: { mimeType: "image/jpeg", data: base64Image } }
-                ]
-            }]
+            contents: [{ parts: [{ text: promptTexto }, { inlineData: { mimeType: "image/jpeg", data: base64Image } }] }]
         };
 
         try {
-            const resposta = await fetch(url, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(corpoRequisicao) 
-            });
-            
+            const resposta = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpoRequisicao) });
             const dados = await resposta.json();
             
-            if (!resposta.ok) {
-                throw new Error(dados.error ? dados.error.message : "Erro na API do Google");
-            }
+            if (!resposta.ok) throw new Error(dados.error ? dados.error.message : "Erro na API do Google");
 
             let textoResposta = dados.candidates[0].content.parts[0].text;
-            
-            // EXTRATOR BLINDADO (Ignora conversas da IA e puxa só o JSON)
             let inicioJson = textoResposta.indexOf('{');
             let fimJson = textoResposta.lastIndexOf('}');
             
             if (inicioJson !== -1 && fimJson !== -1) {
                 let jsonLimpo = textoResposta.substring(inicioJson, fimJson + 1);
-                const jsonExtraido = JSON.parse(jsonLimpo);
-                itensLidosPelaIA = jsonExtraido.itens || [];
+                itensLidosPelaIA = JSON.parse(jsonLimpo).itens || [];
                 mostrarResultadoNaTela();
             } else {
                 throw new Error("A IA processou a imagem, mas não encontrou uma tabela de equipamentos visível.");
@@ -211,10 +198,8 @@
         } catch (erro) {
             document.getElementById('ai-loader').style.display = 'none';
             document.getElementById('modal-text').innerText = "Erro na Leitura";
-            
-            const erroBox = document.getElementById('erro-box');
-            erroBox.style.display = 'block';
-            erroBox.innerText = "Motivo: " + erro.message;
+            document.getElementById('erro-box').style.display = 'block';
+            document.getElementById('erro-box').innerText = "Motivo: " + erro.message;
         }
     }
 
@@ -222,9 +207,8 @@
         document.getElementById('ai-loader').style.display = 'none';
         
         if (itensLidosPelaIA.length === 0) {
-            const erroBox = document.getElementById('erro-box');
-            erroBox.style.display = 'block';
-            erroBox.innerText = "A tabela retornou vazia. Tente focar melhor nos itens.";
+            document.getElementById('erro-box').style.display = 'block';
+            document.getElementById('erro-box').innerText = "A tabela retornou vazia. Tente focar melhor nos itens.";
             document.getElementById('modal-text').innerText = "Nada encontrado";
             return;
         }
@@ -233,16 +217,13 @@
         const divResultado = document.getElementById('resultado-ia');
         divResultado.style.display = 'block';
         document.getElementById('btn-salvar').style.display = 'block';
-
         divResultado.innerHTML = '';
         
         itensLidosPelaIA.forEach((item, index) => {
             let htmlFormularioExtra = '';
-            
             if (modoAtual === 'aluguel') {
                 let ctr = item.contrato_numero || '';
                 let val = item.valor || '';
-                
                 let txtPeriodo = (item.periodo || '').toLowerCase();
                 let selMes = txtPeriodo.includes('mês') || txtPeriodo.includes('mensal') ? 'selected' : '';
                 let selQuinzena = txtPeriodo.includes('quinzena') ? 'selected' : '';
@@ -254,7 +235,7 @@
                     <div class="fallback-box">
                         <label>Nº do Contrato</label>
                         <input type="text" id="man-contrato-${index}" value="${ctr}">
-                        <label>Período (Identificado: ${item.periodo || 'N/A'})</label>
+                        <label>Período</label>
                         <select id="man-periodo-${index}">
                             <option value="Mês" ${selMes}>Mês (Padrão 30 dias)</option>
                             <option value="Quinzena" ${selQuinzena}>Quinzena (15 dias)</option>
@@ -262,8 +243,7 @@
                         </select>
                         <label>Valor da Locação (R$)</label>
                         <input type="number" id="man-valor-${index}" value="${val}">
-                    </div>
-                `;
+                    </div>`;
             } else {
                 htmlFormularioExtra = `
                     <div class="fallback-box">
@@ -271,8 +251,7 @@
                         <input type="text" id="man-forn-${index}" value="${item.fornecedor || ''}">
                         <label>Valor da Compra (R$)</label>
                         <input type="number" id="man-valor-${index}" value="${item.valor || 0}">
-                    </div>
-                `;
+                    </div>`;
             }
 
             divResultado.innerHTML += `
@@ -280,23 +259,41 @@
                     <strong style="font-size:1.1rem; color:var(--primary);">${item.equipamento}</strong><br>
                     <span style="color:#64748b; font-size:0.8rem;">Locadora/Loja: ${item.fornecedor || 'Não identificado'}</span>
                     ${htmlFormularioExtra}
-                </div>
-            `;
+                </div>`;
         });
     }
 
     async function salvarNoBanco() {
-        const obra = document.getElementById('obraSelect').value;
-        const hojeObj = new Date();
-        const hojeIso = hojeObj.toISOString().split('T')[0];
-        
-        document.getElementById('modal-text').innerText = "Salvando no sistema...";
+        document.getElementById('modal-text').innerText = "Enviando foto para a nuvem...";
         document.getElementById('resultado-ia').style.display = 'none';
         document.getElementById('btn-salvar').style.display = 'none';
         document.getElementById('ai-loader').style.display = 'block';
 
+        let urlDaFoto = null;
+
+        // 1. FAZ O UPLOAD DA FOTO PARA O BUCKET 'comprovantes'
+        if (arquivoFotoOriginal) {
+            const nomeUnico = `doc_${Date.now()}.jpg`;
+            const { data: uploadData, error: uploadError } = await client.storage
+                .from('comprovantes')
+                .upload(nomeUnico, arquivoFotoOriginal);
+
+            if (!uploadError) {
+                // Pega o link público da foto gerada
+                const { data: publicData } = client.storage.from('comprovantes').getPublicUrl(nomeUnico);
+                urlDaFoto = publicData.publicUrl;
+            } else {
+                console.error("Erro ao subir a foto:", uploadError);
+            }
+        }
+
+        document.getElementById('modal-text').innerText = "Salvando materiais no sistema...";
+        const obra = document.getElementById('obraSelect').value;
+        const hojeObj = new Date();
+        const hojeIso = hojeObj.toISOString().split('T')[0];
         let dadosParaSalvar = [];
 
+        // 2. MONTA OS DADOS PARA SALVAR (AGORA COM O ANEXO)
         for (let i = 0; i < itensLidosPelaIA.length; i++) {
             let item = itensLidosPelaIA[i];
             
@@ -307,7 +304,8 @@
                 dadosParaSalvar.push({
                     obra: obra, fornecedor: fornManual, equipamento: item.equipamento,
                     unidade: 'Proprio', data_inicio: hojeIso, data_fim: hojeIso, 
-                    contrato: 'NF via IA App', valor: valorManual, status: 'ativo'
+                    contrato: 'NF via IA App', valor: valorManual, status: 'ativo',
+                    anexo: urlDaFoto // <-- FOTO ENTRA AQUI
                 });
             } else {
                 let contratoManual = document.getElementById(`man-contrato-${i}`).value || 'Sem Contrato';
@@ -322,18 +320,20 @@
                 dadosParaSalvar.push({
                     obra: obra, fornecedor: item.fornecedor || 'Locadora', equipamento: item.equipamento,
                     unidade: periodoManual, data_inicio: hojeIso, data_fim: dataFim.toISOString().split('T')[0],
-                    contrato: contratoManual, valor: valorManual, status: 'ativo'
+                    contrato: contratoManual, valor: valorManual, status: 'ativo',
+                    anexo: urlDaFoto // <-- FOTO ENTRA AQUI
                 });
             }
         }
 
+        // 3. INSERE NA TABELA LOCACOES
         const { error } = await client.from('locacoes').insert(dadosParaSalvar);
 
         if (!error) {
-            alert("✅ Cadastrado com sucesso no sistema!");
+            alert("✅ Cadastrado com sucesso! A foto foi salva como comprovante.");
             fecharModal();
         } else {
-            document.getElementById('modal-text').innerText = "Erro ao salvar";
+            document.getElementById('modal-text').innerText = "Erro ao salvar no banco";
             document.getElementById('ai-loader').style.display = 'none';
             const erroBox = document.getElementById('erro-box');
             erroBox.style.display = 'block';
@@ -385,6 +385,7 @@
     function fecharModal() {
         document.getElementById('ai-modal').style.display = 'none';
         document.getElementById('cam-entrada').value = '';
+        arquivoFotoOriginal = null;
     }
 </script>
 </body>
