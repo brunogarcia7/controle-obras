@@ -8,14 +8,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; --danger: #ef4444; --v20: #facc15; }
+        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; --danger: #ef4444; --v21: #06b6d4; }
         body { font-family: 'Inter', sans-serif; background-color: #333; margin: 0; display: flex; justify-content: center; }
         .mobile-container { width: 100%; max-width: 420px; height: 100vh; background-color: var(--bg-app); position: relative; overflow-y: auto; display: flex; flex-direction: column; }
         
         .header { background-color: var(--header); color: white; padding: 25px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
         .header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .header p { margin: 5px 0 0 0; color: #cbd5e1; font-size: 0.85rem; }
-        .badge-v20 { background: var(--v20); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; border: 1px solid #ca8a04;}
+        .badge-v21 { background: var(--v21); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; border: 1px solid #0891b2;}
         
         .content { padding: 20px; flex: 1; }
         
@@ -54,14 +54,14 @@
         .btn-cancelar { background: transparent; color: white; border: 1px solid white; padding: 10px; border-radius: 12px; width: 100%; font-size: 1rem; flex-shrink: 0;}
         input[type="file"] { display: none; }
         
-        #erro-box { display: none; background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 20px; width: 100%; border: 1px solid #f87171; }
+        #erro-box { display: none; background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 20px; width: 100%; border: 1px solid #f87171; text-align: center;}
     </style>
 </head>
 <body>
 
 <div class="mobile-container">
     <div class="header">
-        <h1>👷 Almoxarifado <span class="badge-v20">v20</span></h1>
+        <h1>👷 Almoxarifado <span class="badge-v21">v21</span></h1>
         <p>Leitor Inteligente de NFs e Contratos</p>
     </div>
 
@@ -166,13 +166,11 @@
     }
 
     async function chamarGeminiAPI(base64Image) {
-        // MOTOR DEFINITIVO E ESTÁVEL
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
-        // PROMPT FORÇANDO A BUSCAR A COLUNA "QTD"
         let promptTexto = modoAtual === 'compra' 
             ? `Você é um robô. Extraia os materiais da nota. Ache a coluna de Quantidade (Qtd). Retorne APENAS o JSON: { "itens": [ {"quantidade": 1, "equipamento": "nome", "fornecedor": "loja", "valor": 0.00} ] }.`
-            : `Você é um robô. Extraia os equipamentos do contrato. Olhe atentamente para a coluna "Qtd" ou "Quantidade" na tabela. Retorne APENAS o JSON: { "itens": [ {"quantidade": numero_da_coluna_qtd, "equipamento": "nome", "fornecedor": "locadora", "contrato_numero": "numero", "periodo": "Mensal", "valor": 0.00} ] }.`;
+            : `Você é um robô. Extraia os equipamentos do contrato. Olhe atentamente para a coluna "Qtd" ou "Quantidade" na tabela. Retorne APENAS o JSON: { "itens": [ {"quantidade": numero_da_coluna_qtd, "equipamento": "nome", "fornecedor": "locadora", "contrato_numero": "numero", "periodo": "Mensal", "valor": 0.00} ] }. Se a quantidade não estiver visível, coloque 1.`;
 
         const corpoRequisicao = {
             contents: [{ parts: [{ text: promptTexto }, { inlineData: { mimeType: "image/jpeg", data: base64Image } }] }]
@@ -182,7 +180,14 @@
             const resposta = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpoRequisicao) });
             const dados = await resposta.json();
             
-            if (!resposta.ok) throw new Error(dados.error ? dados.error.message : "Erro na API");
+            if (!resposta.ok) {
+                let msgErro = dados.error ? dados.error.message : "Erro na API do Google";
+                // TRADUTOR DE ERRO DE CONGESTIONAMENTO DO GOOGLE
+                if (msgErro.includes("high demand") || msgErro.includes("High demand")) {
+                    throw new Error("⏳ Os servidores do Google estão congestionados neste exato momento. Por favor, aguarde uns 30 segundos e tente tirar a foto novamente.");
+                }
+                throw new Error(msgErro);
+            }
 
             let textoResposta = dados.candidates[0].content.parts[0].text;
             let inicioJson = textoResposta.indexOf('{');
@@ -195,11 +200,12 @@
             } else {
                 throw new Error("A IA processou a imagem, mas não encontrou uma tabela de equipamentos visível.");
             }
+
         } catch (erro) {
             document.getElementById('ai-loader').style.display = 'none';
-            document.getElementById('modal-text').innerText = "Erro na Leitura";
+            document.getElementById('modal-text').innerText = "Aviso do Sistema";
             document.getElementById('erro-box').style.display = 'block';
-            document.getElementById('erro-box').innerText = "Motivo: " + erro.message;
+            document.getElementById('erro-box').innerText = erro.message;
         }
     }
 
@@ -208,7 +214,7 @@
         
         if (itensLidosPelaIA.length === 0) {
             document.getElementById('erro-box').style.display = 'block';
-            document.getElementById('erro-box').innerText = "A tabela retornou vazia.";
+            document.getElementById('erro-box').innerText = "A tabela retornou vazia. Tente focar melhor nos itens.";
             document.getElementById('modal-text').innerText = "Nada encontrado";
             return;
         }
@@ -221,7 +227,7 @@
         
         itensLidosPelaIA.forEach((item, index) => {
             let htmlFormularioExtra = '';
-            let qtd = item.quantidade || 1; // Puxa o "16", "4", etc.
+            let qtd = item.quantidade || 1; 
 
             if (modoAtual === 'aluguel') {
                 let ctr = item.contrato_numero || '';
