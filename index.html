@@ -40,8 +40,11 @@
         .filter-group select, .filter-group input { height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-family: 'Inter'; font-weight: 600; color: var(--text); outline: none; min-width: 200px; box-sizing: border-box;}
         .filter-group input::placeholder { font-weight: 400; color: #94a3b8; }
         
+        .botoes-topo { display: flex; gap: 10px; }
         .btn-print { background: var(--text); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-print:hover { background: #000; }
+        .btn-novo { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
+        .btn-novo:hover { background: #1d4ed8; }
 
         /* TABELA E ANIMAÇÕES */
         .secao-tabela { display: none; } 
@@ -85,12 +88,15 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* MODAL DE EDIÇÃO */
+        /* MODAIS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); display: none; justify-content: center; align-items: center; z-index: 100; }
-        .modal-box { background: white; padding: 25px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-box { background: white; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;}
         .modal-box h3 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .form-edit label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-light); margin-top: 15px; margin-bottom: 5px; }
-        .form-edit input { width: 100%; height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 10px; font-family: 'Inter'; box-sizing: border-box; }
+        .form-group { margin-top: 15px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-light); margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 10px; font-family: 'Inter'; box-sizing: border-box; }
+        .grid-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
         .btn-save-edit { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-cancel-edit { background: transparent; border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -140,7 +146,10 @@
                 </select>
                 <input type="text" id="filtroContrato" placeholder="🔎 Digite o Nº do Contrato..." onkeyup="carregarDados()">
             </div>
-            <button class="btn-print" onclick="window.print()">🖨️ Imprimir PDF</button>
+            <div class="botoes-topo">
+                <button class="btn-print" onclick="window.print()">🖨️ Imprimir PDF</button>
+                <button class="btn-novo" onclick="abrirModalNovo()">➕ Novo Equipamento</button>
+            </div>
         </div>
 
         <div id="secao-locacoes" class="secao-tabela animate-show">
@@ -210,24 +219,100 @@
             <div class="form-edit">
                 <input type="hidden" id="edit-id">
                 
-                <label>Nome do Equipamento</label>
-                <input type="text" id="edit-equip">
-
-                <label>Quantidade</label>
-                <input type="number" id="edit-qtd" step="1">
+                <div class="form-group">
+                    <label>Nome do Equipamento</label>
+                    <input type="text" id="edit-equip">
+                </div>
                 
-                <label>Nº do Contrato (Para locações)</label>
-                <input type="text" id="edit-contrato">
-                
-                <label>Valor Mensal / Compra (R$)</label>
-                <input type="number" id="edit-valor" step="0.01">
+                <div class="grid-duplo">
+                    <div class="form-group">
+                        <label>Quantidade</label>
+                        <input type="number" id="edit-qtd" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Nº Contrato</label>
+                        <input type="text" id="edit-contrato">
+                    </div>
+                </div>
 
-                <label>Valor de Indenização (R$)</label>
-                <input type="number" id="edit-indenizacao" step="0.01">
+                <div class="grid-duplo">
+                    <div class="form-group">
+                        <label>Valor (R$)</label>
+                        <input type="number" id="edit-valor" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Indenização (R$)</label>
+                        <input type="number" id="edit-indenizacao" step="0.01">
+                    </div>
+                </div>
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel-edit" onclick="fecharModalEdicao()">Cancelar</button>
-                <button class="btn-save-edit" onclick="salvarEdicao()">Salvar</button>
+                <button class="btn-save-edit" onclick="salvarEdicao()">Salvar Modificações</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-novo">
+        <div class="modal-box">
+            <h3>➕ Adicionar Novo Equipamento</h3>
+            <div class="form-edit">
+                
+                <div class="form-group">
+                    <label>Tipo de Entrada</label>
+                    <select id="novo-tipo" onchange="toggleCamposNovo()">
+                        <option value="aluguel">📄 Locação (Aluguel)</option>
+                        <option value="compra">🛒 Patrimônio (Compra)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Obra</label>
+                    <input type="text" id="novo-obra" placeholder="Ex: Sede Start Química">
+                </div>
+
+                <div class="form-group">
+                    <label>Equipamento</label>
+                    <input type="text" id="novo-equip" placeholder="Ex: Betoneira 400L">
+                </div>
+
+                <div class="grid-duplo">
+                    <div class="form-group">
+                        <label>Quantidade</label>
+                        <input type="number" id="novo-qtd" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Valor Total (R$)</label>
+                        <input type="number" id="novo-valor" step="0.01" value="0.00">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-forn">Locadora</label>
+                    <input type="text" id="novo-forn" placeholder="Nome do fornecedor">
+                </div>
+
+                <div id="campos-locacao">
+                    <div class="grid-duplo">
+                        <div class="form-group">
+                            <label>Nº do Contrato</label>
+                            <input type="text" id="novo-contrato" placeholder="Ex: 011359/A">
+                        </div>
+                        <div class="form-group">
+                            <label>Período</label>
+                            <select id="novo-periodo">
+                                <option value="Mês">Mês (30 dias)</option>
+                                <option value="Quinzena">Quinzena (15 dias)</option>
+                                <option value="Dia">Diária</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel-edit" onclick="fecharModalNovo()">Cancelar</button>
+                <button class="btn-save-edit" onclick="salvarNovo()">Salvar Cadastro</button>
             </div>
         </div>
     </div>
@@ -266,6 +351,9 @@
                 
                 const selObra = document.getElementById('filtroObra');
                 const selForn = document.getElementById('filtroForn');
+
+                selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>';
+                selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
 
                 obras.forEach(o => selObra.add(new Option(o, o)));
                 forns.forEach(f => selForn.add(new Option(f, f)));
@@ -308,13 +396,12 @@
                     const qtdDisplay = item.quantidade || 1;
                     const badgeQtd = `<span class="qtd-badge">${qtdDisplay} UN</span>`;
 
-                    const numContrato = item.contrato && item.contrato !== 'NF via IA App' && item.contrato !== 'NF Compra' && item.contrato !== 'Sem Contrato'
+                    const numContrato = item.contrato && item.contrato !== 'NF via IA App' && item.contrato !== 'NF Compra' && item.contrato !== 'Sem Contrato' && item.contrato !== 'Cadastro Manual'
                         ? `<span class="highlight-txt">Contrato: ${item.contrato}</span>` : '';
 
                     const tagIndenizacao = item.valor_indenizacao && item.valor_indenizacao > 0
                         ? `<div class="indeniz-tag">Indenização: ${formatarMoeda(item.valor_indenizacao)}</div>` : '';
 
-                    // LIXEIRA E BOTÃO DESFAZER (RESTAURAR)
                     let botoesAcao = '';
                     if (item.status === 'ativo') {
                         botoesAcao += `<button class="btn-action-small btn-editar" title="Editar" onclick="abrirEdicao(${item.id})">✏️</button>`;
@@ -323,10 +410,9 @@
                         }
                         botoesAcao += `<button class="btn-action-small btn-delete" title="Arquivar / Devolver" onclick="arquivarItem(${item.id})">🗑️</button>`;
                     } else {
-                        // NOVO BOTÃO DE DESFAZER PARA ITENS INATIVOS
                         botoesAcao = `
                             <span class="status-badge" style="margin-right: 8px;">Arquivado</span>
-                            <button class="btn-action-small btn-desfazer" title="Desfazer exclusão (Restaurar para a lista)" onclick="restaurarItem(${item.id})">↩️</button>
+                            <button class="btn-action-small btn-desfazer" title="Desfazer exclusão (Restaurar)" onclick="restaurarItem(${item.id})">↩️</button>
                         `;
                     }
 
@@ -378,6 +464,7 @@
             } catch (err) { alert("Erro ao carregar dados."); }
         }
 
+        // --- SISTEMA DE EDIÇÃO ---
         function abrirEdicao(id) {
             const item = dadosGlobais.find(i => i.id === id);
             if(!item) return;
@@ -414,6 +501,86 @@
             } else { alert("Erro ao atualizar!"); }
         }
 
+        // --- SISTEMA DE CADASTRO MANUAL NOVO ---
+        function toggleCamposNovo() {
+            const tipo = document.getElementById('novo-tipo').value;
+            document.getElementById('campos-locacao').style.display = tipo === 'aluguel' ? 'block' : 'none';
+            document.getElementById('lbl-forn').innerText = tipo === 'aluguel' ? 'Locadora' : 'Loja / Fornecedor';
+        }
+
+        function abrirModalNovo() {
+            document.getElementById('novo-tipo').value = 'aluguel';
+            document.getElementById('novo-obra').value = '';
+            document.getElementById('novo-equip').value = '';
+            document.getElementById('novo-qtd').value = '1';
+            document.getElementById('novo-valor').value = '';
+            document.getElementById('novo-forn').value = '';
+            document.getElementById('novo-contrato').value = '';
+            document.getElementById('novo-periodo').value = 'Mês';
+            toggleCamposNovo();
+            document.getElementById('modal-novo').style.display = 'flex';
+        }
+
+        function fecharModalNovo() {
+            document.getElementById('modal-novo').style.display = 'none';
+        }
+
+        async function salvarNovo() {
+            const tipo = document.getElementById('novo-tipo').value;
+            const obra = document.getElementById('novo-obra').value.trim();
+            const equipamento = document.getElementById('novo-equip').value.trim();
+            const quantidade = parseInt(document.getElementById('novo-qtd').value) || 1;
+            const valor = parseFloat(document.getElementById('novo-valor').value) || 0;
+            const fornecedor = document.getElementById('novo-forn').value.trim() || 'Não identificado';
+            
+            if (!obra || !equipamento) {
+                alert("Por favor, preencha o nome da Obra e do Equipamento!");
+                return;
+            }
+
+            const hojeObj = new Date();
+            const hojeIso = hojeObj.toISOString().split('T')[0];
+            
+            let objSalvar = {
+                obra: obra,
+                fornecedor: fornecedor,
+                equipamento: equipamento,
+                quantidade: quantidade,
+                valor: valor,
+                status: 'ativo',
+                data_inicio: hojeIso
+            };
+
+            if (tipo === 'compra') {
+                objSalvar.unidade = 'Proprio';
+                objSalvar.data_fim = hojeIso;
+                objSalvar.contrato = 'Cadastro Manual';
+            } else {
+                const periodo = document.getElementById('novo-periodo').value;
+                const contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato';
+                
+                let dataFim = new Date(hojeObj);
+                if (periodo === 'Mês') dataFim.setDate(dataFim.getDate() + 30);
+                else if (periodo === 'Quinzena') dataFim.setDate(dataFim.getDate() + 15);
+                else if (periodo === 'Dia') dataFim.setDate(dataFim.getDate() + 1);
+
+                objSalvar.unidade = periodo;
+                objSalvar.data_fim = dataFim.toISOString().split('T')[0];
+                objSalvar.contrato = contrato;
+            }
+
+            const { error } = await client.from('locacoes').insert([objSalvar]);
+
+            if (!error) {
+                alert("Equipamento cadastrado com sucesso!");
+                fecharModalNovo();
+                carregarFiltros().then(() => carregarDados()); // Atualiza os filtros e a tabela
+            } else {
+                alert("Erro ao salvar no banco: " + error.message);
+            }
+        }
+
+        // --- AÇÕES RÁPIDAS ---
         window.arquivarItem = async (id) => {
             if (confirm("Deseja marcar este item como devolvido/arquivado? Ele irá para a aba Histórico.")) {
                 await client.from('locacoes').update({ status: 'inativo' }).eq('id', id);
@@ -421,7 +588,6 @@
             }
         }
 
-        // FUNÇÃO PARA RESTAURAR O ITEM ARQUIVADO (DESFAZER)
         window.restaurarItem = async (id) => {
             if (confirm("Deseja desfazer a exclusão e restaurar este item para a aba principal?")) {
                 await client.from('locacoes').update({ status: 'ativo' }).eq('id', id);
@@ -441,6 +607,7 @@
             if(!error) { carregarDados(); } 
         };
 
+        // INICIALIZAÇÃO
         carregarFiltros().then(() => carregarDados());
 
     </script>
