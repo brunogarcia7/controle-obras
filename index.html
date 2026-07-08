@@ -11,7 +11,7 @@
         :root { --bg: #f8fafc; --text: #1e293b; --text-light: #64748b; --primary: #2563eb; --white: #ffffff; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; overflow-x: hidden; }
         
-        /* MENU LATERAL */
+        /* MENU LATERAL EXPANSÍVEL */
         .sidebar { width: 260px; background: #0f172a; min-height: 100vh; padding: 20px; color: white; display: flex; flex-direction: column; transition: width 0.3s ease; flex-shrink: 0; box-sizing: border-box; z-index: 10;}
         .sidebar.collapsed { width: 85px; align-items: center; }
         .sidebar.collapsed .text-hide { display: none; }
@@ -34,19 +34,20 @@
         .header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; }
         .header p { margin: 5px 0 0 0; color: var(--text-light); }
 
-        /* CONTROLES DO TOPO */
+        /* BARRA DE CONTROLES */
         .top-controls { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid var(--border); margin-bottom: 30px; flex-wrap: wrap; gap: 15px;}
         .filter-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1;}
-        .filter-group select, .filter-group input { height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-family: 'Inter'; font-weight: 600; color: var(--text); outline: none; min-width: 200px; box-sizing: border-box;}
+        .filter-group select, .filter-group input { height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-family: 'Inter'; font-weight: 600; color: var(--text); outline: none; min-width: 200px; box-sizing: border-box; transition: 0.2s; }
+        .filter-group input:focus, .filter-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .filter-group input::placeholder { font-weight: 400; color: #94a3b8; }
         
         .botoes-topo { display: flex; gap: 10px; }
         .btn-print { background: var(--text); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
-        .btn-print:hover { background: #000; }
+        .btn-print:hover { background: #000; transform: translateY(-1px); }
         .btn-novo { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
-        .btn-novo:hover { background: #1d4ed8; }
+        .btn-novo:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
 
-        /* TABELAS */
+        /* TABELA E ANIMAÇÕES */
         .secao-tabela { display: none; } 
         .animate-show { display: block; animation: fadeInScale 0.3s ease-out forwards; }
         @keyframes fadeInScale { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -60,15 +61,17 @@
         .table-modern tr:hover { background: #f8fafc; }
         .table-modern td { padding: 16px 12px; vertical-align: middle; }
         
-        /* TEXTOS */
+        /* TEXTOS DA TABELA */
         .group-info { display: flex; flex-direction: column; }
         .main-txt { font-weight: 700; color: var(--text); font-size: 0.95rem; display: flex; align-items: center; }
         .sub-txt { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
         .highlight-txt { font-size: 0.75rem; color: var(--primary); font-weight: 700; margin-bottom: 2px;}
+        
         .qtd-badge { background: var(--primary); color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 800; margin-right: 10px; }
         .price-tag { font-weight: 800; color: #0f172a; }
         .indeniz-tag { font-size: 0.7rem; color: var(--danger); background: #fef2f2; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; font-weight: 600; border: 1px solid #fca5a5; width: fit-content;}
-        .status-badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; background: #e2e8f0; color: #475569; width: fit-content; }
+        .status-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; font-weight: bold; background: #e2e8f0; color: #475569; width: fit-content; }
+        .status-badge.highlight { background: #dbeafe; color: #1e40af; }
         
         /* BOTÕES DE AÇÃO */
         .btn-anexo { background: #eff6ff; color: var(--primary); padding: 8px 12px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; border: 1px solid #bfdbfe; transition: 0.2s; }
@@ -77,7 +80,7 @@
         
         .action-buttons { display: flex; align-items: center; gap: 5px; }
         .btn-action-small { background: #f1f5f9; color: #475569; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
-        .btn-action-small:hover { background: #e2e8f0; }
+        .btn-action-small:hover { background: #e2e8f0; transform: scale(1.05); }
         .btn-renovar { color: #0284c7; background: #e0f2fe; } .btn-renovar:hover { background: #bae6fd; }
         .btn-editar { color: #d97706; background: #fef3c7; } .btn-editar:hover { background: #fde68a; }
         .btn-delete { color: var(--danger); background: #fee2e2; } .btn-delete:hover { background: #fca5a5; }
@@ -86,19 +89,34 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* FASE 1: SISTEMA DE TOASTS (NOTIFICAÇÕES CORPORATIVAS) */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { min-width: 280px; padding: 15px 20px; border-radius: 8px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.9rem; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-left: 5px solid; }
+        .toast.show { transform: translateX(0); }
+        .toast.success { border-color: var(--success); color: #064e3b; background: #ecfdf5; }
+        .toast.error { border-color: var(--danger); color: #7f1d1d; background: #fef2f2; }
+        .toast.warning { border-color: var(--warning); color: #78350f; background: #fffbeb; }
+
+        /* FASE 1: LOADER GLOBAL DE BLOQUEIO */
+        .global-loader-box { background: white; padding: 25px 40px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; gap: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: fadeInScale 0.2s ease-out; }
+        .global-loader-box span { font-weight: 700; color: var(--text); font-size: 1rem;}
+
         /* MODAIS */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); display: none; justify-content: center; align-items: center; z-index: 100; }
-        .modal-box { background: white; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;}
-        .modal-box h3 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .form-group { margin-top: 15px; }
-        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-light); margin-bottom: 5px; }
-        .form-group input, .form-group select { width: 100%; height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 10px; font-family: 'Inter'; box-sizing: border-box; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(3px); }
+        .modal-box { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; animation: fadeInScale 0.2s ease-out;}
+        .modal-box h3 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: bold; color: var(--text-light); margin-bottom: 8px; }
+        .form-group input, .form-group select { width: 100%; height: 42px; border-radius: 8px; border: 1px solid var(--border); padding: 0 12px; font-family: 'Inter'; box-sizing: border-box; transition: 0.2s; font-size: 0.95rem; color: var(--text); }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); outline: none; }
         .form-group input:disabled { background: #f1f5f9; font-weight: bold; color: #475569; }
-        .grid-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
-        .btn-save-edit { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-cancel-edit { background: transparent; border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-save-edit { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-save-edit:hover { background: #059669; }
+        .btn-cancel-edit { background: transparent; color: var(--text-light); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-cancel-edit:hover { background: #f1f5f9; color: var(--text); }
 
         @media print {
             .sidebar, .top-controls, .btn-anexo, td:last-child, th:last-child { display: none !important; }
@@ -111,6 +129,30 @@
     </style>
 </head>
 <body>
+
+    <!-- FASE 1: Container de Toasts -->
+    <div id="toast-container"></div>
+
+    <!-- FASE 1: Loader Global de Bloqueio -->
+    <div class="modal-overlay" id="global-loader" style="z-index: 10000;">
+        <div class="global-loader-box">
+            <div class="loader" style="margin:0;"></div>
+            <span id="global-loader-msg">Processando...</span>
+        </div>
+    </div>
+
+    <!-- FASE 1: Modal de Confirmação Corporativo -->
+    <div class="modal-overlay" id="modal-confirm" style="z-index: 9999;">
+        <div class="modal-box" style="max-width: 400px; text-align: center; padding: 30px;">
+            <div id="confirm-icon" style="font-size: 3rem; margin-bottom: 15px;">⚠️</div>
+            <h3 id="confirm-title" style="border:none; padding:0; margin-bottom: 10px; color: var(--text);">Confirmação</h3>
+            <p id="confirm-msg" style="font-size: 0.95rem; color: var(--text-light); margin-bottom: 30px; line-height: 1.5;"></p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn-cancel-edit" onclick="fecharConfirm()" style="flex:1;">Cancelar</button>
+                <button class="btn-save-edit" id="btn-confirm-action" style="flex:1; background: var(--primary);">Confirmar</button>
+            </div>
+        </div>
+    </div>
 
     <div class="sidebar" id="sidebar">
         <button class="btn-toggle-menu" onclick="toggleSidebar()">☰</button>
@@ -155,50 +197,72 @@
             </div>
         </div>
 
+        <!-- LOCAÇÕES -->
         <div id="secao-locacoes" class="secao-tabela animate-show">
             <div class="card-table">
                 <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
                 <div id="loader-loc" class="loader"></div>
                 <table class="table-modern" id="tabela-locacoes" style="display:none;">
-                    <thead><tr><th>Obra / Locadora</th><th>Equipamento</th><th>Período de Aluguel</th><th>Valores / Contrato</th><th>Comprovante</th><th>Ações</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Obra / Locadora</th><th>Equipamento</th><th>Período de Aluguel</th><th>Valores / Contrato</th><th>Comprovante</th><th>Ações</th>
+                        </tr>
+                    </thead>
                     <tbody id="body-locacoes"></tbody>
                 </table>
             </div>
         </div>
 
+        <!-- COMPRAS -->
         <div id="secao-compras" class="secao-tabela">
             <div class="card-table">
                 <h3 style="color: var(--success);">🛒 Ferramentas Próprias (Patrimônio)</h3>
                 <div id="loader-comp" class="loader"></div>
                 <table class="table-modern" id="tabela-compras" style="display:none;">
-                    <thead><tr><th>Obra / Loja</th><th>Equipamento</th><th>Data de Compra</th><th>Valores Pagos</th><th>Comprovante</th><th>Ações</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Obra / Loja</th><th>Equipamento</th><th>Data de Compra</th><th>Valores Pagos</th><th>Comprovante</th><th>Ações</th>
+                        </tr>
+                    </thead>
                     <tbody id="body-compras"></tbody>
                 </table>
             </div>
         </div>
 
+        <!-- FORNECEDORES -->
         <div id="secao-fornecedores" class="secao-tabela">
             <div class="card-table">
                 <h3 style="color: #6366f1;">🏢 Gestão de Fornecedores e Locadoras</h3>
+                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px; margin-top: -10px;">Corrija erros de digitação da IA ou mescle fornecedores duplicados. A alteração afeta todos os equipamentos vinculados automaticamente.</p>
                 <table class="table-modern" id="tabela-fornecedores">
-                    <thead><tr><th>Nome do Fornecedor / Locadora</th><th>Equipamentos Vinculados</th><th>Ações</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Nome do Fornecedor / Locadora</th><th>Total de Equipamentos</th><th>Ações</th>
+                        </tr>
+                    </thead>
                     <tbody id="body-fornecedores"></tbody>
                 </table>
             </div>
         </div>
 
+        <!-- HISTÓRICO -->
         <div id="secao-historico" class="secao-tabela">
             <div class="card-table">
                 <h3 style="color: var(--text-light);">🕰️ Histórico e Itens Devolvidos</h3>
                 <div id="loader-hist" class="loader"></div>
                 <table class="table-modern" id="tabela-historico" style="display:none;">
-                    <thead><tr><th>Obra / Fornecedor</th><th>Equipamento</th><th>Data Base</th><th>Valores</th><th>Comprovante</th><th>Status / Ação</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Obra / Fornecedor</th><th>Equipamento</th><th>Data Base</th><th>Valores</th><th>Comprovante</th><th>Status / Ação</th>
+                        </tr>
+                    </thead>
                     <tbody id="body-historico"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
+    <!-- MODAL DE EDIÇÃO DE EQUIPAMENTO -->
     <div class="modal-overlay" id="modal-editar">
         <div class="modal-box">
             <h3>✏️ Editar Equipamento</h3>
@@ -211,8 +275,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Locadora / Fornecedor</label>
-                    <input type="text" id="edit-forn" list="lista-forns-edit" placeholder="Altere ou digite o fornecedor...">
+                    <label>Locadora / Fornecedor Vinculado</label>
+                    <input type="text" id="edit-forn" list="lista-forns-edit" placeholder="Selecione ou digite um fornecedor...">
                     <datalist id="lista-forns-edit"></datalist>
                 </div>
                 
@@ -245,6 +309,7 @@
         </div>
     </div>
 
+    <!-- MODAL DE NOVO EQUIPAMENTO -->
     <div class="modal-overlay" id="modal-novo">
         <div class="modal-box">
             <h3>➕ Adicionar Novo Equipamento</h3>
@@ -309,14 +374,19 @@
         </div>
     </div>
 
+    <!-- MODAL RENOMEAR FORNECEDOR -->
     <div class="modal-overlay" id="modal-renomear-forn">
         <div class="modal-box">
             <h3>✏️ Renomear Fornecedor</h3>
-            <p style="font-size:0.85rem; color:var(--text-light);">Ao renomear, todos os equipamentos vinculados serão atualizados automaticamente.</p>
+            <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Ao corrigir o nome, todos os equipamentos vinculados serão atualizados em massa.</p>
             <div class="form-edit">
                 <input type="hidden" id="renomear-forn-origem">
                 <div class="form-group">
-                    <label>Novo Nome</label>
+                    <label>Nome Atual (Incorreto)</label>
+                    <input type="text" id="renomear-forn-origem-txt" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Novo Nome / Razão Social Correta</label>
                     <input type="text" id="renomear-forn-novo" placeholder="Digite o nome correto...">
                 </div>
             </div>
@@ -327,24 +397,25 @@
         </div>
     </div>
 
+    <!-- MODAL MESCLAR FORNECEDORES -->
     <div class="modal-overlay" id="modal-mesclar-forn">
         <div class="modal-box">
-            <h3>🔗 Mesclar Fornecedores Duplicados</h3>
-            <p style="font-size:0.85rem; color:var(--text-light);">Mova todos os equipamentos de um cadastro incorreto para o correto.</p>
+            <h3>🔗 Mesclar Duplicados</h3>
+            <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Mova todos os equipamentos de um cadastro duplicado/incorreto para o cadastro definitivo.</p>
             <div class="form-edit">
                 <input type="hidden" id="merge-origem">
                 <div class="form-group">
-                    <label>Fornecedor Incorreto (Será apagado)</label>
+                    <label>Fornecedor Incorreto (Origem)</label>
                     <input type="text" id="merge-origem-txt" disabled>
                 </div>
                 <div class="form-group">
-                    <label>Mover equipamentos para (Destino Correto)</label>
+                    <label>Mesclar com (Destino Correto)</label>
                     <select id="merge-destino"></select>
                 </div>
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button>
-                <button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar Agora</button>
+                <button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar e Unificar</button>
             </div>
         </div>
     </div>
@@ -355,6 +426,58 @@
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let dadosGlobais = [];
+
+        // --- FASE 1: FUNÇÕES DE UX CORPORATIVA ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+            toast.innerHTML = `<span style="font-size: 1.2rem;">${icon}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+            
+            void toast.offsetWidth; // Force reflow
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function showGlobalLoading(msg = 'Processando...') {
+            document.getElementById('global-loader-msg').innerText = msg;
+            document.getElementById('global-loader').style.display = 'flex';
+        }
+
+        function hideGlobalLoading() {
+            document.getElementById('global-loader').style.display = 'none';
+        }
+
+        let confirmCallbackAction = null;
+        function showConfirm(title, message, onConfirm, isDanger = false) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-msg').innerText = message;
+            document.getElementById('confirm-icon').innerText = isDanger ? '🚨' : '⚠️';
+            
+            const btnConfirm = document.getElementById('btn-confirm-action');
+            btnConfirm.style.background = isDanger ? 'var(--danger)' : 'var(--primary)';
+            btnConfirm.innerText = isDanger ? 'Sim, Excluir' : 'Confirmar';
+
+            confirmCallbackAction = onConfirm;
+            document.getElementById('modal-confirm').style.display = 'flex';
+        }
+
+        function fecharConfirm() {
+            document.getElementById('modal-confirm').style.display = 'none';
+            confirmCallbackAction = null;
+        }
+
+        document.getElementById('btn-confirm-action').addEventListener('click', () => {
+            fecharConfirm();
+            if (confirmCallbackAction) confirmCallbackAction();
+        });
+        // ----------------------------------------
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
 
@@ -375,6 +498,7 @@
             return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
+        // CARREGA FILTROS E DATALISTS
         async function carregarFiltros() {
             const { data } = await client.from('locacoes').select('obra, fornecedor');
             if(data) {
@@ -403,6 +527,7 @@
             }
         }
 
+        // CARREGA TODOS OS DADOS E RENDERIZA AS TABELAS
         async function carregarDados() {
             document.querySelectorAll('.loader').forEach(e => e.style.display = 'block');
             document.querySelectorAll('.table-modern').forEach(e => e.style.display = 'none');
@@ -504,174 +629,126 @@
                 if (countComp > 0) document.getElementById('tabela-compras').style.display = 'table';
                 if (countHist > 0) document.getElementById('tabela-historico').style.display = 'table';
 
-                // Processa a aba de Fornecedores
-                processarAbaFornecedores();
+                renderizarModuloFornecedores();
 
-            } catch (err) { alert("Erro ao carregar dados."); }
+            } catch (err) { 
+                showToast("Erro de conexão ao carregar os dados.", "error"); 
+            }
         }
 
-        // --- SISTEMA DE FORNECEDORES ---
-        function processarAbaFornecedores() {
-            // Conta os equipamentos por fornecedor
-            let mapaForns = {};
-            dadosGlobais.forEach(i => {
-                const f = i.fornecedor || 'Desconhecido';
-                if(!mapaForns[f]) mapaForns[f] = 0;
-                mapaForns[f]++;
-            });
-        }
-
-        function processarFoto(event) {
-            // Logica placeholder para event handler se necessario
-        }
-
-        function processarAbaFornecedores() {
-             // Agrupa equipamentos por fornecedor
-             let contagemFornecedores = {};
-             dadosGlobais.forEach(item => {
-                 let forn = item.fornecedor;
-                 if (forn) {
-                     if (!contagemFornecedores[forn]) contagemFornecedores[forn] = 0;
-                     contagemFornecedores[forn]++;
-                 }
-             });
-        }
-
-        function processarResultadoFornecedores() {
+        // --- SISTEMA DE FORNECEDORES (VIRTUAL TABLE) ---
+        function renderizarModuloFornecedores() {
             const bodyForn = document.getElementById('body-fornecedores');
-            if(!bodyForn) return;
             bodyForn.innerHTML = '';
-        }
-
-        function renderizarFornecedores() {
-            const tableForn = document.getElementById('tabela-fornecedores');
-            const tbodyForn = document.getElementById('body-fornecedores');
-            if(!tableForn || !bodyForn) return;
             
-            // Agrupar e contar equipamentos
-            let mapa = {};
-            dadosGlobais.forEach(i => {
-                let f = i.fornecedor || 'Desconhecido';
-                if(!mapa[f]) mapa[f] = 0;
-                mapa[f]++;
+            let contagemForns = {};
+            dadosGlobais.forEach(item => {
+                let f = item.fornecedor || 'Não identificado';
+                contagemForns[f] = (contagemForns[f] || 0) + 1;
             });
 
-            // Converte e ordena alfabeticamente
-            let listaForn = Object.keys(mapa).map(f => ({ nome: f, qtd: mapa[f] })).sort((a,b) => a.nome.localeCompare(b.nome));
+            const listaForns = Object.keys(contagemForns).sort((a, b) => a.localeCompare(b));
             
-            bodyForn.innerHTML = '';
-            listaForns.forEach(f => {
+            listaForns.forEach(fornecedor => {
                 bodyForn.innerHTML += `
                     <tr>
-                        <td><span class="main-txt">${f.nome}</span></td>
-                        <td><span class="status-badge">${f.qtd} equipamento(s)</span></td>
+                        <td><span class="main-txt">${fornecedor}</span></td>
+                        <td><span class="status-badge highlight">${contagemForns[fornecedor]} equipamentos vinculados</span></td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn-action-small btn-editar" title="Editar Razão Social" onclick="abrirEdicaoForn('${f.nome}')">✏️</button>
-                                <button class="btn-action-small btn-renovar" title="Unificar Duplicado" onclick="abrirUnificarForn('${f.nome}')">🔗</button>
+                                <button class="btn-action-small btn-editar" title="Corrigir Nome (Renomear)" onclick="abrirRenomearForn('${fornecedor}')">✏️</button>
+                                <button class="btn-action-small btn-renovar" title="Mesclar com outro fornecedor correto" onclick="abrirMesclarForn('${fornecedor}')">🔗</button>
                             </div>
                         </td>
                     </tr>
                 `;
             });
+            document.getElementById('tabela-fornecedores').style.display = 'table';
         }
 
-        // Correção das funções reais da tabela de fornecedores
-        function renderTabelaFornecedores() {
-            const tbody = document.getElementById('body-locacoes'); // reutilizando area
-            // Criado na div correta abaixo
-        }
-        
-        function processarListaFornecedores() {
-             let mapa = {};
-             dadosGlobais.forEach(item => {
-                 let f = item.fornecedor || 'Desconhecido';
-                 if(!mapa[f]) mapa[f] = 0;
-                 mapa[f]++;
-             });
-             return Object.keys(mapa).map(k => ({nome: k, total: mapa[k]})).sort((a,b) => a.nome.localeCompare(b.nome));
+        function abrirRenomearForn(origem) {
+            document.getElementById('renomear-forn-origem').value = origem;
+            document.getElementById('renomear-forn-origem-txt').value = origem;
+            document.getElementById('renomear-forn-novo').value = origem;
+            document.getElementById('modal-renomear-forn').style.display = 'flex';
         }
 
-        function drawFornecedores() {
-             let fData = getFornecedoresResumo();
-             let b = document.getElementById('body-fornecedores');
-             if(!b) return;
-             b.innerHTML = '';
-             
-        }
-
-        // INTEGRAÇÃO COMPLETA: Criando e renderizando aba Fornecedores dinamicamente.
-        function getFornecedores() {
-            let map = {};
-            dadosGlobais.forEach(item => {
-                let f = item.fornecedor || 'Não identificado';
-                map[f] = (map[f] || 0) + 1;
-            });
-            return Object.keys(map).map(k => ({ nome: k, total: map[k] })).sort((a,b) => a.nome.localeCompare(b.nome));
-        }
-
-        function renderizarFornecedores() {
-            const bodyFornecedores = document.getElementById('body-locacoes'); 
-            // Substituido para não poluir
-        }
-
-        function construirMenuFornecedores() {
-             // Injetado diretamente no HTML
-        }
-
-        // --- SISTEMA DE EDIÇÃO DE EQUIPAMENTOS ---
-        function abrirEdicao(id) {
-            const item = dadosGlobais.find(i => i.id === id);
-            if(!item) return;
+        function salvarRenomearForn() {
+            const origem = document.getElementById('renomear-forn-origem').value;
+            const novoNome = document.getElementById('renomear-forn-novo').value.trim();
             
-            document.getElementById('edit-id').value = item.id;
-            document.getElementById('edit-equip').value = item.equipamento || '';
-            document.getElementById('edit-qtd').value = item.quantidade || 1;
-            document.getElementById('edit-contrato').value = item.contrato || '';
-            document.getElementById('edit-valor').value = item.valor || 0;
-            document.getElementById('edit-indenizacao').value = item.valor_indenizacao || 0;
-            
-            // NOVO CAMPO: Edição do fornecedor dentro do equipamento
-            if(!document.getElementById('edit-forn')) {
-                const fornGroup = document.createElement('div');
-                fornGroup.className = 'form-group';
-                fornGroup.innerHTML = `
-                    <label>Fornecedor vinculado</label>
-                    <input type="text" id="edit-forn" list="lista-forns-edit" placeholder="Fornecedor do item">
-                    <datalist id="lista-forns-edit"></datalist>
-                `;
-                // Insere depois do equipamento
-                const inputEquip = document.getElementById('edit-equip').parentElement;
-                inputEquip.parentNode.insertBefore(fornGroup, inputEquip.nextSibling);
+            if (!novoNome || novoNome === origem) {
+                showToast("O novo nome não pode ser vazio ou igual ao antigo!", "warning"); 
+                return;
             }
-            
-            const selForn = document.getElementById('edit-forn');
-            if(selForn) {
-                selForn.value = item.fornecedor || '';
-                const dataListForns = document.getElementById('lista-forns-edit') || document.getElementById('lista-forns');
-                if(document.getElementById('lista-forns') && !document.getElementById('lista-forns-edit')) {
-                    selForn.setAttribute('list', 'lista-forns');
+
+            showConfirm('Renomear Fornecedor', `TODOS os equipamentos de "${origem}" passarão a pertencer à "${novoNome}". Confirmar alteração?`, async () => {
+                document.getElementById('modal-renomear-forn').style.display = 'none';
+                showGlobalLoading("Atualizando fornecedores em lote...");
+                
+                const { error } = await client.from('locacoes').update({ fornecedor: novoNome }).eq('fornecedor', origem);
+                hideGlobalLoading();
+
+                if(!error) {
+                    showToast("Nome corrigido em todos os equipamentos!", "success");
+                    carregarFiltros().then(() => carregarDados());
+                } else {
+                    showToast("Erro ao atualizar: " + error.message, "error");
+                    carregarDados();
                 }
-            }
-
-            document.getElementById('modal-editar').style.display = 'flex';
+            });
         }
 
+        function abrirMesclarForn(origem) {
+            document.getElementById('merge-origem').value = origem;
+            document.getElementById('merge-origem-txt').value = origem;
+            
+            const selDestino = document.getElementById('merge-destino');
+            selDestino.innerHTML = '';
+            
+            const forns = [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort();
+            forns.forEach(f => {
+                if(f !== origem) selDestino.add(new Option(f, f));
+            });
+            
+            document.getElementById('modal-mesclar-forn').style.display = 'flex';
+        }
+
+        function salvarMesclarForn() {
+            const origem = document.getElementById('merge-origem').value;
+            const destino = document.getElementById('merge-destino').value;
+            
+            if(!destino) { showToast("Selecione o destino para mesclar!", "warning"); return; }
+            
+            showConfirm('Mesclar Fornecedores', `ATENÇÃO: Todos os itens de "${origem}" serão transferidos para "${destino}". Essa ação corrige duplicatas. Confirmar?`, async () => {
+                document.getElementById('modal-mesclar-forn').style.display = 'none';
+                showGlobalLoading("Mesclando dados...");
+                
+                const { error } = await client.from('locacoes').update({ fornecedor: destino }).eq('fornecedor', origem);
+                hideGlobalLoading();
+
+                if(!error) {
+                    showToast("Fornecedores mesclados com sucesso!", "success");
+                    carregarFiltros().then(() => carregarDados());
+                } else {
+                    showToast("Erro ao mesclar: " + error.message, "error");
+                    carregarDados();
+                }
+            });
+        }
+
+        // --- SISTEMA DE EDIÇÃO DE EQUIPAMENTO ---
         function abrirEdicao(id) {
             const item = dadosGlobais.find(i => i.id === id);
             if(!item) return;
             
             document.getElementById('edit-id').value = item.id;
             document.getElementById('edit-equip').value = item.equipamento || '';
+            document.getElementById('edit-forn').value = item.fornecedor || ''; 
             document.getElementById('edit-qtd').value = item.quantidade || 1;
             document.getElementById('edit-contrato').value = item.contrato || '';
             document.getElementById('edit-valor').value = item.valor || 0;
             document.getElementById('edit-indenizacao').value = item.valor_indenizacao || 0;
-            
-            // Se o campo de fornecedor no modal de edição não existir, a gente cria via JS (ou adicionei no HTML abaixo)
-            if(document.getElementById('edit-forn')) {
-                document.getElementById('edit-forn').value = item.fornecedor || '';
-            }
             
             document.getElementById('modal-editar').style.display = 'flex';
         }
@@ -683,25 +760,26 @@
         async function salvarEdicao() {
             const id = document.getElementById('edit-id').value;
             const equipamento = document.getElementById('edit-equip').value;
+            const fornecedor = document.getElementById('edit-forn').value.trim() || 'Não identificado';
             const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1;
             const contrato = document.getElementById('edit-contrato').value;
             const valor = parseFloat(document.getElementById('edit-valor').value) || 0;
             const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
-            
-            let updtObj = { equipamento, quantidade, contrato, valor, valor_indenizacao };
 
-            // Pega o fornecedor se o campo existir no modal
-            const fornEl = document.getElementById('edit-forn');
-            if (fornEl) {
-                updObj.fornecedor = fornEl.value.trim();
-            }
+            showGlobalLoading("Salvando edições...");
+            const { error } = await client.from('locacoes').update({ 
+                equipamento, fornecedor, quantidade, contrato, valor, valor_indenizacao 
+            }).eq('id', id);
 
-            const { error } = await client.from('locacoes').update(updObj).eq('id', id);
+            hideGlobalLoading();
 
             if(!error) {
                 fecharModalEdicao();
-                carregarFiltros().then(() => carregarDados());
-            } else { alert("Erro ao atualizar!"); }
+                showToast("Equipamento atualizado com sucesso!", "success");
+                carregarFiltros().then(() => carregarDados()); 
+            } else { 
+                showToast("Erro ao atualizar o equipamento!", "error"); 
+            }
         }
 
         // --- SISTEMA DE CADASTRO MANUAL NOVO ---
@@ -737,7 +815,7 @@
             const fornecedor = document.getElementById('novo-forn').value.trim() || 'Não identificado';
             
             if (!obra || !equipamento) {
-                alert("Por favor, preencha o nome da Obra e do Equipamento!");
+                showToast("Por favor, preencha o nome da Obra e do Equipamento!", "warning");
                 return;
             }
 
@@ -772,43 +850,60 @@
                 objSalvar.contrato = contrato;
             }
 
+            showGlobalLoading("Cadastrando equipamento...");
             const { error } = await client.from('locacoes').insert([objSalvar]);
+            hideGlobalLoading();
 
             if (!error) {
-                alert("Equipamento cadastrado com sucesso!");
+                showToast("Equipamento adicionado com sucesso!", "success");
                 fecharModalNovo();
-                carregarFiltros().then(() => carregarDados()); // Atualiza os filtros e a tabela
+                carregarFiltros().then(() => carregarDados()); 
             } else {
-                alert("Erro ao salvar no banco: " + error.message);
+                showToast("Erro ao salvar no banco: " + error.message, "error");
             }
         }
 
-        // --- AÇÕES RÁPIDAS ---
-        window.arquivarItem = async (id) => {
-            if (confirm("Deseja marcar este item como devolvido/arquivado? Ele irá para a aba Histórico.")) {
+        // --- AÇÕES RÁPIDAS COM MODAL DE CONFIRMAÇÃO ---
+        function arquivarItem(id) {
+            showConfirm("Arquivar Equipamento", "Deseja marcar este item como devolvido/arquivado? Ele sairá da tela principal e irá para o Histórico.", async () => {
+                showGlobalLoading("Movendo para o histórico...");
                 await client.from('locacoes').update({ status: 'inativo' }).eq('id', id);
+                hideGlobalLoading();
+                showToast("Equipamento arquivado com sucesso!", "success");
                 carregarDados();
-            }
+            }, true);
         }
 
-        window.restaurarItem = async (id) => {
-            if (confirm("Deseja desfazer a exclusão e restaurar este item para a aba principal?")) {
+        function restaurarItem(id) {
+            showConfirm("Restaurar Equipamento", "Deseja desfazer a exclusão e restaurar este item para a aba de Ativos?", async () => {
+                showGlobalLoading("Restaurando equipamento...");
                 await client.from('locacoes').update({ status: 'ativo' }).eq('id', id);
+                hideGlobalLoading();
+                showToast("Equipamento restaurado!", "success");
                 carregarDados();
-            }
+            });
         }
 
-        window.renovarItem = async (id, fim, uni) => {
-            if(!confirm(`Deseja renovar este contrato por mais 1 ${uni}?`)) return;
-            let d = new Date(fim);
-            d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-            if(uni.includes('Mês')) d.setDate(d.getDate() + 30); 
-            else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15);
-            else d.setDate(d.getDate() + 1);
-            
-            const { error } = await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id);
-            if(!error) { carregarDados(); } 
-        };
+        function renovarItem(id, fim, uni) {
+            showConfirm("Renovar Contrato", `Deseja prorrogar a locação deste equipamento por mais 1 ${uni}? A data de vencimento será recalculada automaticamente.`, async () => {
+                showGlobalLoading("Renovando período...");
+                let d = new Date(fim);
+                d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                if(uni.includes('Mês')) d.setDate(d.getDate() + 30); 
+                else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15);
+                else d.setDate(d.getDate() + 1);
+                
+                const { error } = await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id);
+                hideGlobalLoading();
+                
+                if(!error) {
+                    showToast("Período renovado com sucesso!", "success");
+                    carregarDados(); 
+                } else {
+                    showToast("Erro ao renovar contrato.", "error");
+                }
+            });
+        }
 
         // INICIALIZAÇÃO
         carregarFiltros().then(() => carregarDados());
