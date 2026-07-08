@@ -89,7 +89,7 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* FASE 1: SISTEMA DE TOASTS (NOTIFICAÇÕES CORPORATIVAS) */
+        /* FASE 1: SISTEMA DE TOASTS */
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { min-width: 280px; padding: 15px 20px; border-radius: 8px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.9rem; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-left: 5px solid; }
         .toast.show { transform: translateX(0); }
@@ -97,7 +97,7 @@
         .toast.error { border-color: var(--danger); color: #7f1d1d; background: #fef2f2; }
         .toast.warning { border-color: var(--warning); color: #78350f; background: #fffbeb; }
 
-        /* FASE 1: LOADER GLOBAL DE BLOQUEIO */
+        /* FASE 1: LOADER GLOBAL */
         .global-loader-box { background: white; padding: 25px 40px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; gap: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: fadeInScale 0.2s ease-out; }
         .global-loader-box span { font-weight: 700; color: var(--text); font-size: 1rem;}
 
@@ -130,10 +130,8 @@
 </head>
 <body>
 
-    <!-- FASE 1: Container de Toasts -->
     <div id="toast-container"></div>
 
-    <!-- FASE 1: Loader Global de Bloqueio -->
     <div class="modal-overlay" id="global-loader" style="z-index: 10000;">
         <div class="global-loader-box">
             <div class="loader" style="margin:0;"></div>
@@ -141,7 +139,6 @@
         </div>
     </div>
 
-    <!-- FASE 1: Modal de Confirmação Corporativo -->
     <div class="modal-overlay" id="modal-confirm" style="z-index: 9999;">
         <div class="modal-box" style="max-width: 400px; text-align: center; padding: 30px;">
             <div id="confirm-icon" style="font-size: 3rem; margin-bottom: 15px;">⚠️</div>
@@ -197,109 +194,72 @@
             </div>
         </div>
 
-        <!-- LOCAÇÕES -->
         <div id="secao-locacoes" class="secao-tabela animate-show">
             <div class="card-table">
                 <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
                 <div id="loader-loc" class="loader"></div>
                 <table class="table-modern" id="tabela-locacoes" style="display:none;">
-                    <thead>
-                        <tr>
-                            <th>Obra / Locadora</th><th>Equipamento</th><th>Período de Aluguel</th><th>Valores / Contrato</th><th>Comprovante</th><th>Ações</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Obra / Locadora</th><th>Equipamento</th><th>Período de Aluguel</th><th>Valores / Contrato</th><th>Comprovante</th><th>Ações</th></tr></thead>
                     <tbody id="body-locacoes"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- COMPRAS -->
         <div id="secao-compras" class="secao-tabela">
             <div class="card-table">
                 <h3 style="color: var(--success);">🛒 Ferramentas Próprias (Patrimônio)</h3>
                 <div id="loader-comp" class="loader"></div>
                 <table class="table-modern" id="tabela-compras" style="display:none;">
-                    <thead>
-                        <tr>
-                            <th>Obra / Loja</th><th>Equipamento</th><th>Data de Compra</th><th>Valores Pagos</th><th>Comprovante</th><th>Ações</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Obra / Loja</th><th>Equipamento</th><th>Data de Compra</th><th>Valores Pagos</th><th>Comprovante</th><th>Ações</th></tr></thead>
                     <tbody id="body-compras"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- FORNECEDORES -->
         <div id="secao-fornecedores" class="secao-tabela">
             <div class="card-table">
                 <h3 style="color: #6366f1;">🏢 Gestão de Fornecedores e Locadoras</h3>
-                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px; margin-top: -10px;">Corrija erros de digitação da IA ou mescle fornecedores duplicados. A alteração afeta todos os equipamentos vinculados automaticamente.</p>
+                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px; margin-top: -10px;">Corrija erros de digitação ou mescle fornecedores duplicados.</p>
                 <table class="table-modern" id="tabela-fornecedores">
-                    <thead>
-                        <tr>
-                            <th>Nome do Fornecedor / Locadora</th><th>Total de Equipamentos</th><th>Ações</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Nome do Fornecedor / Locadora</th><th>Total de Equipamentos</th><th>Ações</th></tr></thead>
                     <tbody id="body-fornecedores"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- HISTÓRICO -->
         <div id="secao-historico" class="secao-tabela">
             <div class="card-table">
                 <h3 style="color: var(--text-light);">🕰️ Histórico e Itens Devolvidos</h3>
                 <div id="loader-hist" class="loader"></div>
                 <table class="table-modern" id="tabela-historico" style="display:none;">
-                    <thead>
-                        <tr>
-                            <th>Obra / Fornecedor</th><th>Equipamento</th><th>Data Base</th><th>Valores</th><th>Comprovante</th><th>Status / Ação</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Obra / Fornecedor</th><th>Equipamento</th><th>Data Base</th><th>Valores</th><th>Comprovante</th><th>Status / Ação</th></tr></thead>
                     <tbody id="body-historico"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- MODAL DE EDIÇÃO DE EQUIPAMENTO -->
     <div class="modal-overlay" id="modal-editar">
         <div class="modal-box">
             <h3>✏️ Editar Equipamento</h3>
             <div class="form-edit">
                 <input type="hidden" id="edit-id">
-                
-                <div class="form-group">
-                    <label>Nome do Equipamento</label>
-                    <input type="text" id="edit-equip">
-                </div>
+                <div class="form-group"><label>Nome do Equipamento</label><input type="text" id="edit-equip"></div>
 
                 <div class="form-group">
                     <label>Locadora / Fornecedor Vinculado</label>
-                    <input type="text" id="edit-forn" list="lista-forns-edit" placeholder="Selecione ou digite um fornecedor...">
-                    <datalist id="lista-forns-edit"></datalist>
+                    <select id="edit-forn-select" onchange="verificarNovoFornEdit()">
+                        </select>
+                    <input type="text" id="edit-forn-input" placeholder="Digite o novo fornecedor..." style="display:none; margin-top:10px;">
                 </div>
                 
                 <div class="grid-duplo">
-                    <div class="form-group">
-                        <label>Quantidade</label>
-                        <input type="number" id="edit-qtd" step="1">
-                    </div>
-                    <div class="form-group">
-                        <label>Nº Contrato</label>
-                        <input type="text" id="edit-contrato">
-                    </div>
+                    <div class="form-group"><label>Quantidade</label><input type="number" id="edit-qtd" step="1"></div>
+                    <div class="form-group"><label>Nº Contrato</label><input type="text" id="edit-contrato"></div>
                 </div>
-
                 <div class="grid-duplo">
-                    <div class="form-group">
-                        <label>Valor Total (R$)</label>
-                        <input type="number" id="edit-valor" step="0.01">
-                    </div>
-                    <div class="form-group">
-                        <label>Indenização (R$)</label>
-                        <input type="number" id="edit-indenizacao" step="0.01">
-                    </div>
+                    <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="edit-valor" step="0.01"></div>
+                    <div class="form-group"><label>Indenização (R$)</label><input type="number" id="edit-indenizacao" step="0.01"></div>
                 </div>
             </div>
             <div class="modal-actions">
@@ -309,7 +269,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE NOVO EQUIPAMENTO -->
     <div class="modal-overlay" id="modal-novo">
         <div class="modal-box">
             <h3>➕ Adicionar Novo Equipamento</h3>
@@ -324,44 +283,32 @@
 
                 <div class="form-group">
                     <label>Obra</label>
-                    <input type="text" id="novo-obra" list="lista-obras" placeholder="Selecione ou digite uma nova obra...">
-                    <datalist id="lista-obras"></datalist>
+                    <select id="novo-obra-select" onchange="verificarNovaObra()">
+                        </select>
+                    <input type="text" id="novo-obra-input" placeholder="Digite o nome da nova obra..." style="display:none; margin-top:10px;">
                 </div>
 
-                <div class="form-group">
-                    <label>Equipamento</label>
-                    <input type="text" id="novo-equip" placeholder="Ex: Betoneira 400L">
-                </div>
+                <div class="form-group"><label>Equipamento</label><input type="text" id="novo-equip" placeholder="Ex: Betoneira 400L"></div>
 
                 <div class="grid-duplo">
-                    <div class="form-group">
-                        <label>Quantidade</label>
-                        <input type="number" id="novo-qtd" value="1" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label>Valor Total (R$)</label>
-                        <input type="number" id="novo-valor" step="0.01" value="0.00">
-                    </div>
+                    <div class="form-group"><label>Quantidade</label><input type="number" id="novo-qtd" value="1" min="1"></div>
+                    <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="novo-valor" step="0.01" value="0.00"></div>
                 </div>
 
                 <div class="form-group">
                     <label id="lbl-forn">Locadora / Fornecedor</label>
-                    <input type="text" id="novo-forn" list="lista-forns" placeholder="Selecione ou digite o fornecedor...">
-                    <datalist id="lista-forns"></datalist>
+                    <select id="novo-forn-select" onchange="verificarNovoForn()">
+                        </select>
+                    <input type="text" id="novo-forn-input" placeholder="Digite o nome do fornecedor..." style="display:none; margin-top:10px;">
                 </div>
 
                 <div id="campos-locacao">
                     <div class="grid-duplo">
-                        <div class="form-group">
-                            <label>Nº do Contrato</label>
-                            <input type="text" id="novo-contrato" placeholder="Ex: 011359/A">
-                        </div>
+                        <div class="form-group"><label>Nº do Contrato</label><input type="text" id="novo-contrato" placeholder="Ex: 011359/A"></div>
                         <div class="form-group">
                             <label>Período</label>
                             <select id="novo-periodo">
-                                <option value="Mês">Mês (30 dias)</option>
-                                <option value="Quinzena">Quinzena (15 dias)</option>
-                                <option value="Dia">Diária</option>
+                                <option value="Mês">Mês (30 dias)</option><option value="Quinzena">Quinzena (15 dias)</option><option value="Dia">Diária</option>
                             </select>
                         </div>
                     </div>
@@ -374,21 +321,13 @@
         </div>
     </div>
 
-    <!-- MODAL RENOMEAR FORNECEDOR -->
     <div class="modal-overlay" id="modal-renomear-forn">
         <div class="modal-box">
             <h3>✏️ Renomear Fornecedor</h3>
-            <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Ao corrigir o nome, todos os equipamentos vinculados serão atualizados em massa.</p>
             <div class="form-edit">
                 <input type="hidden" id="renomear-forn-origem">
-                <div class="form-group">
-                    <label>Nome Atual (Incorreto)</label>
-                    <input type="text" id="renomear-forn-origem-txt" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Novo Nome / Razão Social Correta</label>
-                    <input type="text" id="renomear-forn-novo" placeholder="Digite o nome correto...">
-                </div>
+                <div class="form-group"><label>Nome Atual (Incorreto)</label><input type="text" id="renomear-forn-origem-txt" disabled></div>
+                <div class="form-group"><label>Novo Nome Correto</label><input type="text" id="renomear-forn-novo" placeholder="Digite o nome correto..."></div>
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button>
@@ -397,21 +336,13 @@
         </div>
     </div>
 
-    <!-- MODAL MESCLAR FORNECEDORES -->
     <div class="modal-overlay" id="modal-mesclar-forn">
         <div class="modal-box">
             <h3>🔗 Mesclar Duplicados</h3>
-            <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Mova todos os equipamentos de um cadastro duplicado/incorreto para o cadastro definitivo.</p>
             <div class="form-edit">
                 <input type="hidden" id="merge-origem">
-                <div class="form-group">
-                    <label>Fornecedor Incorreto (Origem)</label>
-                    <input type="text" id="merge-origem-txt" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Mesclar com (Destino Correto)</label>
-                    <select id="merge-destino"></select>
-                </div>
+                <div class="form-group"><label>Fornecedor Incorreto (Origem)</label><input type="text" id="merge-origem-txt" disabled></div>
+                <div class="form-group"><label>Mesclar com (Destino Correto)</label><select id="merge-destino"></select></div>
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button>
@@ -424,10 +355,9 @@
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
         let dadosGlobais = [];
 
-        // --- FASE 1: FUNÇÕES DE UX CORPORATIVA ---
+        // --- SISTEMA DE TOASTS E MODAIS ---
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -435,14 +365,9 @@
             let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
             toast.innerHTML = `<span style="font-size: 1.2rem;">${icon}</span> <span>${message}</span>`;
             container.appendChild(toast);
-            
-            void toast.offsetWidth; // Force reflow
+            void toast.offsetWidth; 
             toast.classList.add('show');
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
         }
 
         function showGlobalLoading(msg = 'Processando...') {
@@ -450,20 +375,16 @@
             document.getElementById('global-loader').style.display = 'flex';
         }
 
-        function hideGlobalLoading() {
-            document.getElementById('global-loader').style.display = 'none';
-        }
+        function hideGlobalLoading() { document.getElementById('global-loader').style.display = 'none'; }
 
         let confirmCallbackAction = null;
         function showConfirm(title, message, onConfirm, isDanger = false) {
             document.getElementById('confirm-title').innerText = title;
             document.getElementById('confirm-msg').innerText = message;
             document.getElementById('confirm-icon').innerText = isDanger ? '🚨' : '⚠️';
-            
             const btnConfirm = document.getElementById('btn-confirm-action');
             btnConfirm.style.background = isDanger ? 'var(--danger)' : 'var(--primary)';
-            btnConfirm.innerText = isDanger ? 'Sim, Excluir' : 'Confirmar';
-
+            btnConfirm.innerText = isDanger ? 'Sim, Confirmar' : 'Confirmar';
             confirmCallbackAction = onConfirm;
             document.getElementById('modal-confirm').style.display = 'flex';
         }
@@ -477,57 +398,61 @@
             fecharConfirm();
             if (confirmCallbackAction) confirmCallbackAction();
         });
-        // ----------------------------------------
 
+        // --- NAVEGAÇÃO E FORMATAÇÃO ---
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
-
         function mudarAba(aba) {
             document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('active'));
             document.querySelectorAll('.secao-tabela').forEach(e => e.classList.remove('animate-show'));
-            
             document.getElementById('menu-' + aba.substring(0,4)).classList.add('active');
             document.getElementById('secao-' + aba).classList.add('animate-show');
         }
+        function formatarData(dataString) { if (!dataString) return '--'; const p = dataString.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+        function formatarMoeda(valor) { return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-        function formatarData(dataString) {
-            if (!dataString) return '--';
-            const p = dataString.split('-'); return `${p[2]}/${p[1]}/${p[0]}`;
+        // --- CONTROLES DE NOVAS OBRAS E FORNECEDORES (SEM DATALIST) ---
+        function verificarNovaObra() {
+            const s = document.getElementById('novo-obra-select');
+            const i = document.getElementById('novo-obra-input');
+            if(s.value === 'NOVA') { i.style.display = 'block'; i.focus(); } else { i.style.display = 'none'; }
+        }
+        function verificarNovoForn() {
+            const s = document.getElementById('novo-forn-select');
+            const i = document.getElementById('novo-forn-input');
+            if(s.value === 'NOVA') { i.style.display = 'block'; i.focus(); } else { i.style.display = 'none'; }
+        }
+        function verificarNovoFornEdit() {
+            const s = document.getElementById('edit-forn-select');
+            const i = document.getElementById('edit-forn-input');
+            if(s.value === 'NOVA') { i.style.display = 'block'; i.focus(); } else { i.style.display = 'none'; }
         }
 
-        function formatarMoeda(valor) {
-            return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-
-        // CARREGA FILTROS E DATALISTS
         async function carregarFiltros() {
             const { data } = await client.from('locacoes').select('obra, fornecedor');
             if(data) {
                 const obras = [...new Set(data.map(i => i.obra))].filter(Boolean).sort();
                 const forns = [...new Set(data.map(i => i.fornecedor))].filter(Boolean).sort();
                 
+                // Filtros do topo
                 const selObra = document.getElementById('filtroObra');
                 const selForn = document.getElementById('filtroForn');
-                const listObras = document.getElementById('lista-obras');
-                const listForns = document.getElementById('lista-forns');
-                const listFornsEdit = document.getElementById('lista-forns-edit');
-
                 selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>';
                 selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
-                listObras.innerHTML = ''; listForns.innerHTML = ''; listFornsEdit.innerHTML = '';
 
-                obras.forEach(o => {
-                    selObra.add(new Option(o, o));
-                    listObras.appendChild(new Option(o));
-                });
-                forns.forEach(f => {
-                    selForn.add(new Option(f, f));
-                    listForns.appendChild(new Option(f));
-                    listFornsEdit.appendChild(new Option(f));
-                });
+                // Selects dos modais
+                const selObraNovo = document.getElementById('novo-obra-select');
+                const selFornNovo = document.getElementById('novo-forn-select');
+                const selFornEdit = document.getElementById('edit-forn-select');
+                
+                selObraNovo.innerHTML = '<option value="" disabled selected>Selecione a obra...</option><option value="NOVA" style="font-weight:bold; color:var(--primary);">➕ Cadastrar Nova Obra...</option>';
+                selFornNovo.innerHTML = '<option value="" disabled selected>Selecione o fornecedor...</option><option value="NOVA" style="font-weight:bold; color:var(--primary);">➕ Cadastrar Novo Fornecedor...</option>';
+                selFornEdit.innerHTML = '<option value="" disabled>Selecione o fornecedor...</option><option value="NOVA" style="font-weight:bold; color:var(--primary);">➕ Digitar Novo Fornecedor...</option>';
+
+                obras.forEach(o => { selObra.add(new Option(o, o)); selObraNovo.add(new Option(o, o)); });
+                forns.forEach(f => { selForn.add(new Option(f, f)); selFornNovo.add(new Option(f, f)); selFornEdit.add(new Option(f, f)); });
             }
         }
 
-        // CARREGA TODOS OS DADOS E RENDERIZA AS TABELAS
         async function carregarDados() {
             document.querySelectorAll('.loader').forEach(e => e.style.display = 'block');
             document.querySelectorAll('.table-modern').forEach(e => e.style.display = 'none');
@@ -545,7 +470,6 @@
 
                 const { data, error } = await query;
                 if (error) throw error;
-                
                 dadosGlobais = data;
 
                 const bodyLocacoes = document.getElementById('body-locacoes');
@@ -553,111 +477,67 @@
                 const bodyHistorico = document.getElementById('body-historico');
                 
                 bodyLocacoes.innerHTML = ''; bodyCompras.innerHTML = ''; bodyHistorico.innerHTML = '';
-
                 let countLoc = 0, countComp = 0, countHist = 0;
 
                 data.forEach(item => {
-                    const btnAnexo = item.anexo 
-                        ? `<a href="${item.anexo}" target="_blank" class="btn-anexo">📸 Ver Foto</a>` 
-                        : `<span class="btn-sem-anexo">Sem anexo</span>`;
-
-                    const qtdDisplay = item.quantidade || 1;
-                    const badgeQtd = `<span class="qtd-badge">${qtdDisplay} UN</span>`;
-
-                    const numContrato = item.contrato && item.contrato !== 'NF via IA App' && item.contrato !== 'NF Compra' && item.contrato !== 'Sem Contrato' && item.contrato !== 'Cadastro Manual'
-                        ? `<span class="highlight-txt">Contrato: ${item.contrato}</span>` : '';
-
-                    const tagIndenizacao = item.valor_indenizacao && item.valor_indenizacao > 0
-                        ? `<div class="indeniz-tag">Indenização: ${formatarMoeda(item.valor_indenizacao)}</div>` : '';
+                    const btnAnexo = item.anexo ? `<a href="${item.anexo}" target="_blank" class="btn-anexo">📸 Ver Foto</a>` : `<span class="btn-sem-anexo">Sem anexo</span>`;
+                    const badgeQtd = `<span class="qtd-badge">${item.quantidade || 1} UN</span>`;
+                    const numContrato = item.contrato && item.contrato !== 'NF via IA App' && item.contrato !== 'NF Compra' && item.contrato !== 'Sem Contrato' && item.contrato !== 'Cadastro Manual' ? `<span class="highlight-txt">Contrato: ${item.contrato}</span>` : '';
+                    const tagIndenizacao = item.valor_indenizacao && item.valor_indenizacao > 0 ? `<div class="indeniz-tag">Indenização: ${formatarMoeda(item.valor_indenizacao)}</div>` : '';
 
                     let botoesAcao = '';
                     if (item.status === 'ativo') {
                         botoesAcao += `<button class="btn-action-small btn-editar" title="Editar" onclick="abrirEdicao(${item.id})">✏️</button>`;
-                        if (item.unidade !== 'Proprio') {
-                            botoesAcao += `<button class="btn-action-small btn-renovar" title="Renovar" onclick="renovarItem(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄</button>`;
-                        }
+                        if (item.unidade !== 'Proprio') botoesAcao += `<button class="btn-action-small btn-renovar" title="Renovar" onclick="renovarItem(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄</button>`;
                         botoesAcao += `<button class="btn-action-small btn-delete" title="Arquivar / Devolver" onclick="arquivarItem(${item.id})">🗑️</button>`;
                     } else {
-                        botoesAcao = `
-                            <span class="status-badge" style="margin-right: 8px;">Arquivado</span>
-                            <button class="btn-action-small btn-desfazer" title="Desfazer exclusão (Restaurar)" onclick="restaurarItem(${item.id})">↩️</button>
-                        `;
+                        botoesAcao = `<span class="status-badge" style="margin-right: 8px;">Arquivado</span> <button class="btn-action-small btn-desfazer" title="Desfazer exclusão (Restaurar)" onclick="restaurarItem(${item.id})">↩️</button>`;
                     }
 
                     const linhaHTML = `
                         <tr>
-                            <td>
-                                <div class="group-info">
-                                    <span class="main-txt">${item.obra}</span>
-                                    <span class="sub-txt">Forn: ${item.fornecedor}</span>
-                                </div>
-                            </td>
+                            <td><div class="group-info"><span class="main-txt">${item.obra}</span><span class="sub-txt">Forn: ${item.fornecedor}</span></div></td>
                             <td><span class="main-txt">${badgeQtd} ${item.equipamento}</span></td>
-                            <td>
-                                <div class="group-info">
-                                    <span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>
-                                    ${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${formatarData(item.data_fim)}</span>` : ''}
-                                </div>
-                            </td>
-                            <td>
-                                <div class="group-info">
-                                    ${numContrato}
-                                    <span class="price-tag">${formatarMoeda(item.valor)}</span>
-                                    ${tagIndenizacao}
-                                </div>
-                            </td>
+                            <td><div class="group-info"><span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${formatarData(item.data_fim)}</span>` : ''}</div></td>
+                            <td><div class="group-info">${numContrato}<span class="price-tag">${formatarMoeda(item.valor)}</span>${tagIndenizacao}</div></td>
                             <td>${btnAnexo}</td>
                             <td><div class="action-buttons">${botoesAcao}</div></td>
                         </tr>
                     `;
 
-                    if (item.status !== 'ativo') {
-                        bodyHistorico.innerHTML += linhaHTML;
-                        countHist++;
-                    } else if (item.unidade === 'Proprio') {
-                        bodyCompras.innerHTML += linhaHTML;
-                        countComp++;
-                    } else {
-                        bodyLocacoes.innerHTML += linhaHTML;
-                        countLoc++;
-                    }
+                    if (item.status !== 'ativo') { bodyHistorico.innerHTML += linhaHTML; countHist++; } 
+                    else if (item.unidade === 'Proprio') { bodyCompras.innerHTML += linhaHTML; countComp++; } 
+                    else { bodyLocacoes.innerHTML += linhaHTML; countLoc++; }
                 });
 
                 document.querySelectorAll('.loader').forEach(e => e.style.display = 'none');
-                
                 if (countLoc > 0) document.getElementById('tabela-locacoes').style.display = 'table';
                 if (countComp > 0) document.getElementById('tabela-compras').style.display = 'table';
                 if (countHist > 0) document.getElementById('tabela-historico').style.display = 'table';
 
                 renderizarModuloFornecedores();
 
-            } catch (err) { 
-                showToast("Erro de conexão ao carregar os dados.", "error"); 
-            }
+            } catch (err) { showToast("Erro de conexão ao carregar os dados.", "error"); }
         }
 
-        // --- SISTEMA DE FORNECEDORES (VIRTUAL TABLE) ---
+        // --- ABA FORNECEDORES ---
         function renderizarModuloFornecedores() {
             const bodyForn = document.getElementById('body-fornecedores');
             bodyForn.innerHTML = '';
-            
             let contagemForns = {};
             dadosGlobais.forEach(item => {
                 let f = item.fornecedor || 'Não identificado';
                 contagemForns[f] = (contagemForns[f] || 0) + 1;
             });
-
-            const listaForns = Object.keys(contagemForns).sort((a, b) => a.localeCompare(b));
-            
-            listaForns.forEach(fornecedor => {
+            Object.keys(contagemForns).sort((a, b) => a.localeCompare(b)).forEach(forn => {
                 bodyForn.innerHTML += `
                     <tr>
-                        <td><span class="main-txt">${fornecedor}</span></td>
-                        <td><span class="status-badge highlight">${contagemForns[fornecedor]} equipamentos vinculados</span></td>
+                        <td><span class="main-txt">${forn}</span></td>
+                        <td><span class="status-badge highlight">${contagemForns[forn]} equipamentos vinculados</span></td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn-action-small btn-editar" title="Corrigir Nome (Renomear)" onclick="abrirRenomearForn('${fornecedor}')">✏️</button>
-                                <button class="btn-action-small btn-renovar" title="Mesclar com outro fornecedor correto" onclick="abrirMesclarForn('${fornecedor}')">🔗</button>
+                                <button class="btn-action-small btn-editar" title="Corrigir Nome (Renomear)" onclick="abrirRenomearForn('${forn}')">✏️</button>
+                                <button class="btn-action-small btn-renovar" title="Mesclar com outro fornecedor correto" onclick="abrirMesclarForn('${forn}')">🔗</button>
                             </div>
                         </td>
                     </tr>
@@ -676,64 +556,40 @@
         function salvarRenomearForn() {
             const origem = document.getElementById('renomear-forn-origem').value;
             const novoNome = document.getElementById('renomear-forn-novo').value.trim();
-            
-            if (!novoNome || novoNome === origem) {
-                showToast("O novo nome não pode ser vazio ou igual ao antigo!", "warning"); 
-                return;
-            }
+            if (!novoNome || novoNome === origem) { showToast("O novo nome não pode ser vazio ou igual ao antigo!", "warning"); return; }
 
             showConfirm('Renomear Fornecedor', `TODOS os equipamentos de "${origem}" passarão a pertencer à "${novoNome}". Confirmar alteração?`, async () => {
                 document.getElementById('modal-renomear-forn').style.display = 'none';
                 showGlobalLoading("Atualizando fornecedores em lote...");
-                
                 const { error } = await client.from('locacoes').update({ fornecedor: novoNome }).eq('fornecedor', origem);
                 hideGlobalLoading();
-
-                if(!error) {
-                    showToast("Nome corrigido em todos os equipamentos!", "success");
-                    carregarFiltros().then(() => carregarDados());
-                } else {
-                    showToast("Erro ao atualizar: " + error.message, "error");
-                    carregarDados();
-                }
+                if(!error) { showToast("Nome corrigido com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } 
+                else { showToast("Erro: " + error.message, "error"); carregarDados(); }
             });
         }
 
         function abrirMesclarForn(origem) {
             document.getElementById('merge-origem').value = origem;
             document.getElementById('merge-origem-txt').value = origem;
-            
             const selDestino = document.getElementById('merge-destino');
             selDestino.innerHTML = '';
-            
-            const forns = [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort();
-            forns.forEach(f => {
+            [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort().forEach(f => {
                 if(f !== origem) selDestino.add(new Option(f, f));
             });
-            
             document.getElementById('modal-mesclar-forn').style.display = 'flex';
         }
 
         function salvarMesclarForn() {
             const origem = document.getElementById('merge-origem').value;
             const destino = document.getElementById('merge-destino').value;
-            
             if(!destino) { showToast("Selecione o destino para mesclar!", "warning"); return; }
-            
-            showConfirm('Mesclar Fornecedores', `ATENÇÃO: Todos os itens de "${origem}" serão transferidos para "${destino}". Essa ação corrige duplicatas. Confirmar?`, async () => {
+            showConfirm('Mesclar Fornecedores', `ATENÇÃO: Todos os itens de "${origem}" serão transferidos para "${destino}". Confirmar?`, async () => {
                 document.getElementById('modal-mesclar-forn').style.display = 'none';
                 showGlobalLoading("Mesclando dados...");
-                
                 const { error } = await client.from('locacoes').update({ fornecedor: destino }).eq('fornecedor', origem);
                 hideGlobalLoading();
-
-                if(!error) {
-                    showToast("Fornecedores mesclados com sucesso!", "success");
-                    carregarFiltros().then(() => carregarDados());
-                } else {
-                    showToast("Erro ao mesclar: " + error.message, "error");
-                    carregarDados();
-                }
+                if(!error) { showToast("Fornecedores mesclados com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } 
+                else { showToast("Erro ao mesclar: " + error.message, "error"); carregarDados(); }
             });
         }
 
@@ -744,7 +600,14 @@
             
             document.getElementById('edit-id').value = item.id;
             document.getElementById('edit-equip').value = item.equipamento || '';
-            document.getElementById('edit-forn').value = item.fornecedor || ''; 
+            
+            const selEditForn = document.getElementById('edit-forn-select');
+            selEditForn.value = item.fornecedor || '';
+            if(!selEditForn.value) selEditForn.value = ''; // reseta se não achar na lista
+            
+            document.getElementById('edit-forn-input').style.display = 'none';
+            document.getElementById('edit-forn-input').value = '';
+
             document.getElementById('edit-qtd').value = item.quantidade || 1;
             document.getElementById('edit-contrato').value = item.contrato || '';
             document.getElementById('edit-valor').value = item.valor || 0;
@@ -753,36 +616,27 @@
             document.getElementById('modal-editar').style.display = 'flex';
         }
 
-        function fecharModalEdicao() {
-            document.getElementById('modal-editar').style.display = 'none';
-        }
+        function fecharModalEdicao() { document.getElementById('modal-editar').style.display = 'none'; }
 
         async function salvarEdicao() {
             const id = document.getElementById('edit-id').value;
             const equipamento = document.getElementById('edit-equip').value;
-            const fornecedor = document.getElementById('edit-forn').value.trim() || 'Não identificado';
+            const selectForn = document.getElementById('edit-forn-select').value;
+            const fornecedor = selectForn === 'NOVA' ? document.getElementById('edit-forn-input').value.trim() : (selectForn || 'Não identificado');
             const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1;
             const contrato = document.getElementById('edit-contrato').value;
             const valor = parseFloat(document.getElementById('edit-valor').value) || 0;
             const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
 
             showGlobalLoading("Salvando edições...");
-            const { error } = await client.from('locacoes').update({ 
-                equipamento, fornecedor, quantidade, contrato, valor, valor_indenizacao 
-            }).eq('id', id);
-
+            const { error } = await client.from('locacoes').update({ equipamento, fornecedor, quantidade, contrato, valor, valor_indenizacao }).eq('id', id);
             hideGlobalLoading();
 
-            if(!error) {
-                fecharModalEdicao();
-                showToast("Equipamento atualizado com sucesso!", "success");
-                carregarFiltros().then(() => carregarDados()); 
-            } else { 
-                showToast("Erro ao atualizar o equipamento!", "error"); 
-            }
+            if(!error) { fecharModalEdicao(); showToast("Equipamento atualizado!", "success"); carregarFiltros().then(() => carregarDados()); } 
+            else { showToast("Erro ao atualizar o equipamento: " + error.message, "error"); }
         }
 
-        // --- SISTEMA DE CADASTRO MANUAL NOVO ---
+        // --- SISTEMA DE CADASTRO NOVO ---
         function toggleCamposNovo() {
             const tipo = document.getElementById('novo-tipo').value;
             document.getElementById('campos-locacao').style.display = tipo === 'aluguel' ? 'block' : 'none';
@@ -791,101 +645,81 @@
 
         function abrirModalNovo() {
             document.getElementById('novo-tipo').value = 'aluguel';
-            document.getElementById('novo-obra').value = '';
+            document.getElementById('novo-obra-select').value = '';
+            document.getElementById('novo-obra-input').style.display = 'none';
+            document.getElementById('novo-obra-input').value = '';
             document.getElementById('novo-equip').value = '';
             document.getElementById('novo-qtd').value = '1';
             document.getElementById('novo-valor').value = '';
-            document.getElementById('novo-forn').value = '';
+            document.getElementById('novo-forn-select').value = '';
+            document.getElementById('novo-forn-input').style.display = 'none';
+            document.getElementById('novo-forn-input').value = '';
             document.getElementById('novo-contrato').value = '';
             document.getElementById('novo-periodo').value = 'Mês';
             toggleCamposNovo();
             document.getElementById('modal-novo').style.display = 'flex';
         }
 
-        function fecharModalNovo() {
-            document.getElementById('modal-novo').style.display = 'none';
-        }
+        function fecharModalNovo() { document.getElementById('modal-novo').style.display = 'none'; }
 
         async function salvarNovo() {
             const tipo = document.getElementById('novo-tipo').value;
-            const obra = document.getElementById('novo-obra').value.trim();
+            const selObra = document.getElementById('novo-obra-select').value;
+            const obra = selObra === 'NOVA' ? document.getElementById('novo-obra-input').value.trim() : selObra;
             const equipamento = document.getElementById('novo-equip').value.trim();
             const quantidade = parseInt(document.getElementById('novo-qtd').value) || 1;
             const valor = parseFloat(document.getElementById('novo-valor').value) || 0;
-            const fornecedor = document.getElementById('novo-forn').value.trim() || 'Não identificado';
+            const selForn = document.getElementById('novo-forn-select').value;
+            const fornecedor = selForn === 'NOVA' ? document.getElementById('novo-forn-input').value.trim() : (selForn || 'Não identificado');
             
-            if (!obra || !equipamento) {
-                showToast("Por favor, preencha o nome da Obra e do Equipamento!", "warning");
-                return;
-            }
+            if (!obra || !equipamento) { showToast("Preencha o nome da Obra e do Equipamento!", "warning"); return; }
 
             const hojeObj = new Date();
-            const hojeIso = hojeObj.toISOString().split('T')[0];
-            
-            let objSalvar = {
-                obra: obra,
-                fornecedor: fornecedor,
-                equipamento: equipamento,
-                quantidade: quantidade,
-                valor: valor,
-                status: 'ativo',
-                data_inicio: hojeIso
-            };
+            let objSalvar = { obra, fornecedor, equipamento, quantidade, valor, status: 'ativo', data_inicio: hojeObj.toISOString().split('T')[0] };
 
             if (tipo === 'compra') {
-                objSalvar.unidade = 'Proprio';
-                objSalvar.data_fim = hojeIso;
-                objSalvar.contrato = 'Cadastro Manual';
+                objSalvar.unidade = 'Proprio'; objSalvar.data_fim = objSalvar.data_inicio; objSalvar.contrato = 'Cadastro Manual';
             } else {
                 const periodo = document.getElementById('novo-periodo').value;
-                const contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato';
-                
                 let dataFim = new Date(hojeObj);
                 if (periodo === 'Mês') dataFim.setDate(dataFim.getDate() + 30);
                 else if (periodo === 'Quinzena') dataFim.setDate(dataFim.getDate() + 15);
                 else if (periodo === 'Dia') dataFim.setDate(dataFim.getDate() + 1);
-
-                objSalvar.unidade = periodo;
-                objSalvar.data_fim = dataFim.toISOString().split('T')[0];
-                objSalvar.contrato = contrato;
+                objSalvar.unidade = periodo; objSalvar.data_fim = dataFim.toISOString().split('T')[0];
+                objSalvar.contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato';
             }
 
             showGlobalLoading("Cadastrando equipamento...");
             const { error } = await client.from('locacoes').insert([objSalvar]);
             hideGlobalLoading();
 
-            if (!error) {
-                showToast("Equipamento adicionado com sucesso!", "success");
-                fecharModalNovo();
-                carregarFiltros().then(() => carregarDados()); 
-            } else {
-                showToast("Erro ao salvar no banco: " + error.message, "error");
-            }
+            if (!error) { showToast("Equipamento adicionado!", "success"); fecharModalNovo(); carregarFiltros().then(() => carregarDados()); } 
+            else { showToast("Erro ao salvar no banco: " + error.message, "error"); }
         }
 
-        // --- AÇÕES RÁPIDAS COM MODAL DE CONFIRMAÇÃO ---
+        // --- AÇÕES RÁPIDAS (COM CORREÇÃO DE BUG E CATCH) ---
         function arquivarItem(id) {
             showConfirm("Arquivar Equipamento", "Deseja marcar este item como devolvido/arquivado? Ele sairá da tela principal e irá para o Histórico.", async () => {
                 showGlobalLoading("Movendo para o histórico...");
-                await client.from('locacoes').update({ status: 'inativo' }).eq('id', id);
+                const { error } = await client.from('locacoes').update({ status: 'inativo' }).eq('id', id);
                 hideGlobalLoading();
-                showToast("Equipamento arquivado com sucesso!", "success");
-                carregarDados();
+                if (error) { showToast("Erro: " + error.message, "error"); } 
+                else { showToast("Equipamento arquivado com sucesso!", "success"); carregarDados(); }
             }, true);
         }
 
         function restaurarItem(id) {
             showConfirm("Restaurar Equipamento", "Deseja desfazer a exclusão e restaurar este item para a aba de Ativos?", async () => {
                 showGlobalLoading("Restaurando equipamento...");
-                await client.from('locacoes').update({ status: 'ativo' }).eq('id', id);
+                const { error } = await client.from('locacoes').update({ status: 'ativo' }).eq('id', id);
                 hideGlobalLoading();
-                showToast("Equipamento restaurado!", "success");
-                carregarDados();
+                if (error) { showToast("Erro ao restaurar: " + error.message, "error"); } 
+                else { showToast("Equipamento restaurado!", "success"); carregarDados(); }
             });
         }
 
         function renovarItem(id, fim, uni) {
-            showConfirm("Renovar Contrato", `Deseja prorrogar a locação deste equipamento por mais 1 ${uni}? A data de vencimento será recalculada automaticamente.`, async () => {
+            showConfirm("Renovar Contrato", `Deseja prorrogar a locação deste equipamento por mais 1 ${uni}?`, async () => {
                 showGlobalLoading("Renovando período...");
                 let d = new Date(fim);
                 d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
@@ -895,17 +729,11 @@
                 
                 const { error } = await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id);
                 hideGlobalLoading();
-                
-                if(!error) {
-                    showToast("Período renovado com sucesso!", "success");
-                    carregarDados(); 
-                } else {
-                    showToast("Erro ao renovar contrato.", "error");
-                }
+                if(!error) { showToast("Período renovado com sucesso!", "success"); carregarDados(); } 
+                else { showToast("Erro ao renovar: " + error.message, "error"); }
             });
         }
 
-        // INICIALIZAÇÃO
         carregarFiltros().then(() => carregarDados());
 
     </script>
