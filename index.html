@@ -67,10 +67,10 @@
         .highlight-txt { font-size: 0.75rem; color: var(--primary); font-weight: 700; margin-bottom: 2px;}
         
         .qtd-badge { background: var(--primary); color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 800; margin-right: 10px; }
-        
         .price-tag { font-weight: 800; color: #0f172a; }
         .indeniz-tag { font-size: 0.7rem; color: var(--danger); background: #fef2f2; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; font-weight: 600; border: 1px solid #fca5a5; width: fit-content;}
-        .status-badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; background: #e2e8f0; color: #475569; width: fit-content; }
+        .status-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; font-weight: bold; background: #e2e8f0; color: #475569; width: fit-content; }
+        .status-badge.highlight { background: #dbeafe; color: #1e40af; }
         
         /* BOTÕES DE AÇÃO */
         .btn-anexo { background: #eff6ff; color: var(--primary); padding: 8px 12px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; border: 1px solid #bfdbfe; transition: 0.2s; }
@@ -95,6 +95,7 @@
         .form-group { margin-top: 15px; }
         .form-group label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-light); margin-bottom: 5px; }
         .form-group input, .form-group select { width: 100%; height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 10px; font-family: 'Inter'; box-sizing: border-box; }
+        .form-group input:disabled { background: #f1f5f9; font-weight: bold; color: #475569; }
         .grid-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
@@ -123,6 +124,10 @@
         
         <div class="menu-item" id="menu-comp" onclick="mudarAba('compras')">
             <span class="icon">🛒</span> <span class="text-hide">Patrimônio Próprio</span>
+        </div>
+
+        <div class="menu-item" id="menu-forn" onclick="mudarAba('fornecedores')">
+            <span class="icon">🏢</span> <span class="text-hide">Fornecedores</span>
         </div>
 
         <div class="menu-item" id="menu-hist" onclick="mudarAba('historico')">
@@ -159,12 +164,7 @@
                 <table class="table-modern" id="tabela-locacoes" style="display:none;">
                     <thead>
                         <tr>
-                            <th>Obra / Locadora</th>
-                            <th>Equipamento</th>
-                            <th>Período de Aluguel</th>
-                            <th>Valores / Contrato</th>
-                            <th>Comprovante</th>
-                            <th>Ações</th>
+                            <th>Obra / Locadora</th><th>Equipamento</th><th>Período de Aluguel</th><th>Valores / Contrato</th><th>Comprovante</th><th>Ações</th>
                         </tr>
                     </thead>
                     <tbody id="body-locacoes"></tbody>
@@ -179,15 +179,25 @@
                 <table class="table-modern" id="tabela-compras" style="display:none;">
                     <thead>
                         <tr>
-                            <th>Obra / Loja</th>
-                            <th>Equipamento</th>
-                            <th>Data de Compra</th>
-                            <th>Valores Pagos</th>
-                            <th>Comprovante</th>
-                            <th>Ações</th>
+                            <th>Obra / Loja</th><th>Equipamento</th><th>Data de Compra</th><th>Valores Pagos</th><th>Comprovante</th><th>Ações</th>
                         </tr>
                     </thead>
                     <tbody id="body-compras"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="secao-fornecedores" class="secao-tabela">
+            <div class="card-table">
+                <h3 style="color: #6366f1;">🏢 Gestão de Fornecedores e Locadoras</h3>
+                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px; margin-top: -10px;">Corrija erros de digitação da IA ou mescle fornecedores duplicados. A alteração afeta todos os equipamentos vinculados automaticamente.</p>
+                <table class="table-modern" id="tabela-fornecedores">
+                    <thead>
+                        <tr>
+                            <th>Nome do Fornecedor / Locadora</th><th>Total de Equipamentos</th><th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-fornecedores"></tbody>
                 </table>
             </div>
         </div>
@@ -199,12 +209,7 @@
                 <table class="table-modern" id="tabela-historico" style="display:none;">
                     <thead>
                         <tr>
-                            <th>Obra / Fornecedor</th>
-                            <th>Equipamento</th>
-                            <th>Data Base</th>
-                            <th>Valores</th>
-                            <th>Comprovante</th>
-                            <th>Status / Ação</th>
+                            <th>Obra / Fornecedor</th><th>Equipamento</th><th>Data Base</th><th>Valores</th><th>Comprovante</th><th>Status / Ação</th>
                         </tr>
                     </thead>
                     <tbody id="body-historico"></tbody>
@@ -223,6 +228,12 @@
                     <label>Nome do Equipamento</label>
                     <input type="text" id="edit-equip">
                 </div>
+
+                <div class="form-group">
+                    <label>Locadora / Fornecedor Vinculado</label>
+                    <input type="text" id="edit-forn" list="lista-forns-edit" placeholder="Selecione ou digite um fornecedor...">
+                    <datalist id="lista-forns-edit"></datalist>
+                </div>
                 
                 <div class="grid-duplo">
                     <div class="form-group">
@@ -237,7 +248,7 @@
 
                 <div class="grid-duplo">
                     <div class="form-group">
-                        <label>Valor (R$)</label>
+                        <label>Valor Total (R$)</label>
                         <input type="number" id="edit-valor" step="0.01">
                     </div>
                     <div class="form-group">
@@ -257,7 +268,6 @@
         <div class="modal-box">
             <h3>➕ Adicionar Novo Equipamento</h3>
             <div class="form-edit">
-                
                 <div class="form-group">
                     <label>Tipo de Entrada</label>
                     <select id="novo-tipo" onchange="toggleCamposNovo()">
@@ -310,11 +320,54 @@
                         </div>
                     </div>
                 </div>
-
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel-edit" onclick="fecharModalNovo()">Cancelar</button>
                 <button class="btn-save-edit" onclick="salvarNovo()">Salvar Cadastro</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-renomear-forn">
+        <div class="modal-box">
+            <h3>✏️ Renomear Fornecedor</h3>
+            <p style="font-size:0.85rem; color:var(--text-light);">Ao corrigir o nome, todos os equipamentos vinculados serão atualizados em massa.</p>
+            <div class="form-edit">
+                <input type="hidden" id="renomear-forn-origem">
+                <div class="form-group">
+                    <label>Nome Atual (Incorreto)</label>
+                    <input type="text" id="renomear-forn-origem-txt" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Novo Nome / Razão Social Correta</label>
+                    <input type="text" id="renomear-forn-novo" placeholder="Digite o nome correto...">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button>
+                <button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar Todos</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-mesclar-forn">
+        <div class="modal-box">
+            <h3>🔗 Mesclar Duplicados</h3>
+            <p style="font-size:0.85rem; color:var(--text-light);">Mova todos os equipamentos de um cadastro duplicado/incorreto para o cadastro definitivo.</p>
+            <div class="form-edit">
+                <input type="hidden" id="merge-origem">
+                <div class="form-group">
+                    <label>Fornecedor Incorreto (Origem)</label>
+                    <input type="text" id="merge-origem-txt" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Mesclar com (Destino Correto)</label>
+                    <select id="merge-destino"></select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button>
+                <button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar e Unificar</button>
             </div>
         </div>
     </div>
@@ -345,6 +398,7 @@
             return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
+        // CARREGA FILTROS E DATALISTS
         async function carregarFiltros() {
             const { data } = await client.from('locacoes').select('obra, fornecedor');
             if(data) {
@@ -355,14 +409,12 @@
                 const selForn = document.getElementById('filtroForn');
                 const listObras = document.getElementById('lista-obras');
                 const listForns = document.getElementById('lista-forns');
+                const listFornsEdit = document.getElementById('lista-forns-edit');
 
-                // Limpa os dados
                 selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>';
                 selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
-                listObras.innerHTML = '';
-                listForns.innerHTML = '';
+                listObras.innerHTML = ''; listForns.innerHTML = ''; listFornsEdit.innerHTML = '';
 
-                // Popula os filtros do topo e as listas do modal
                 obras.forEach(o => {
                     selObra.add(new Option(o, o));
                     listObras.appendChild(new Option(o));
@@ -370,10 +422,12 @@
                 forns.forEach(f => {
                     selForn.add(new Option(f, f));
                     listForns.appendChild(new Option(f));
+                    listFornsEdit.appendChild(new Option(f));
                 });
             }
         }
 
+        // CARREGA TODOS OS DADOS E RENDERIZA AS TABELAS
         async function carregarDados() {
             document.querySelectorAll('.loader').forEach(e => e.style.display = 'block');
             document.querySelectorAll('.table-modern').forEach(e => e.style.display = 'none');
@@ -475,16 +529,117 @@
                 if (countComp > 0) document.getElementById('tabela-compras').style.display = 'table';
                 if (countHist > 0) document.getElementById('tabela-historico').style.display = 'table';
 
+                renderizarModuloFornecedores();
+
             } catch (err) { alert("Erro ao carregar dados."); }
         }
 
-        // --- SISTEMA DE EDIÇÃO ---
+        // --- SISTEMA DE FORNECEDORES (VIRTUAL TABLE) ---
+        function renderizarModuloFornecedores() {
+            const bodyForn = document.getElementById('body-fornecedores');
+            bodyForn.innerHTML = '';
+            
+            // Agrupa todos os fornecedores encontrados no banco
+            let contagemForns = {};
+            dadosGlobais.forEach(item => {
+                let f = item.fornecedor || 'Não identificado';
+                contagemForns[f] = (contagemForns[f] || 0) + 1;
+            });
+
+            const listaForns = Object.keys(contagemForns).sort((a, b) => a.localeCompare(b));
+            
+            listaForns.forEach(fornecedor => {
+                bodyForn.innerHTML += `
+                    <tr>
+                        <td><span class="main-txt">${fornecedor}</span></td>
+                        <td><span class="status-badge highlight">${contagemForns[fornecedor]} equipamentos vinculados</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-action-small btn-editar" title="Corrigir Nome (Renomear)" onclick="abrirRenomearForn('${fornecedor}')">✏️</button>
+                                <button class="btn-action-small btn-renovar" title="Mesclar com outro fornecedor correto" onclick="abrirMesclarForn('${fornecedor}')">🔗</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('tabela-fornecedores').style.display = 'table';
+        }
+
+        function abrirRenomearForn(origem) {
+            document.getElementById('renomear-forn-origem').value = origem;
+            document.getElementById('renomear-forn-origem-txt').value = origem;
+            document.getElementById('renomear-forn-novo').value = origem;
+            document.getElementById('modal-renomear-forn').style.display = 'flex';
+        }
+
+        async function salvarRenomearForn() {
+            const origem = document.getElementById('renomear-forn-origem').value;
+            const novoNome = document.getElementById('renomear-forn-novo').value.trim();
+            
+            if (!novoNome || novoNome === origem) {
+                alert("O novo nome não pode ser vazio ou igual ao antigo!"); return;
+            }
+
+            if(confirm(`Tem certeza? TODOS os equipamentos de "${origem}" passarão a pertencer à "${novoNome}".`)) {
+                document.getElementById('modal-renomear-forn').style.display = 'none';
+                document.querySelectorAll('.loader').forEach(e => e.style.display = 'block');
+                
+                const { error } = await client.from('locacoes').update({ fornecedor: novoNome }).eq('fornecedor', origem);
+                if(!error) {
+                    alert("✅ Nome corrigido em todos os equipamentos!");
+                    carregarFiltros().then(() => carregarDados());
+                } else {
+                    alert("Erro ao atualizar: " + error.message);
+                    carregarDados();
+                }
+            }
+        }
+
+        function abrirMesclarForn(origem) {
+            document.getElementById('merge-origem').value = origem;
+            document.getElementById('merge-origem-txt').value = origem;
+            
+            const selDestino = document.getElementById('merge-destino');
+            selDestino.innerHTML = '';
+            
+            const forns = [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort();
+            forns.forEach(f => {
+                if(f !== origem) selDestino.add(new Option(f, f));
+            });
+            
+            document.getElementById('modal-mesclar-forn').style.display = 'flex';
+        }
+
+        async function salvarMesclarForn() {
+            const origem = document.getElementById('merge-origem').value;
+            const destino = document.getElementById('merge-destino').value;
+            
+            if(!destino) { alert("Selecione o destino!"); return; }
+            
+            if(confirm(`ATENÇÃO: Todos os itens de "${origem}" serão unificados dentro de "${destino}". Essa ação corrige duplicatas. Confirmar?`)) {
+                document.getElementById('modal-mesclar-forn').style.display = 'none';
+                document.querySelectorAll('.loader').forEach(e => e.style.display = 'block');
+                
+                const { error } = await client.from('locacoes').update({ fornecedor: destino }).eq('fornecedor', origem);
+                
+                if(!error) {
+                    alert("✅ Fornecedores mesclados com sucesso!");
+                    carregarFiltros().then(() => carregarDados());
+                } else {
+                    alert("Erro ao mesclar: " + error.message);
+                    carregarDados();
+                }
+            }
+        }
+
+        // --- SISTEMA DE EDIÇÃO DE EQUIPAMENTO ---
         function abrirEdicao(id) {
             const item = dadosGlobais.find(i => i.id === id);
             if(!item) return;
             
             document.getElementById('edit-id').value = item.id;
             document.getElementById('edit-equip').value = item.equipamento || '';
+            document.getElementById('edit-forn').value = item.fornecedor || ''; // Puxa o fornecedor
             document.getElementById('edit-qtd').value = item.quantidade || 1;
             document.getElementById('edit-contrato').value = item.contrato || '';
             document.getElementById('edit-valor').value = item.valor || 0;
@@ -500,18 +655,19 @@
         async function salvarEdicao() {
             const id = document.getElementById('edit-id').value;
             const equipamento = document.getElementById('edit-equip').value;
+            const fornecedor = document.getElementById('edit-forn').value.trim() || 'Não identificado';
             const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1;
             const contrato = document.getElementById('edit-contrato').value;
             const valor = parseFloat(document.getElementById('edit-valor').value) || 0;
             const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
 
             const { error } = await client.from('locacoes').update({ 
-                equipamento, quantidade, contrato, valor, valor_indenizacao 
+                equipamento, fornecedor, quantidade, contrato, valor, valor_indenizacao 
             }).eq('id', id);
 
             if(!error) {
                 fecharModalEdicao();
-                carregarDados();
+                carregarFiltros().then(() => carregarDados()); // Recarrega os filtros pois o fornecedor pode ter mudado
             } else { alert("Erro ao atualizar!"); }
         }
 
@@ -588,7 +744,7 @@
             if (!error) {
                 alert("Equipamento cadastrado com sucesso!");
                 fecharModalNovo();
-                carregarFiltros().then(() => carregarDados()); // Atualiza os filtros e a tabela
+                carregarFiltros().then(() => carregarDados()); 
             } else {
                 alert("Erro ao salvar no banco: " + error.message);
             }
