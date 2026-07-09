@@ -180,11 +180,11 @@
 
         <div class="top-controls">
             <div class="filter-group">
-                <select id="filtroObra" onchange="carregarDados()">
-                    <option value="todas">🏢 Todas as Obras</option>
+                <select id="filtroObra" onchange="carregarDados()" title="">
+                    <option value="todas" title="">🏢 Todas as Obras</option>
                 </select>
-                <select id="filtroForn" onchange="carregarDados()">
-                    <option value="todos">🚚 Todos os Fornecedores</option>
+                <select id="filtroForn" onchange="carregarDados()" title="">
+                    <option value="todos" title="">🚚 Todos os Fornecedores</option>
                 </select>
                 <input type="text" id="filtroContrato" placeholder="🔎 Digite o Nº do Contrato..." onkeyup="carregarDados()">
             </div>
@@ -248,8 +248,7 @@
 
                 <div class="form-group">
                     <label>Locadora / Fornecedor Vinculado</label>
-                    <select id="edit-forn-select" onchange="verificarNovoFornEdit()">
-                        </select>
+                    <select id="edit-forn-select" onchange="verificarNovoFornEdit()" title=""></select>
                     <input type="text" id="edit-forn-input" placeholder="Digite o novo fornecedor..." style="display:none; margin-top:10px;">
                 </div>
                 
@@ -275,16 +274,15 @@
             <div class="form-edit">
                 <div class="form-group">
                     <label>Tipo de Entrada</label>
-                    <select id="novo-tipo" onchange="toggleCamposNovo()">
-                        <option value="aluguel">📄 Locação (Aluguel)</option>
-                        <option value="compra">🛒 Patrimônio (Compra)</option>
+                    <select id="novo-tipo" onchange="toggleCamposNovo()" title="">
+                        <option value="aluguel" title="">📄 Locação (Aluguel)</option>
+                        <option value="compra" title="">🛒 Patrimônio (Compra)</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label>Obra</label>
-                    <select id="novo-obra-select" onchange="verificarNovaObra()">
-                        </select>
+                    <select id="novo-obra-select" onchange="verificarNovaObra()" title=""></select>
                     <input type="text" id="novo-obra-input" placeholder="Digite o nome da nova obra..." style="display:none; margin-top:10px;">
                 </div>
 
@@ -297,8 +295,7 @@
 
                 <div class="form-group">
                     <label id="lbl-forn">Locadora / Fornecedor</label>
-                    <select id="novo-forn-select" onchange="verificarNovoForn()">
-                        </select>
+                    <select id="novo-forn-select" onchange="verificarNovoForn()" title=""></select>
                     <input type="text" id="novo-forn-input" placeholder="Digite o nome do fornecedor..." style="display:none; margin-top:10px;">
                 </div>
 
@@ -307,8 +304,8 @@
                         <div class="form-group"><label>Nº do Contrato</label><input type="text" id="novo-contrato" placeholder="Ex: 011359/A"></div>
                         <div class="form-group">
                             <label>Período</label>
-                            <select id="novo-periodo">
-                                <option value="Mês">Mês (30 dias)</option><option value="Quinzena">Quinzena (15 dias)</option><option value="Dia">Diária</option>
+                            <select id="novo-periodo" title="">
+                                <option value="Mês" title="">Mês (30 dias)</option><option value="Quinzena" title="">Quinzena (15 dias)</option><option value="Dia" title="">Diária</option>
                             </select>
                         </div>
                     </div>
@@ -342,7 +339,7 @@
             <div class="form-edit">
                 <input type="hidden" id="merge-origem">
                 <div class="form-group"><label>Fornecedor Incorreto (Origem)</label><input type="text" id="merge-origem-txt" disabled></div>
-                <div class="form-group"><label>Mesclar com (Destino Correto)</label><select id="merge-destino"></select></div>
+                <div class="form-group"><label>Mesclar com (Destino Correto)</label><select id="merge-destino" title=""></select></div>
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button>
@@ -377,6 +374,7 @@
 
         function hideGlobalLoading() { document.getElementById('global-loader').style.display = 'none'; }
 
+        // CORREÇÃO DO BUG DO MODAL DE CONFIRMAÇÃO: Segura a ação na memória.
         let confirmCallbackAction = null;
         function showConfirm(title, message, onConfirm, isDanger = false) {
             document.getElementById('confirm-title').innerText = title;
@@ -385,18 +383,24 @@
             const btnConfirm = document.getElementById('btn-confirm-action');
             btnConfirm.style.background = isDanger ? 'var(--danger)' : 'var(--primary)';
             btnConfirm.innerText = isDanger ? 'Sim, Confirmar' : 'Confirmar';
-            confirmCallbackAction = onConfirm;
+            confirmCallbackAction = onConfirm; // Salva a ação
             document.getElementById('modal-confirm').style.display = 'flex';
         }
 
         function fecharConfirm() {
             document.getElementById('modal-confirm').style.display = 'none';
-            confirmCallbackAction = null;
         }
 
+        // Ouve o clique apenas UMA VEZ na inicialização
         document.getElementById('btn-confirm-action').addEventListener('click', () => {
-            fecharConfirm();
-            if (confirmCallbackAction) confirmCallbackAction();
+            if (confirmCallbackAction) {
+                const actionToRun = confirmCallbackAction; // Copia a ação
+                confirmCallbackAction = null; // Limpa da memória global
+                fecharConfirm(); // Fecha a tela primeiro
+                actionToRun(); // Executa a ação armazenada
+            } else {
+                fecharConfirm();
+            }
         });
 
         // --- NAVEGAÇÃO E FORMATAÇÃO ---
@@ -410,7 +414,7 @@
         function formatarData(dataString) { if (!dataString) return '--'; const p = dataString.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
         function formatarMoeda(valor) { return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-        // --- CONTROLES DE NOVAS OBRAS E FORNECEDORES (SEM DATALIST) ---
+        // --- CONTROLES DE NOVAS OBRAS E FORNECEDORES ---
         function verificarNovaObra() {
             const s = document.getElementById('novo-obra-select');
             const i = document.getElementById('novo-obra-input');
@@ -436,20 +440,27 @@
                 // Filtros do topo
                 const selObra = document.getElementById('filtroObra');
                 const selForn = document.getElementById('filtroForn');
-                selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>';
-                selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
+                selObra.innerHTML = '<option value="todas" title="">🏢 Todas as Obras</option>';
+                selForn.innerHTML = '<option value="todos" title="">🚚 Todos os Fornecedores</option>';
 
                 // Selects dos modais
                 const selObraNovo = document.getElementById('novo-obra-select');
                 const selFornNovo = document.getElementById('novo-forn-select');
                 const selFornEdit = document.getElementById('edit-forn-select');
                 
-                selObraNovo.innerHTML = '<option value="" disabled selected>Selecione a obra...</option><option value="NOVA" style="font-weight:bold; color:var(--primary);">➕ Cadastrar Nova Obra...</option>';
-                selFornNovo.innerHTML = '<option value="" disabled selected>Selecione o fornecedor...</option><option value="NOVA" style="font-weight:bold; color:var(--primary);">➕ Cadastrar Novo Fornecedor...</option>';
-                selFornEdit.innerHTML = '<option value="" disabled>Selecione o fornecedor...</option><option value="NOVA" style="font-weight:bold; color:var(--primary);">➕ Digitar Novo Fornecedor...</option>';
+                selObraNovo.innerHTML = '<option value="" disabled selected title="">Selecione a obra...</option><option value="NOVA" title="" style="font-weight:bold; color:var(--primary);">➕ Cadastrar Nova Obra...</option>';
+                selFornNovo.innerHTML = '<option value="" disabled selected title="">Selecione o fornecedor...</option><option value="NOVA" title="" style="font-weight:bold; color:var(--primary);">➕ Cadastrar Novo Fornecedor...</option>';
+                selFornEdit.innerHTML = '<option value="" disabled title="">Selecione o fornecedor...</option><option value="NOVA" title="" style="font-weight:bold; color:var(--primary);">➕ Digitar Novo Fornecedor...</option>';
 
-                obras.forEach(o => { selObra.add(new Option(o, o)); selObraNovo.add(new Option(o, o)); });
-                forns.forEach(f => { selForn.add(new Option(f, f)); selFornNovo.add(new Option(f, f)); selFornEdit.add(new Option(f, f)); });
+                obras.forEach(o => { 
+                    let op1 = new Option(o, o); op1.title = ""; selObra.add(op1);
+                    let op2 = new Option(o, o); op2.title = ""; selObraNovo.add(op2);
+                });
+                forns.forEach(f => { 
+                    let op1 = new Option(f, f); op1.title = ""; selForn.add(op1);
+                    let op2 = new Option(f, f); op2.title = ""; selFornNovo.add(op2);
+                    let op3 = new Option(f, f); op3.title = ""; selFornEdit.add(op3);
+                });
             }
         }
 
@@ -574,7 +585,11 @@
             const selDestino = document.getElementById('merge-destino');
             selDestino.innerHTML = '';
             [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort().forEach(f => {
-                if(f !== origem) selDestino.add(new Option(f, f));
+                if(f !== origem) {
+                    let opt = new Option(f, f);
+                    opt.title = "";
+                    selDestino.add(opt);
+                }
             });
             document.getElementById('modal-mesclar-forn').style.display = 'flex';
         }
@@ -697,7 +712,7 @@
             else { showToast("Erro ao salvar no banco: " + error.message, "error"); }
         }
 
-        // --- AÇÕES RÁPIDAS (COM CORREÇÃO DE BUG E CATCH) ---
+        // --- AÇÕES RÁPIDAS COM MODAL DE CONFIRMAÇÃO ---
         function arquivarItem(id) {
             showConfirm("Arquivar Equipamento", "Deseja marcar este item como devolvido/arquivado? Ele sairá da tela principal e irá para o Histórico.", async () => {
                 showGlobalLoading("Movendo para o histórico...");
