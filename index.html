@@ -45,7 +45,6 @@
         .filter-group input:focus, .filter-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .filter-group input::placeholder { font-weight: 400; color: #94a3b8; }
         
-        /* FASE 3: COMPONENTES DE BUSCA E FILTROS INTELIGENTES */
         .btn-limpar { background: #fef2f2; border: 1px solid #fca5a5; color: var(--danger); padding: 0 15px; height: 40px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
         .btn-limpar:hover { background: var(--danger); color: white; border-color: var(--danger); }
         .counter-badge { background: #f1f5f9; color: var(--text-light); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
@@ -69,7 +68,7 @@
         .chart-card h4 { margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .chart-container { flex: 1; position: relative; min-height: 0; }
 
-        /* FASE 3: CARD DA TABELA COM CABEÇALHO FIXO E SCROLL CONTROLADO */
+        /* TABELA E ANIMAÇÕES */
         .secao-tabela { display: none; } 
         .animate-show { display: block; animation: fadeInScale 0.3s ease-out forwards; }
         @keyframes fadeInScale { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -77,20 +76,16 @@
         .card-table { background: var(--white); padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 30px; max-height: 520px; overflow-y: auto; overflow-x: auto; position: relative; }
         .card-table h3 { margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text); border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 10px;}
         
-        /* FASE 3: REGRAS DA TABELA MODERNA (ZEBRADA E STICKY) */
         .table-modern { width: 100%; border-collapse: collapse; min-width: 950px; }
         .table-modern th { padding: 14px 12px; color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; text-align: left; border-bottom: 2px solid var(--border); position: sticky; top: -25px; background: var(--white); z-index: 2; cursor: pointer; user-select: none; transition: background 0.2s; }
         .table-modern th:hover { background: #f1f5f9; color: var(--primary); }
         .table-modern tr { transition: 0.15s; border-bottom: 1px solid #f1f5f9; }
-        
-        /* LINHAS ZEBRADAS */
         .table-modern tbody tr:nth-child(even) { background-color: #f8fafc; }
-        .table-modern tbody tr:hover { background-color: #f0fdf4 !important; } /* Cor sutil de destaque no hover */
+        .table-modern tbody tr:hover { background-color: #f0fdf4 !important; } 
         .table-modern td { padding: 14px 12px; vertical-align: middle; }
         
         .sort-icon { margin-left: 5px; font-size: 0.7rem; color: var(--primary); display: inline-block; }
 
-        /* TEXTOS DA TABELA */
         .group-info { display: flex; flex-direction: column; }
         .main-txt { font-weight: 700; color: var(--text); font-size: 0.95rem; display: flex; align-items: center; }
         .sub-txt { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
@@ -167,16 +162,14 @@
         <div class="main-content">
             <div class="header">
                 <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
-                <span class="badge-version">Versão 1.3</span>
+                <span class="badge-version">Versão 1.3.1</span>
             </div>
 
             <div class="top-controls">
                 <div class="filter-group">
                     <select id="filtroObra" onchange="carregarDados()"><option value="todas">🏢 Todas as Obras</option></select>
                     <select id="filtroForn" onchange="carregarDados()"><option value="todos">🚚 Todos os Fornecedores</option></select>
-                    
                     <input type="text" id="filtroContrato" placeholder="🔎 Busca por item, contrato, loja..." onkeyup="aplicarFiltrosELocalSort()">
-                    
                     <button class="btn-limpar" id="btn-limpar-filtros" onclick="limparFiltros()" style="display: none;">🧹 Limpar Filtros</button>
                     <span class="counter-badge" id="registro-contador">0 encontrados</span>
                 </div>
@@ -287,6 +280,7 @@
         </div>
     </div>
 
+    <!-- MODAL EDITAR -->
     <div class="modal-overlay" id="modal-editar">
         <div class="modal-box">
             <h3>✏️ Editar Equipamento</h3>
@@ -315,6 +309,7 @@
         </div>
     </div>
 
+    <!-- MODAL NOVO -->
     <div class="modal-overlay" id="modal-novo">
         <div class="modal-box">
             <h3>➕ Adicionar Novo Equipamento</h3>
@@ -345,19 +340,19 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome Correto</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar Todos</button></div></div></div>
-    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar e Unificar</button></div></div></div>
+    <!-- MODAIS DE FORNECEDOR -->
+    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual (Incorreto)</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome Correto</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar Todos</button></div></div></div>
+    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto (Origem)</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com (Destino Correto)</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar e Unificar</button></div></div></div>
 
     <script>
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        let dadosGlobais = []; // Cache completo vindo do Supabase
-        let dadosFiltrados = []; // Cache local da tela após filtros aplicados
+        let dadosGlobais = []; 
+        let dadosFiltrados = []; 
         let chartObras = null, chartForns = null, chartStatus = null;
 
-        // FASE 3: VARIÁVEIS DE ESTADO DA ORDENAÇÃO LOCAL
         let sortColunaAtual = 'data_inicio';
         let sortDirecaoAsc = false;
 
@@ -405,7 +400,6 @@
             }
         }
 
-        // FASE 3 CENTRALIZAÇÃO: Puxa o banco bruto do Supabase e salva em dadosGlobais
         async function carregarDados() {
             document.querySelectorAll('.loader').forEach(e => e.style.display = 'block');
             document.querySelectorAll('.table-modern').forEach(e => e.style.display = 'none');
@@ -413,95 +407,58 @@
                 const { data, error } = await client.from('locacoes').select('*');
                 if (error) throw error;
                 dadosGlobais = data;
-                aplicarFiltrosELocalSort(); // Roda a renderização e filtros locais
+                aplicarFiltrosELocalSort(); 
             } catch (err) { showToast("Erro ao conectar no banco de dados.", "error"); }
         }
 
-        // FASE 3 MOTOR: Filtra, ordena e renderiza tudo localmente sem re-pesquisar o Supabase
         function aplicarFiltrosELocalSort() {
             const fObra = document.getElementById('filtroObra').value;
             const fForn = document.getElementById('filtroForn').value;
             const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
 
-            // 1. Filtragem Inteligente Local
             dadosFiltrados = dadosGlobais.filter(item => {
                 const matchObra = fObra === 'todas' || item.obra === fObra;
                 const matchForn = fForn === 'todos' || item.fornecedor === fForn;
-                
-                // Pesquisa em múltiplos campos de texto de uma vez só (Smart Search)
                 const textoAlvo = `${item.equipamento} ${item.contrato} ${item.fornecedor} ${item.obra}`.toLowerCase();
                 const matchTexto = fTexto === '' || textoAlvo.includes(fTexto);
-                
                 return matchObra && matchForn && matchTexto;
             });
 
-            // Gerencia visibilidade do botão de Limpar Filtros
             const filtroAtivo = fObra !== 'todas' || fForn !== 'todos' || fTexto !== '';
             document.getElementById('btn-limpar-filtros').style.display = filtroAtivo ? 'flex' : 'none';
 
-            // 2. Ordenação Local Dinâmica
             dadosFiltrados.sort((a, b) => {
-                let valA = a[sortColunaAtual];
-                let valB = b[sortColunaAtual];
-
-                // Tratamento para valores numéricos ou nulos
-                if (typeof valA === 'number' || typeof valB === 'number') {
-                    return sortDirecaoAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0);
-                }
-                
-                valA = String(valA || '').toLowerCase();
-                valB = String(valB || '').toLowerCase();
+                let valA = a[sortColunaAtual]; let valB = b[sortColunaAtual];
+                if (typeof valA === 'number' || typeof valB === 'number') { return sortDirecaoAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0); }
+                valA = String(valA || '').toLowerCase(); valB = String(valB || '').toLowerCase();
                 return sortDirecaoAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
             });
 
-            // Atualiza indicadores visuais de setas (▲/▼)
             atualizarSetasOrdenacao();
-
-            // 3. Renderização das Tabelas e Dashboards
             renderizarTabelasTela();
             atualizarDashboard(dadosFiltrados);
+            renderizarModuloFornecedores();
         }
 
-        // FASE 3 AUXILIAR: Muda a coluna alvo do clique
         function ordenarColuna(coluna) {
-            if (sortColunaAtual === coluna) {
-                sortDirecaoAsc = !sortDirecaoAsc; // Inverte direção se clicar na mesma
-            } else {
-                sortColunaAtual = coluna;
-                sortDirecaoAsc = true; // Reseta para Crescente se for coluna nova
-            }
+            if (sortColunaAtual === coluna) { sortDirecaoAsc = !sortDirecaoAsc; } else { sortColunaAtual = coluna; sortDirecaoAsc = true; }
             aplicarFiltrosELocalSort();
         }
 
         function atualizarSetasOrdenacao() {
-            // Limpa todos os ícones de setas das colunas
             document.querySelectorAll('.sort-icon').forEach(span => span.innerText = '');
-            
-            // Desenha a seta na coluna ativa
             const seta = sortDirecaoAsc ? ' ▲' : ' ▼';
             const idsSetas = ['sort-obra', 'sort-equipamento', 'sort-data_fim', 'sort-valor', 'sort-comp-obra', 'sort-comp-equip', 'sort-comp-data', 'sort-comp-valor', 'sort-hist-obra', 'sort-hist-equip', 'sort-hist-data', 'sort-hist-valor'];
-            
-            idsSetas.forEach(id => {
-                const el = document.getElementById(id);
-                if (el && id.includes(sortColunaAtual)) {
-                    el.innerText = seta;
-                }
-            });
+            idsSetas.forEach(id => { const el = document.getElementById(id); if (el && id.includes(sortColunaAtual)) { el.innerText = seta; } });
         }
 
         function limparFiltros() {
-            document.getElementById('filtroObra').value = 'todas';
-            document.getElementById('filtroForn').value = 'todos';
-            document.getElementById('filtroContrato').value = '';
-            aplicarFiltrosELocalSort();
-            showToast("Filtros redefinidos!", "success");
+            document.getElementById('filtroObra').value = 'todas'; document.getElementById('filtroForn').value = 'todos'; document.getElementById('filtroContrato').value = '';
+            aplicarFiltrosELocalSort(); showToast("Filtros redefinidos!", "success");
         }
 
         function renderizarTabelasTela() {
-            const bodyLocacoes = document.getElementById('body-locacoes'); 
-            const bodyCompras = document.getElementById('body-compras'); 
-            const bodyHistorico = document.getElementById('body-historico');
-            
+            const bodyLocacoes = document.getElementById('body-locacoes'); const bodyCompras = document.getElementById('body-compras'); const bodyHistorico = document.getElementById('body-historico');
             bodyLocacoes.innerHTML = ''; bodyCompras.innerHTML = ''; bodyHistorico.innerHTML = '';
             let countLoc = 0, countComp = 0, countHist = 0;
 
@@ -528,17 +485,13 @@
             });
 
             document.querySelectorAll('.loader').forEach(e => e.style.display = 'none');
-            
-            // Gerencia exibição das tabelas
             document.getElementById('tabela-locacoes').style.display = countLoc > 0 ? 'table' : 'none';
             document.getElementById('tabela-compras').style.display = countComp > 0 ? 'table' : 'none';
             document.getElementById('tabela-historico').style.display = countHist > 0 ? 'table' : 'none';
 
-            // Atualiza o contador gerencial inteligente do topo
             const contBadge = document.getElementById('registro-contador');
             contBadge.innerText = `${dadosFiltrados.length} registros encontrados`;
-            if(dadosFiltrados.length !== dadosGlobais.length) contBadge.classList.add('active');
-            else contBadge.classList.remove('active');
+            if(dadosFiltrados.length !== dadosGlobais.length) contBadge.classList.add('active'); else contBadge.classList.remove('active');
         }
 
         function atualizarDashboard(data) {
@@ -568,19 +521,30 @@
             chartStatus = new Chart(document.getElementById('chart-status').getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(contagemStatus), datasets: [{ data: Object.values(contagemStatus), backgroundColor: ['#10b981', '#ef4444'] }] }, options: { responsive: true, maintainAspectRatio: false } });
         }
 
+        // FASE 3 FIX: O Módulo Fornecedores agora respeita a busca e volta a aparecer na tela!
         function renderizarModuloFornecedores() {
-            const bodyForn = document.getElementById('body-fornecedores'); bodyForn.innerHTML = '';
-            let contagemForns = {}; dadosGlobais.forEach(item => { let f = item.fornecedor || 'Não identificado'; contagemForns[f] = (contagemForns[f] || 0) + 1; });
+            const bodyForn = document.getElementById('body-fornecedores'); 
+            bodyForn.innerHTML = '';
+            let contagemForns = {}; 
+            
+            // Usa dadosFiltrados para que a pesquisa do topo funcione também nos fornecedores
+            dadosFiltrados.forEach(item => { 
+                let f = item.fornecedor || 'Não identificado'; 
+                contagemForns[f] = (contagemForns[f] || 0) + 1; 
+            });
+            
             Object.keys(contagemForns).sort((a, b) => a.localeCompare(b)).forEach(forn => {
                 bodyForn.innerHTML += `<tr><td><span class="main-txt">${forn}</span></td><td><span class="status-badge highlight">${contagemForns[forn]} equipamentos</span></td><td><div class="action-buttons"><button class="btn-action-small btn-editar" title="Renomear" onclick="abrirRenomearForn('${forn}')">✏️</button><button class="btn-action-small btn-renovar" title="Mesclar" onclick="abrirMesclarForn('${forn}')">🔗</button></div></td></tr>`;
             });
-            document.getElementById('tabela-fornecedores').style.display = 'table';
+            
+            // Mostra a tabela se houver resultados na busca
+            document.getElementById('tabela-fornecedores').style.display = Object.keys(contagemForns).length > 0 ? 'table' : 'none';
         }
 
         function abrirRenomearForn(origem) { document.getElementById('renomear-forn-origem').value = origem; document.getElementById('renomear-forn-origem-txt').value = origem; document.getElementById('renomear-forn-novo').value = origem; document.getElementById('modal-renomear-forn').style.display = 'flex'; }
         function salvarRenomearForn() {
             const origem = document.getElementById('renomear-forn-origem').value; const novoNome = document.getElementById('renomear-forn-novo').value.trim();
-            if (!novoNome || novoNome === origen) { showToast("Nome inválido!", "warning"); return; }
+            if (!novoNome || novoNome === origem) { showToast("Nome inválido!", "warning"); return; }
             showConfirm('Renomear Fornecedor', `TODOS os equipamentos de "${origem}" mudarão para "${novoNome}". Confirmar?`, async () => {
                 document.getElementById('modal-renomear-forn').style.display = 'none'; showGlobalLoading("Atualizando...");
                 const { error } = await client.from('locacoes').update({ fornecedor: novoNome }).eq('fornecedor', origem); hideGlobalLoading();
@@ -590,6 +554,7 @@
 
         function abrirMesclarForn(origem) {
             document.getElementById('merge-origem').value = origem; document.getElementById('merge-origem-txt').value = origem; const selDestino = document.getElementById('merge-destino'); selDestino.innerHTML = '';
+            // Pega do dadosGlobais (sem filtro) para você poder mesclar com QUALQUER fornecedor do banco
             [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort().forEach(f => { if(f !== origem) { selDestino.add(new Option(f, f)); } });
             document.getElementById('modal-mesclar-forn').style.display = 'flex';
         }
@@ -623,20 +588,33 @@
             if(!error) { fecharModalEdicao(); showToast("Salvo com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro ao salvar.", "error"); }
         }
 
+        function toggleCamposNovo() {
+            const tipo = document.getElementById('novo-tipo').value;
+            document.getElementById('campos-locacao').style.display = tipo === 'aluguel' ? 'block' : 'none';
+            document.getElementById('box-vencimento').style.display = tipo === 'aluguel' ? 'block' : 'none';
+            document.getElementById('lbl-forn').innerText = tipo === 'aluguel' ? 'Locadora' : 'Loja / Fornecedor';
+            document.getElementById('lbl-data-inicio').innerText = tipo === 'aluguel' ? 'Data Locação' : 'Data da Compra';
+        }
+
         function abrirModalNovo() {
             document.getElementById('novo-tipo').value = 'aluguel'; document.getElementById('novo-obra').value = ''; document.getElementById('novo-equip').value = ''; document.getElementById('novo-qtd').value = '1'; document.getElementById('novo-valor').value = ''; document.getElementById('novo-forn').value = ''; document.getElementById('novo-contrato').value = ''; document.getElementById('novo-periodo').value = 'Mês'; 
             const hoje = new Date(); document.getElementById('novo-inicio').value = hoje.toISOString().split('T')[0]; hoje.setDate(hoje.getDate() + 30); document.getElementById('novo-vencimento').value = hoje.toISOString().split('T')[0];
             toggleCamposNovo(); document.getElementById('modal-novo').style.display = 'flex';
         }
         function fecharModalNovo() { document.getElementById('modal-novo').style.display = 'none'; }
+        
         async function salvarNovo() {
             const tipo = document.getElementById('novo-tipo').value; const obra = document.getElementById('novo-obra').value.trim(); const equipamento = document.getElementById('novo-equip').value.trim(); const quantidade = parseInt(document.getElementById('novo-qtd').value) || 1; const valor = parseFloat(document.getElementById('novo-valor').value) || 0; const fornecedor = document.getElementById('novo-forn').value.trim() || 'Não identificado';
             if (!obra || !equipamento) { showToast("Preencha obra e equipamento!", "warning"); return; }
             const data_inicio = document.getElementById('novo-inicio').value || new Date().toISOString().split('T')[0];
             let objSalvar = { obra, fornecedor, equipamento, quantidade, valor, status: 'ativo', data_inicio: data_inicio };
-            if (tipo === 'compra') { objSalvar.unidade = 'Proprio'; objSalvar.data_fim = data_inicio; objSalvar.contrato = 'Cadastro Manual'; } else {
+
+            if (tipo === 'compra') { 
+                objSalvar.unidade = 'Proprio'; objSalvar.data_fim = data_inicio; objSalvar.contrato = 'Cadastro Manual'; 
+            } else {
                 objSalvar.unidade = document.getElementById('novo-periodo').value.trim() || 'Mês'; objSalvar.data_fim = document.getElementById('novo-vencimento').value || data_inicio; objSalvar.contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato';
             }
+
             showGlobalLoading("Cadastrando..."); const { error } = await client.from('locacoes').insert([objSalvar]); hideGlobalLoading();
             if (!error) { showToast("Adicionado com sucesso!", "success"); fecharModalNovo(); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro.", "error"); }
         }
