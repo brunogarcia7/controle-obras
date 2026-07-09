@@ -65,9 +65,9 @@
         .header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; }
         .header p { margin: 5px 0 0 0; color: var(--text-light); }
-        .badge-version { background: #8b5cf6; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; border: 1px solid #a78bfa; }
+        .badge-version { background: #f59e0b; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; border: 1px solid #fbbf24; }
 
-        /* BARRA DE CONTROLES */
+        /* BARRA DE CONTROLES COGNITIVOS */
         .top-controls { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid var(--border); margin-bottom: 25px; flex-wrap: wrap; gap: 15px; transition: background 0.3s, border-color 0.3s;}
         .filter-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1;}
         .filter-group select, .filter-group input { height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-family: 'Inter'; font-weight: 600; color: var(--text); background: var(--input-bg); outline: none; min-width: 180px; box-sizing: border-box; transition: 0.2s; }
@@ -95,6 +95,7 @@
         /* DASHBOARDS */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .kpi-card { background: var(--white); padding: 18px 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.01); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; transition: background 0.3s, border-color 0.3s; }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.03); }
         .kpi-title { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
         .kpi-value { font-size: 1.7rem; font-weight: 800; color: var(--text); }
 
@@ -103,7 +104,7 @@
         .chart-card h4 { margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .chart-container { flex: 1; position: relative; min-height: 0; }
 
-        /* TABELAS */
+        /* TABELAS E SEÇÕES */
         .secao-tabela { display: none; } 
         .animate-show { display: block; animation: fadeInScale 0.3s ease-out forwards; }
         @keyframes fadeInScale { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -155,7 +156,7 @@
             tr { page-break-inside: avoid; }
             .secao-tabela { display: block !important; }
             body.ocultar-historico-print #secao-historico { display: none !important; }
-            #tabela-locacoes[style*="display: none"], #tabela-compras[style*="display: none"], #tabela-historico[style*="display: none"], #tabela-fornecedores[style*="display: none"] { display: none !important; }
+            #tabela-locacoes[style*="display: none"], #tabela-compras[style*="display: none"], #tabela-historico[style*="display: none"], #tabela-fornecedores[style*="display: none"], #secao-sistema[style*="display: none"] { display: none !important; }
         }
 
         /* MODAIS E TOASTS FLUTUANTES */
@@ -185,6 +186,16 @@
         .btn-save-edit:hover { filter: brightness(0.9); }
         .btn-cancel-edit { background: transparent; color: var(--text-light); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-cancel-edit:hover { background: var(--row-even); color: var(--text); }
+        
+        /* FASE 6: CAIXAS DE BACKUP */
+        .backup-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .backup-box { background: var(--row-even); border: 1px solid var(--border); border-radius: 12px; padding: 25px; text-align: center; transition: 0.2s; }
+        .backup-box:hover { border-color: var(--primary); }
+        .backup-box h4 { margin: 0 0 10px 0; color: var(--text); font-size: 1.1rem; }
+        .backup-box p { color: var(--text-light); font-size: 0.85rem; margin-bottom: 20px; line-height: 1.4; }
+        .btn-backup { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s;}
+        .btn-backup.restore { background: var(--warning); color: #fff; }
+        .btn-backup:hover { filter: brightness(1.1); transform: translateY(-1px); }
     </style>
 </head>
 <body>
@@ -199,6 +210,9 @@
             <div class="menu-item" id="menu-fornecedores" onclick="mudarAba('fornecedores')"><span class="icon">🏢</span> <span class="text-hide">Fornecedores</span></div>
             <div class="menu-item" id="menu-historico" onclick="mudarAba('historico')"><span class="icon">🕰️</span> <span class="text-hide">Histórico / Arquivo</span></div>
             
+            <!-- FASE 6: NOVA ABA SISTEMA & BACKUP -->
+            <div class="menu-item" id="menu-sistema" onclick="mudarAba('sistema')"><span class="icon">⚙️</span> <span class="text-hide">Sistema & Backup</span></div>
+
             <div class="sidebar-spacer"></div>
             <div class="menu-item" onclick="toggleTema()" style="border: 1px solid rgba(255,255,255,0.2);">
                 <span class="icon" id="tema-icone">🌙</span> <span class="text-hide" id="tema-texto">Modo Escuro</span>
@@ -222,7 +236,8 @@
 
             <div class="header">
                 <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
-                <span class="badge-version">Versão 1.5.1</span>
+                <!-- ATUALIZADO v1.6 -->
+                <span class="badge-version">Versão 1.6</span>
             </div>
 
             <div class="top-controls">
@@ -244,6 +259,7 @@
                 </div>
             </div>
 
+            <!-- DASHBOARDS -->
             <div class="dashboard-grid">
                 <div class="kpi-card" style="border-left: 4px solid var(--primary);"><span class="kpi-title">Total Equipamentos</span><span class="kpi-value" id="kpi-total">0</span></div>
                 <div class="kpi-card" style="border-left: 4px solid var(--success);"><span class="kpi-title">Itens Ativos</span><span class="kpi-value" id="kpi-ativos">0</span></div>
@@ -258,6 +274,7 @@
                 <div class="chart-card"><h4>Distribuição por Status</h4><div class="chart-container"><canvas id="chart-status"></canvas></div></div>
             </div>
 
+            <!-- TABELAS REGULARES -->
             <div id="secao-locacoes" class="secao-tabela animate-show">
                 <div class="card-table">
                     <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
@@ -324,6 +341,37 @@
                     </table>
                 </div>
             </div>
+
+            <!-- FASE 6: SESSÃO SISTEMA & BACKUP -->
+            <div id="secao-sistema" class="secao-tabela">
+                <div class="backup-card-grid">
+                    <div class="backup-box">
+                        <h4>💾 Exportar Backup (JSON)</h4>
+                        <p>Baixe uma cópia de segurança completa de todos os dados do banco para o seu computador.</p>
+                        <button class="btn-backup" onclick="exportarBackupJSON()">⬇️ Baixar Cópia Completa</button>
+                    </div>
+                    <div class="backup-box">
+                        <h4>🔄 Restaurar Backup (JSON)</h4>
+                        <p>Suba um arquivo de backup anterior. O sistema irá sincronizar e atualizar o banco online.</p>
+                        <input type="file" id="input-importar-json" accept=".json" style="display:none;" onchange="importarBackupJSON(event)">
+                        <button class="btn-backup restore" onclick="document.getElementById('input-importar-json').click()">⬆️ Carregar Arquivo JSON</button>
+                    </div>
+                </div>
+
+                <div class="card-table">
+                    <h3 style="color: var(--text-light);">📋 Log de Auditoria (Local)</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px; margin-top: -10px;">Últimas 50 ações realizadas neste dispositivo.</p>
+                    <table class="table-modern">
+                        <thead>
+                            <tr><th>Data e Hora</th><th>Ação Executada</th><th>Detalhe do Registro</th></tr>
+                        </thead>
+                        <tbody id="body-logs">
+                            <tr><td colspan="3" style="text-align:center;">Nenhum log registrado.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div> 
 
@@ -345,6 +393,7 @@
         </div>
     </div>
 
+    <!-- MODAL EDITAR -->
     <div class="modal-overlay" id="modal-editar">
         <div class="modal-box">
             <h3>✏️ Editar Equipamento</h3>
@@ -373,6 +422,7 @@
         </div>
     </div>
 
+    <!-- MODAL NOVO -->
     <div class="modal-overlay" id="modal-novo">
         <div class="modal-box">
             <h3>➕ Adicionar Novo Equipamento</h3>
@@ -384,7 +434,7 @@
                     <div class="form-group"><label>Quantidade</label><input type="number" id="novo-qtd" value="1" min="1"></div>
                     <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="novo-valor" step="0.01" value="0.00"></div>
                 </div>
-                <div class="form-group"><label id="lbl-forn">Locadora / Fornecedor</label><input type="text" id="novo-forn" list="lista-forns" placeholder="Selecione ou digite the fornecedor..."></div>
+                <div class="form-group"><label id="lbl-forn">Locadora / Fornecedor</label><input type="text" id="novo-forn" list="lista-forns" placeholder="Selecione ou digite o fornecedor..."></div>
                 <div class="grid-duplo">
                     <div class="form-group"><label id="lbl-data-inicio">Data Locação</label><input type="date" id="novo-inicio"></div>
                     <div class="form-group" id="box-vencimento"><label>Data Devolução</label><input type="date" id="novo-vencimento"></div>
@@ -403,8 +453,9 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual (Incorreto)</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome Correto</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar Todos</button></div></div></div>
-    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto (Origem)</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com (Destino Correto)</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar e Unificar</button></div></div></div>
+    <!-- MODAIS DE FORNECEDOR -->
+    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar</button></div></div></div>
+    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar</button></div></div></div>
 
     <script>
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
@@ -417,12 +468,71 @@
         let sortColunaAtual = 'data_inicio';
         let sortDirecaoAsc = false;
 
+        // FASE 6: AUDITORIA (LOGS)
+        function registrarLog(acao, detalhe) {
+            let logs = JSON.parse(localStorage.getItem('controle_logs')) || [];
+            const dataHora = new Date().toLocaleString('pt-BR');
+            logs.unshift({ data: dataHora, acao, detalhe });
+            if (logs.length > 50) logs = logs.slice(0, 50);
+            localStorage.setItem('controle_logs', JSON.stringify(logs));
+            renderizarLogs();
+        }
+
+        function renderizarLogs() {
+            const tbody = document.getElementById('body-logs');
+            if(!tbody) return;
+            let logs = JSON.parse(localStorage.getItem('controle_logs')) || [];
+            tbody.innerHTML = '';
+            if(logs.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">Nenhum log registrado ainda no seu navegador.</td></tr>'; return; }
+            logs.forEach(l => {
+                let corAcao = l.acao.includes('Exclu') || l.acao.includes('Arquiv') || l.acao.includes('Mescla') ? 'var(--danger)' : l.acao.includes('Edit') || l.acao.includes('Renova') ? 'var(--warning)' : 'var(--success)';
+                tbody.innerHTML += `<tr><td style="font-size:0.8rem; color:var(--text-light);">${l.data}</td><td><span style="color:${corAcao}; font-weight:bold; font-size:0.8rem;">${l.acao}</span></td><td style="font-size:0.85rem; font-weight:600;">${l.detalhe}</td></tr>`;
+            });
+        }
+
+        // FASE 6: EXPORTAR E IMPORTAR JSON
+        function exportarBackupJSON() {
+            if(dadosGlobais.length === 0) { showToast("Nenhum dado no banco para backup.", "warning"); return; }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dadosGlobais));
+            const btn = document.createElement('a');
+            btn.setAttribute("href", dataStr);
+            btn.setAttribute("download", "backup_obras_" + new Date().toISOString().split('T')[0] + ".json");
+            document.body.appendChild(btn); btn.click(); btn.remove();
+            registrarLog('Backup Finalizado', `Download de arquivo JSON (${dadosGlobais.length} itens)`);
+            showToast("Backup baixado com sucesso!", "success");
+        }
+
+        function importarBackupJSON(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if(!Array.isArray(json)) throw new Error("Formato de backup inválido.");
+                    
+                    showConfirm("🚨 Restaurar Backup", `Você está prestes a fazer Upload de ${json.length} registros. Isso irá Sincronizar e Atualizar o banco de dados online. Confirmar Restauração?`, async () => {
+                        showGlobalLoading("Sincronizando com o Banco...");
+                        const { error } = await client.from('locacoes').upsert(json);
+                        hideGlobalLoading();
+                        if(error) { showToast("Erro no banco: " + error.message, "error"); }
+                        else {
+                            registrarLog('Restauração de Backup', `Importados ${json.length} itens do arquivo.`);
+                            showToast("Banco restaurado com sucesso!", "success");
+                            carregarFiltros().then(() => carregarDados());
+                        }
+                    }, true);
+                } catch(err) { showToast("Arquivo corrompido ou formato incorreto.", "error"); }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; 
+        }
+
         function inicializarTema() {
             const temaSalvo = localStorage.getItem('controle_tema') || 'light';
             if (temaSalvo === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                document.getElementById('tema-icone').innerText = '☀️';
-                document.getElementById('tema-texto').innerText = 'Modo Claro';
+                document.getElementById('tema-icone').innerText = '☀️'; document.getElementById('tema-texto').innerText = 'Modo Claro';
             }
             atualizarCorGraficos();
         }
@@ -430,15 +540,11 @@
         function toggleTema() {
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
             if (isDark) {
-                document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('controle_tema', 'light');
-                document.getElementById('tema-icone').innerText = '🌙';
-                document.getElementById('tema-texto').innerText = 'Modo Escuro';
+                document.documentElement.removeAttribute('data-theme'); localStorage.setItem('controle_tema', 'light');
+                document.getElementById('tema-icone').innerText = '🌙'; document.getElementById('tema-texto').innerText = 'Modo Escuro';
             } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('controle_tema', 'dark');
-                document.getElementById('tema-icone').innerText = '☀️';
-                document.getElementById('tema-texto').innerText = 'Modo Claro';
+                document.documentElement.setAttribute('data-theme', 'dark'); localStorage.setItem('controle_tema', 'dark');
+                document.getElementById('tema-icone').innerText = '☀️'; document.getElementById('tema-texto').innerText = 'Modo Claro';
             }
             atualizarCorGraficos();
             if(dadosFiltrados.length > 0) atualizarDashboard(dadosFiltrados); 
@@ -446,15 +552,13 @@
 
         function atualizarCorGraficos() {
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            Chart.defaults.color = isDark ? '#94a3b8' : '#64748b'; 
-            Chart.defaults.borderColor = isDark ? '#334155' : '#e2e8f0'; 
+            Chart.defaults.color = isDark ? '#94a3b8' : '#64748b'; Chart.defaults.borderColor = isDark ? '#334155' : '#e2e8f0'; 
         }
 
         inicializarTema();
 
         function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div'); toast.className = `toast ${type}`;
+            const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`;
             let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
             toast.innerHTML = `<span style="font-size: 1.2rem;">${icon}</span> <span>${message}</span>`;
             container.appendChild(toast); void toast.offsetWidth; toast.classList.add('show');
@@ -474,20 +578,14 @@
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
         
-        // v1.5.1 FIX: IDs mapeados de forma exata e limpa, eliminando o erro de corte
         function mudarAba(aba) {
-            document.querySelectorAll('.sidebar .menu-item').forEach(e => {
-                if (!e.innerText.includes('Tema') && !e.innerText.includes('Escuro') && !e.innerText.includes('Claro')) {
-                    e.classList.remove('active');
-                }
-            });
+            document.querySelectorAll('.sidebar .menu-item').forEach(e => { if (!e.innerText.includes('Tema') && !e.innerText.includes('Escuro') && !e.innerText.includes('Claro')) { e.classList.remove('active'); } });
             document.querySelectorAll('.secao-tabela').forEach(e => e.classList.remove('animate-show'));
             
-            const menuEl = document.getElementById('menu-' + aba);
-            const secaoEl = document.getElementById('secao-' + aba);
+            const menuEl = document.getElementById('menu-' + aba); const secaoEl = document.getElementById('secao-' + aba);
+            if (menuEl) menuEl.classList.add('active'); if (secaoEl) secaoEl.classList.add('animate-show');
             
-            if (menuEl) menuEl.classList.add('active');
-            if (secaoEl) secaoEl.classList.add('animate-show');
+            if (aba === 'sistema') renderizarLogs(); // Atualiza log ao entrar na aba
             localStorage.setItem('controle_aba', aba); 
         }
 
@@ -531,15 +629,11 @@
         }
 
         function aplicarFiltrosELocalSort() {
-            const fObra = document.getElementById('filtroObra').value;
-            const fForn = document.getElementById('filtroForn').value;
-            const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
-
+            const fObra = document.getElementById('filtroObra').value; const fForn = document.getElementById('filtroForn').value; const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
             localStorage.setItem('controle_filtros', JSON.stringify({ obra: fObra, forn: fForn, texto: fTexto }));
 
             dadosFiltrados = dadosGlobais.filter(item => {
-                const matchObra = fObra === 'todas' || item.obra === fObra;
-                const matchForn = fForn === 'todos' || item.fornecedor === fForn;
+                const matchObra = fObra === 'todas' || item.obra === fObra; const matchForn = fForn === 'todos' || item.fornecedor === fForn;
                 const textoAlvo = `${item.equipamento} ${item.contrato} ${item.fornecedor} ${item.obra}`.toLowerCase();
                 const matchTexto = fTexto === '' || textoAlvo.includes(fTexto);
                 return matchObra && matchForn && matchTexto;
@@ -555,20 +649,16 @@
                 return sortDirecaoAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
             });
 
-            atualizarSetasOrdenacao();
-            renderizarTabelasTela();
-            atualizarDashboard(dadosFiltrados);
-            renderizarModuloFornecedores();
+            atualizarSetasOrdenacao(); renderizarTabelasTela(); atualizarDashboard(dadosFiltrados); renderizarModuloFornecedores();
         }
 
         function ordenarColuna(coluna) {
-            if (sortColunaAtual === column || sortColunaAtual === coluna) { sortDirecaoAsc = !sortDirecaoAsc; } else { sortColunaAtual = coluna; sortDirecaoAsc = true; }
+            if (sortColunaAtual === coluna) { sortDirecaoAsc = !sortDirecaoAsc; } else { sortColunaAtual = coluna; sortDirecaoAsc = true; }
             aplicarFiltrosELocalSort();
         }
 
         function atualizarSetasOrdenacao() {
-            document.querySelectorAll('.sort-icon').forEach(span => span.innerText = '');
-            const seta = sortDirecaoAsc ? ' ▲' : ' ▼';
+            document.querySelectorAll('.sort-icon').forEach(span => span.innerText = ''); const seta = sortDirecaoAsc ? ' ▲' : ' ▼';
             const idsSetas = ['sort-obra', 'sort-equipamento', 'sort-data_fim', 'sort-valor', 'sort-comp-obra', 'sort-comp-equip', 'sort-comp-data', 'sort-comp-valor', 'sort-hist-obra', 'sort-hist-equip', 'sort-hist-data', 'sort-hist-valor'];
             idsSetas.forEach(id => { const el = document.getElementById(id); if (el && id.includes(sortColunaAtual)) { el.innerText = seta; } });
         }
@@ -593,9 +683,9 @@
                 if (item.status === 'ativo') {
                     botoesAcao += `<button class="btn-action-small btn-editar" title="Editar" onclick="abrirEdicao(${item.id})">✏️</button>`;
                     if (item.unidade !== 'Proprio') botoesAcao += `<button class="btn-action-small btn-renovar" title="Renovar" onclick="renovarItem(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄</button>`;
-                    botoesAcao += `<button class="btn-action-small btn-delete" title="Arquivar" onclick="arquivarItem(${item.id})">🗑️</button>`;
+                    botoesAcao += `<button class="btn-action-small btn-delete" title="Arquivar" onclick="arquivarItem(${item.id}, '${item.equipamento}')">🗑️</button>`;
                 } else {
-                    botoesAcao = `<span class="status-badge" style="margin-right: 8px;">Arquivado</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="restaurarItem(${item.id})">↩️</button>`;
+                    botoesAcao = `<span class="status-badge" style="margin-right: 8px;">Arquivado</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="restaurarItem(${item.id}, '${item.equipamento}')">↩️</button>`;
                 }
 
                 const linhaHTML = `<tr><td><div class="group-info"><span class="main-txt">${item.obra}</span><span class="sub-txt">Forn: ${item.fornecedor}</span></div></td><td><span class="main-txt">${badgeQtd} ${item.equipamento}</span></td><td><div class="group-info"><span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${formatarData(item.data_fim)}</span>` : ''}</div></td><td><div class="group-info">${numContrato}<span class="price-tag">${formatarMoeda(item.valor)}</span>${tagIndenizacao}</div></td><td>${btnAnexo}</td><td><div class="action-buttons">${botoesAcao}</div></td></tr>`;
@@ -610,8 +700,7 @@
             document.getElementById('tabela-compras').style.display = countComp > 0 ? 'table' : 'none';
             document.getElementById('tabela-historico').style.display = countHist > 0 ? 'table' : 'none';
 
-            const contBadge = document.getElementById('registro-contador');
-            contBadge.innerText = `${dadosFiltrados.length} registros encontrados`;
+            const contBadge = document.getElementById('registro-contador'); contBadge.innerText = `${dadosFiltrados.length} registros encontrados`;
             if(dadosFiltrados.length !== dadosGlobais.length) contBadge.classList.add('active'); else contBadge.classList.remove('active');
         }
 
@@ -621,8 +710,7 @@
             let contagemObras = {}; let contagemForns = {}; let contagemStatus = { 'Ativo': 0, 'Arquivado': 0 };
 
             data.forEach(item => {
-                let qtd = parseInt(item.quantidade) || 1;
-                total += qtd;
+                let qtd = parseInt(item.quantidade) || 1; total += qtd;
                 if (item.status === 'ativo') { ativos += qtd; contagemStatus['Ativo'] += qtd; } else { arquivados += qtd; contagemStatus['Arquivado'] += qtd; }
                 if (item.obra) { obrasSet.add(item.obra); contagemObras[item.obra] = (contagemObras[item.obra] || 0) + qtd; }
                 if (item.fornecedor) { fornsSet.add(item.fornecedor); contagemForns[item.fornecedor] = (contagemForns[item.fornecedor] || 0) + qtd; }
@@ -632,14 +720,9 @@
             document.getElementById('kpi-arquivados').innerText = arquivados; document.getElementById('kpi-obras').innerText = obrasSet.size;
             document.getElementById('kpi-fornecedores').innerText = fornsSet.size;
 
-            if(chartObras) chartObras.destroy();
-            chartObras = new Chart(document.getElementById('chart-obras').getContext('2d'), { type: 'bar', data: { labels: Object.keys(contagemObras), datasets: [{ data: Object.values(contagemObras), backgroundColor: '#2563eb', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
-
-            if(chartForns) chartForns.destroy();
-            chartForns = new Chart(document.getElementById('chart-fornecedores').getContext('2d'), { type: 'bar', data: { labels: Object.keys(contagemForns), datasets: [{ data: Object.values(contagemForns), backgroundColor: '#6366f1', borderRadius: 5 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
-
-            if(chartStatus) chartStatus.destroy();
-            chartStatus = new Chart(document.getElementById('chart-status').getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(contagemStatus), datasets: [{ data: Object.values(contagemStatus), backgroundColor: ['#10b981', '#ef4444'] }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%' } });
+            if(chartObras) chartObras.destroy(); chartObras = new Chart(document.getElementById('chart-obras').getContext('2d'), { type: 'bar', data: { labels: Object.keys(contagemObras), datasets: [{ data: Object.values(contagemObras), backgroundColor: '#2563eb', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            if(chartForns) chartForns.destroy(); chartForns = new Chart(document.getElementById('chart-fornecedores').getContext('2d'), { type: 'bar', data: { labels: Object.keys(contagemForns), datasets: [{ data: Object.values(contagemForns), backgroundColor: '#6366f1', borderRadius: 5 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            if(chartStatus) chartStatus.destroy(); chartStatus = new Chart(document.getElementById('chart-status').getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(contagemStatus), datasets: [{ data: Object.values(contagemStatus), backgroundColor: ['#10b981', '#ef4444'] }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%' } });
         }
 
         function renderizarModuloFornecedores() {
@@ -658,7 +741,7 @@
             showConfirm('Renomear Fornecedor', `TODOS os equipamentos de "${origem}" mudarão para "${novoNome}". Confirmar?`, async () => {
                 document.getElementById('modal-renomear-forn').style.display = 'none'; showGlobalLoading("Atualizando...");
                 const { error } = await client.from('locacoes').update({ fornecedor: novoNome }).eq('fornecedor', origem); hideGlobalLoading();
-                if(!error) { showToast("Alterado com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro.", "error"); }
+                if(!error) { registrarLog('Renomeou Fornecedor', `De ${origem} para ${novoNome}`); showToast("Alterado com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro.", "error"); }
             });
         }
 
@@ -673,7 +756,7 @@
             showConfirm('Mesclar Fornecedores', `Unificar todos os itens de "${origem}" dentro de "${destino}"?`, async () => {
                 document.getElementById('modal-mesclar-forn').style.display = 'none'; showGlobalLoading("Mesclando...");
                 const { error } = await client.from('locacoes').update({ fornecedor: destino }).eq('fornecedor', origem); hideGlobalLoading();
-                if(!error) { showToast("Mesclado com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro ao mesclar.", "error"); }
+                if(!error) { registrarLog('Mesclou Fornecedores', `Transferiu itens de ${origem} para ${destino}`); showToast("Mesclado com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro ao mesclar.", "error"); }
             });
         }
 
@@ -688,14 +771,15 @@
             document.getElementById('modal-editar').style.display = 'flex';
         }
         function fecharModalEdicao() { document.getElementById('modal-editar').style.display = 'none'; }
+        
         async function salvarEdicao() {
             const id = document.getElementById('edit-id').value; const equipamento = document.getElementById('edit-equip').value.trim();
             const fornecedor = document.getElementById('edit-forn').value.trim() || 'Não identificado';
-            const ClubQtd = document.getElementById('edit-qtd').value;
-            const quantidade = parseInt(ClubQtd) || 1; const contrato = document.getElementById('edit-contrato').value.trim(); const unidade = document.getElementById('edit-periodo').value.trim() || 'Mês';
+            const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1; const contrato = document.getElementById('edit-contrato').value.trim(); const unidade = document.getElementById('edit-periodo').value.trim() || 'Mês';
             const valor = parseFloat(document.getElementById('edit-valor').value) || 0; const data_inicio = document.getElementById('edit-inicio').value; const data_fim = document.getElementById('edit-vencimento').value; const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
+            
             showGlobalLoading("Salvando..."); const { error } = await client.from('locacoes').update({ equipamento, fornecedor, quantidade, contrato, unidade, valor, data_inicio, data_fim, valor_indenizacao }).eq('id', id); hideGlobalLoading();
-            if(!error) { fecharModalEdicao(); showToast("Salvo com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro ao salvar.", "error"); }
+            if(!error) { registrarLog('Edição', `Atualizou o item: ${equipamento}`); fecharModalEdicao(); showToast("Salvo com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro ao salvar.", "error"); }
         }
 
         function toggleCamposNovo() {
@@ -717,33 +801,28 @@
             const tipo = document.getElementById('novo-tipo').value; const obra = document.getElementById('novo-obra').value.trim(); const equipamento = document.getElementById('novo-equip').value.trim(); const quantidade = parseInt(document.getElementById('novo-qtd').value) || 1; const valor = parseFloat(document.getElementById('novo-valor').value) || 0; const fornecedor = document.getElementById('novo-forn').value.trim() || 'Não identificado';
             if (!obra || !equipamento) { showToast("Preencha obra e equipamento!", "warning"); return; }
             const data_inicio = document.getElementById('novo-inicio').value || new Date().toISOString().split('T')[0];
-            let objSalvar = { obra, fornecedor, equipment: equipamento, equipamento, quantidade, valor, status: 'ativo', data_inicio: data_inicio };
+            let objSalvar = { obra, fornecedor, equipamento, quantidade, valor, status: 'ativo', data_inicio: data_inicio };
 
-            if (tipo === 'compra') { 
-                objSalvar.unidade = 'Proprio'; objSalvar.data_fim = data_inicio; objSalvar.contrato = 'Cadastro Manual'; 
-            } else {
-                objSalvar.unidade = document.getElementById('novo-periodo').value.trim() || 'Mês'; objSalvar.data_fim = document.getElementById('novo-vencimento').value || data_inicio; objSalvar.contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato';
-            }
+            if (tipo === 'compra') { objSalvar.unidade = 'Proprio'; objSalvar.data_fim = data_inicio; objSalvar.contrato = 'Cadastro Manual'; } 
+            else { objSalvar.unidade = document.getElementById('novo-periodo').value.trim() || 'Mês'; objSalvar.data_fim = document.getElementById('novo-vencimento').value || data_inicio; objSalvar.contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato'; }
 
             showGlobalLoading("Cadastrando..."); const { error } = await client.from('locacoes').insert([objSalvar]); hideGlobalLoading();
-            if (!error) { showToast("Adicionado com sucesso!", "success"); fecharModalNovo(); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro.", "error"); }
+            if (!error) { registrarLog('Novo Cadastro', `Registrou novo item: ${equipamento}`); showToast("Adicionado com sucesso!", "success"); fecharModalNovo(); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro.", "error"); }
         }
 
-        function arquivarItem(id) { showConfirm("Arquivar Item", "Mover este item para o Histórico?", async () => { showGlobalLoading("Arquivando..."); const { error } = await client.from('locacoes').update({ status: 'inativo' }).eq('id', id); hideGlobalLoading(); if (error) showToast("Erro"); else { showToast("Arquivado!", "success"); carregarDados(); } }, true); }
-        function restaurarItem(id) { showConfirm("Restaurar Item", "Mover item de volta para os ativos?", async () => { showGlobalLoading("Restaurando..."); const { error } = await client.from('locacoes').update({ status: 'ativo' }).eq('id', id); hideGlobalLoading(); if (error) showToast("Erro"); else { showToast("Restaurado!", "success"); carregarDados(); } }); }
-        function renovarItem(id, fim, uni) { showConfirm("Renovar Período", "Prorrogar locação por mais um período?", async () => { showGlobalLoading("Renovando..."); let d = new Date(fim); d.setMinutes(d.getMinutes() + d.getTimezoneOffset()); if(uni.includes('Mês')) d.setDate(d.getDate() + 30); else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15); else d.setDate(d.getDate() + 1); const { error } = await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id); hideGlobalLoading(); if(!error) { showToast("Renovado!", "success"); carregarDados(); } else { showToast("Erro."); } }); }
+        function arquivarItem(id, equipNome) { showConfirm("Arquivar Item", "Mover este item para o Histórico?", async () => { showGlobalLoading("Arquivando..."); const { error } = await client.from('locacoes').update({ status: 'inativo' }).eq('id', id); hideGlobalLoading(); if (error) showToast("Erro"); else { registrarLog('Arquivamento', `Moveu para o histórico: ${equipNome}`); showToast("Arquivado!", "success"); carregarDados(); } }, true); }
+        function restaurarItem(id, equipNome) { showConfirm("Restaurar Item", "Mover item de volta para os ativos?", async () => { showGlobalLoading("Restaurando..."); const { error } = await client.from('locacoes').update({ status: 'ativo' }).eq('id', id); hideGlobalLoading(); if (error) showToast("Erro"); else { registrarLog('Restauração', `Voltou para os ativos: ${equipNome}`); showToast("Restaurado!", "success"); carregarDados(); } }); }
+        function renovarItem(id, fim, uni) { showConfirm("Renovar Período", "Prorrogar locação por mais um período?", async () => { showGlobalLoading("Renovando..."); let d = new Date(fim); d.setMinutes(d.getMinutes() + d.getTimezoneOffset()); if(uni.includes('Mês')) d.setDate(d.getDate() + 30); else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15); else d.setDate(d.getDate() + 1); const { error } = await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id); hideGlobalLoading(); if(!error) { registrarLog('Renovação', `Prorrogou contrato ID: ${id}`); showToast("Renovado!", "success"); carregarDados(); } else { showToast("Erro."); } }); }
 
         function exportarExcel() {
-            if (dadosFiltrados.length === 0) { showToast("Nenhum dado para exportar.", "warning"); return; }
+            if (dadosFiltrados.length === 0) { showToast("Nenhum dado filtrado para exportar.", "warning"); return; }
             showGlobalLoading("Gerando Excel...");
 
             setTimeout(() => {
                 const incHist = document.getElementById('check-print-hist').checked;
                 const dadosParaExportar = incHist ? dadosFiltrados : dadosFiltrados.filter(i => i.status === 'ativo');
 
-                if (dadosParaExportar.length === 0) {
-                    hideGlobalLoading(); showToast("Nenhum item ATIVO para exportar.", "warning"); return;
-                }
+                if (dadosParaExportar.length === 0) { hideGlobalLoading(); showToast("Nenhum item ATIVO para exportar.", "warning"); return; }
 
                 const dadosExcel = dadosParaExportar.map(item => ({
                     "Status": item.status === 'ativo' ? 'Ativo' : 'Arquivado',
@@ -769,7 +848,7 @@
                 const dataHoje = new Date().toISOString().split('T')[0];
                 XLSX.writeFile(workbook, `Controle_Obras_${dataHoje}.xlsx`);
 
-                hideGlobalLoading(); showToast("Planilha gerada com sucesso!", "success");
+                hideGlobalLoading(); registrarLog('Exportação', `Gerou Excel de ${dadosExcel.length} itens`); showToast("Planilha gerada com sucesso!", "success");
             }, 500);
         }
 
@@ -791,6 +870,7 @@
             const qtdPrint = incHist ? dadosFiltrados.length : dadosFiltrados.filter(i => i.status === 'ativo').length;
             document.getElementById('print-count').innerText = `Total de Registros Impressos: ${qtdPrint}`;
 
+            registrarLog('Impressão', `Gerou relatório de impressão para ${qtdPrint} itens`);
             window.print();
         }
 
