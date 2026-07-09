@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Obras - Painel Web</title>
+    <!-- Supabase, Chart.js e agora SheetJS para Excel -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
@@ -36,7 +38,7 @@
         .header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; }
         .header p { margin: 5px 0 0 0; color: var(--text-light); }
-        .badge-version { background: #10b981; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; border: 1px solid #34d399; }
+        .badge-version { background: #8b5cf6; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; border: 1px solid #a78bfa; }
 
         /* BARRA DE CONTROLES COGNITIVOS */
         .top-controls { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid var(--border); margin-bottom: 25px; flex-wrap: wrap; gap: 15px;}
@@ -53,6 +55,8 @@
         .botoes-topo { display: flex; gap: 10px; }
         .btn-print { background: var(--text); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-print:hover { background: #000; transform: translateY(-1px); }
+        .btn-excel { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
+        .btn-excel:hover { background: #059669; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(16,185,129,0.2); }
         .btn-novo { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-novo:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
 
@@ -68,7 +72,7 @@
         .chart-card h4 { margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .chart-container { flex: 1; position: relative; min-height: 0; }
 
-        /* TABELA E ANIMAÇÕES */
+        /* TABELAS */
         .secao-tabela { display: none; } 
         .animate-show { display: block; animation: fadeInScale 0.3s ease-out forwards; }
         @keyframes fadeInScale { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -83,7 +87,6 @@
         .table-modern tbody tr:nth-child(even) { background-color: #f8fafc; }
         .table-modern tbody tr:hover { background-color: #f0fdf4 !important; } 
         .table-modern td { padding: 14px 12px; vertical-align: middle; }
-        
         .sort-icon { margin-left: 5px; font-size: 0.7rem; color: var(--primary); display: inline-block; }
 
         .group-info { display: flex; flex-direction: column; }
@@ -109,7 +112,33 @@
         .btn-delete { color: var(--danger); background: #fee2e2; } .btn-delete:hover { background: #fca5a5; }
         .btn-desfazer { color: var(--success); background: #dcfce7; } .btn-desfazer:hover { background: #bbf7d0; }
 
-        /* COMPONENTES FLUTUANTES */
+        /* FASE 4: IMPRESSÃO CORPORATIVA */
+        #print-header { display: none; }
+        
+        @media print {
+            @page { size: A4 landscape; margin: 15mm; }
+            body { background: white; -webkit-print-color-adjust: exact; }
+            
+            /* Oculta o desnecessário */
+            .sidebar, .top-controls, .dashboard-grid, .charts-grid, .btn-anexo, 
+            .action-buttons, th:nth-last-child(1), td:nth-last-child(1), th:nth-last-child(2), td:nth-last-child(2) { display: none !important; }
+            
+            /* Exibe cabeçalho de impressão */
+            #print-header { display: block !important; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; }
+            
+            .main-content { padding: 0; margin: 0; width: 100%; }
+            .card-table { box-shadow: none; border: none; padding: 0; margin: 0; max-height: none; overflow: visible; }
+            .table-modern { border: 1px solid #000; }
+            .table-modern th, .table-modern td { border: 1px solid #e2e8f0; padding: 10px; font-size: 0.85rem; color: #000; }
+            .table-modern th { background-color: #f1f5f9 !important; color: #000; position: static; }
+            .status-badge, .indeniz-tag, .qtd-badge { border: 1px solid #000; color: #000; background: transparent; }
+            tr { page-break-inside: avoid; }
+            .secao-tabela { display: block !important; }
+            /* Oculta as seções vazias que estão com "display:none" local */
+            #tabela-locacoes[style*="display: none"], #tabela-compras[style*="display: none"], #tabela-historico[style*="display: none"] { display: none !important; }
+        }
+
+        /* MODAIS FLUTUANTES */
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { min-width: 280px; padding: 15px 20px; border-radius: 8px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.9rem; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-left: 5px solid; }
         .toast.show { transform: translateX(0); }
@@ -119,31 +148,23 @@
 
         .global-loader-box { background: white; padding: 25px 40px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; gap: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: fadeInScale 0.2s ease-out; }
         .global-loader-box span { font-weight: 700; color: var(--text); font-size: 1rem;}
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.8); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(3px); }
         .modal-box { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; animation: fadeInScale 0.2s ease-out;}
         .modal-box h3 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
-        
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-size: 0.85rem; font-weight: bold; color: var(--text-light); margin-bottom: 8px; }
         .form-group input, .form-group select { width: 100%; height: 42px; border-radius: 8px; border: 1px solid var(--border); padding: 0 12px; font-family: 'Inter'; box-sizing: border-box; transition: 0.2s; font-size: 0.95rem; color: var(--text); }
         .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); outline: none; }
         .form-group input:disabled { background: #f1f5f9; font-weight: bold; color: #475569; }
         .grid-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
         .btn-save-edit { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-save-edit:hover { background: #059669; }
         .btn-cancel-edit { background: transparent; color: var(--text-light); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-cancel-edit:hover { background: #f1f5f9; color: var(--text); }
-
-        @media print {
-            .sidebar, .top-controls, .btn-anexo, td:last-child, th:last-child, .dashboard-grid, .charts-grid { display: none !important; }
-            .main-content { padding: 0; margin: 0; max-width: 100%; }
-            body { background: white; }
-            .card-table { box-shadow: none; border: none; padding: 0; margin-bottom: 40px; max-height: none; overflow: visible; }
-            .secao-tabela { display: block !important; }
-        }
     </style>
 </head>
 <body>
@@ -160,9 +181,24 @@
         </div>
 
         <div class="main-content">
+            
+            <!-- FASE 4: CABEÇALHO EXCLUSIVO PARA IMPRESSÃO -->
+            <div id="print-header">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <h2 style="margin:0; font-weight: 800; font-size: 1.5rem;">Relatório de Equipamentos e Locações</h2>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #475569;" id="print-filters"></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="margin:0; font-weight: bold; font-size: 0.9rem;" id="print-date"></p>
+                        <p style="margin:2px 0 0 0; font-size: 0.9rem; font-weight: bold; color: var(--primary);" id="print-count"></p>
+                    </div>
+                </div>
+            </div>
+
             <div class="header">
                 <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
-                <span class="badge-version">Versão 1.3.1</span>
+                <span class="badge-version">Versão 1.4</span>
             </div>
 
             <div class="top-controls">
@@ -170,11 +206,12 @@
                     <select id="filtroObra" onchange="carregarDados()"><option value="todas">🏢 Todas as Obras</option></select>
                     <select id="filtroForn" onchange="carregarDados()"><option value="todos">🚚 Todos os Fornecedores</option></select>
                     <input type="text" id="filtroContrato" placeholder="🔎 Busca por item, contrato, loja..." onkeyup="aplicarFiltrosELocalSort()">
-                    <button class="btn-limpar" id="btn-limpar-filtros" onclick="limparFiltros()" style="display: none;">🧹 Limpar Filtros</button>
+                    <button class="btn-limpar" id="btn-limpar-filtros" onclick="limparFiltros()" style="display: none;">🧹 Limpar</button>
                     <span class="counter-badge" id="registro-contador">0 encontrados</span>
                 </div>
                 <div class="botoes-topo">
-                    <button class="btn-print" onclick="window.print()">🖨️ Imprimir PDF</button>
+                    <button class="btn-print" onclick="prepararImpressao()">🖨️ Imprimir PDF</button>
+                    <button class="btn-excel" onclick="exportarExcel()">📊 Exportar Excel</button>
                     <button class="btn-novo" onclick="abrirModalNovo()">➕ Novo Equipamento</button>
                 </div>
             </div>
@@ -341,8 +378,8 @@
     </div>
 
     <!-- MODAIS DE FORNECEDOR -->
-    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual (Incorreto)</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome Correto</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar Todos</button></div></div></div>
-    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto (Origem)</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com (Destino Correto)</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar e Unificar</button></div></div></div>
+    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar</button></div></div></div>
+    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar</button></div></div></div>
 
     <script>
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
@@ -352,7 +389,6 @@
         let dadosGlobais = []; 
         let dadosFiltrados = []; 
         let chartObras = null, chartForns = null, chartStatus = null;
-
         let sortColunaAtual = 'data_inicio';
         let sortDirecaoAsc = false;
 
@@ -521,23 +557,12 @@
             chartStatus = new Chart(document.getElementById('chart-status').getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(contagemStatus), datasets: [{ data: Object.values(contagemStatus), backgroundColor: ['#10b981', '#ef4444'] }] }, options: { responsive: true, maintainAspectRatio: false } });
         }
 
-        // FASE 3 FIX: O Módulo Fornecedores agora respeita a busca e volta a aparecer na tela!
         function renderizarModuloFornecedores() {
-            const bodyForn = document.getElementById('body-fornecedores'); 
-            bodyForn.innerHTML = '';
-            let contagemForns = {}; 
-            
-            // Usa dadosFiltrados para que a pesquisa do topo funcione também nos fornecedores
-            dadosFiltrados.forEach(item => { 
-                let f = item.fornecedor || 'Não identificado'; 
-                contagemForns[f] = (contagemForns[f] || 0) + 1; 
-            });
-            
+            const bodyForn = document.getElementById('body-fornecedores'); bodyForn.innerHTML = '';
+            let contagemForns = {}; dadosFiltrados.forEach(item => { let f = item.fornecedor || 'Não identificado'; contagemForns[f] = (contagemForns[f] || 0) + 1; });
             Object.keys(contagemForns).sort((a, b) => a.localeCompare(b)).forEach(forn => {
                 bodyForn.innerHTML += `<tr><td><span class="main-txt">${forn}</span></td><td><span class="status-badge highlight">${contagemForns[forn]} equipamentos</span></td><td><div class="action-buttons"><button class="btn-action-small btn-editar" title="Renomear" onclick="abrirRenomearForn('${forn}')">✏️</button><button class="btn-action-small btn-renovar" title="Mesclar" onclick="abrirMesclarForn('${forn}')">🔗</button></div></td></tr>`;
             });
-            
-            // Mostra a tabela se houver resultados na busca
             document.getElementById('tabela-fornecedores').style.display = Object.keys(contagemForns).length > 0 ? 'table' : 'none';
         }
 
@@ -554,7 +579,6 @@
 
         function abrirMesclarForn(origem) {
             document.getElementById('merge-origem').value = origem; document.getElementById('merge-origem-txt').value = origem; const selDestino = document.getElementById('merge-destino'); selDestino.innerHTML = '';
-            // Pega do dadosGlobais (sem filtro) para você poder mesclar com QUALQUER fornecedor do banco
             [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort().forEach(f => { if(f !== origem) { selDestino.add(new Option(f, f)); } });
             document.getElementById('modal-mesclar-forn').style.display = 'flex';
         }
@@ -622,6 +646,59 @@
         function arquivarItem(id) { showConfirm("Arquivar Item", "Mover este item para o Histórico?", async () => { showGlobalLoading("Arquivando..."); const { error } = await client.from('locacoes').update({ status: 'inativo' }).eq('id', id); hideGlobalLoading(); if (error) showToast("Erro"); else { showToast("Arquivado!", "success"); carregarDados(); } }, true); }
         function restaurarItem(id) { showConfirm("Restaurar Item", "Mover item de volta para os ativos?", async () => { showGlobalLoading("Restaurando..."); const { error } = await client.from('locacoes').update({ status: 'ativo' }).eq('id', id); hideGlobalLoading(); if (error) showToast("Erro"); else { showToast("Restaurado!", "success"); carregarDados(); } }); }
         function renovarItem(id, fim, uni) { showConfirm("Renovar Período", "Prorrogar locação por mais um período?", async () => { showGlobalLoading("Renovando..."); let d = new Date(fim); d.setMinutes(d.getMinutes() + d.getTimezoneOffset()); if(uni.includes('Mês')) d.setDate(d.getDate() + 30); else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15); else d.setDate(d.getDate() + 1); const { error } = await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id); hideGlobalLoading(); if(!error) { showToast("Renovado!", "success"); carregarDados(); } else { showToast("Erro."); } }); }
+
+        /* --- FASE 4: FUNÇÕES DE SAÍDA (EXCEL E IMPRESSÃO) --- */
+        function exportarExcel() {
+            if (dadosFiltrados.length === 0) { showToast("Nenhum dado filtrado para exportar.", "warning"); return; }
+            showGlobalLoading("Gerando Excel...");
+
+            setTimeout(() => {
+                const dadosExcel = dadosFiltrados.map(item => ({
+                    "Status": item.status === 'ativo' ? 'Ativo' : 'Arquivado',
+                    "Obra": item.obra || "-",
+                    "Fornecedor": item.fornecedor || "-",
+                    "Equipamento": item.equipamento || "-",
+                    "Quantidade": item.quantidade || 1,
+                    "Nº Contrato": item.contrato || "-",
+                    "Período/Unidade": item.unidade || "-",
+                    "Data Locação/Compra": item.data_inicio ? formatarData(item.data_inicio) : "-",
+                    "Data Vencimento": item.data_fim ? formatarData(item.data_fim) : "-",
+                    "Valor (R$)": parseFloat(item.valor) || 0,
+                    "Indenização (R$)": parseFloat(item.valor_indenizacao) || 0
+                }));
+
+                const worksheet = XLSX.utils.json_to_sheet(dadosExcel);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Equipamentos");
+
+                // Ajuste automático de largura das colunas
+                const wscols = [ {wch: 12}, {wch: 25}, {wch: 35}, {wch: 40}, {wch: 12}, {wch: 18}, {wch: 15}, {wch: 20}, {wch: 20}, {wch: 15}, {wch: 15} ];
+                worksheet['!cols'] = wscols;
+
+                const dataHoje = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(workbook, `Relatorio_Obras_${dataHoje}.xlsx`);
+
+                hideGlobalLoading();
+                showToast("Excel exportado com sucesso!", "success");
+            }, 500);
+        }
+
+        function prepararImpressao() {
+            const fObra = document.getElementById('filtroObra').options[document.getElementById('filtroObra').selectedIndex].text;
+            const fForn = document.getElementById('filtroForn').options[document.getElementById('filtroForn').selectedIndex].text;
+            const fTexto = document.getElementById('filtroContrato').value.trim();
+
+            let filtros = `<strong>Filtros aplicados:</strong> Obra: ${fObra} | Fornecedor: ${fForn}`;
+            if (fTexto) filtros += ` | Pesquisa: "${fTexto}"`;
+            document.getElementById('print-filters').innerHTML = filtros;
+            
+            const hoje = new Date();
+            document.getElementById('print-date').innerText = `Gerado em: ${hoje.toLocaleDateString('pt-BR')} às ${hoje.toLocaleTimeString('pt-BR')}`;
+            document.getElementById('print-count').innerText = `Total de Registros: ${dadosFiltrados.length}`;
+
+            // Aciona a caixa de diálogo nativa de impressão
+            window.print();
+        }
 
         carregarFiltros().then(() => carregarDados());
     </script>
