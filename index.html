@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        /* FASE 5: VARIÁVEIS CSS DINÂMICAS PARA DARK MODE */
         :root { 
             --bg: #f8fafc; 
             --text: #1e293b; 
@@ -27,7 +26,6 @@
             --chart-grid: #e2e8f0;
         }
 
-        /* PALETA MODO ESCURO */
         [data-theme="dark"] {
             --bg: #0f172a; 
             --text: #f8fafc; 
@@ -60,7 +58,7 @@
         .menu-item.active { background: var(--primary); }
         .menu-item:hover:not(.active) { background: rgba(255,255,255,0.15); }
         
-        .spacer { flex: 1; } /* Joga os botões de baixo para o fim */
+        .sidebar-spacer { flex: 1; }
 
         /* CONTEÚDO PRINCIPAL */
         .main-content { flex: 1; padding: 30px; box-sizing: border-box; width: 100%; transition: 0.3s; }
@@ -94,7 +92,7 @@
         .btn-novo { background: var(--primary); color: white; border: none; padding: 0 20px; height: 40px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-novo:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
 
-        /* DASHBOARDS E GRÁFICOS */
+        /* DASHBOARDS */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .kpi-card { background: var(--white); padding: 18px 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.01); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; transition: background 0.3s, border-color 0.3s; }
         .kpi-title { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -196,13 +194,12 @@
             <button class="btn-toggle-menu" onclick="toggleSidebar()">☰</button>
             <h2><span class="icon">🏗️</span> <span class="text-hide">ControleObras</span></h2>
             
-            <div class="menu-item active" id="menu-loc" onclick="mudarAba('locacoes')"><span class="icon">📄</span> <span class="text-hide">Locações Ativas</span></div>
-            <div class="menu-item" id="menu-comp" onclick="mudarAba('compras')"><span class="icon">🛒</span> <span class="text-hide">Patrimônio Próprio</span></div>
-            <div class="menu-item" id="menu-forn" onclick="mudarAba('fornecedores')"><span class="icon">🏢</span> <span class="text-hide">Fornecedores</span></div>
-            <div class="menu-item" id="menu-hist" onclick="mudarAba('historico')"><span class="icon">🕰️</span> <span class="text-hide">Histórico / Arquivo</span></div>
+            <div class="menu-item active" id="menu-locacoes" onclick="mudarAba('locacoes')"><span class="icon">📄</span> <span class="text-hide">Locações Ativas</span></div>
+            <div class="menu-item" id="menu-compras" onclick="mudarAba('compras')"><span class="icon">🛒</span> <span class="text-hide">Patrimônio Próprio</span></div>
+            <div class="menu-item" id="menu-fornecedores" onclick="mudarAba('fornecedores')"><span class="icon">🏢</span> <span class="text-hide">Fornecedores</span></div>
+            <div class="menu-item" id="menu-historico" onclick="mudarAba('historico')"><span class="icon">🕰️</span> <span class="text-hide">Histórico / Arquivo</span></div>
             
-            <div class="spacer"></div>
-            <!-- BOTÃO MODO ESCURO -->
+            <div class="sidebar-spacer"></div>
             <div class="menu-item" onclick="toggleTema()" style="border: 1px solid rgba(255,255,255,0.2);">
                 <span class="icon" id="tema-icone">🌙</span> <span class="text-hide" id="tema-texto">Modo Escuro</span>
             </div>
@@ -225,7 +222,7 @@
 
             <div class="header">
                 <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
-                <span class="badge-version">Versão 1.5</span>
+                <span class="badge-version">Versão 1.5.1</span>
             </div>
 
             <div class="top-controls">
@@ -348,7 +345,6 @@
         </div>
     </div>
 
-    <!-- MODAL EDITAR -->
     <div class="modal-overlay" id="modal-editar">
         <div class="modal-box">
             <h3>✏️ Editar Equipamento</h3>
@@ -377,7 +373,6 @@
         </div>
     </div>
 
-    <!-- MODAL NOVO -->
     <div class="modal-overlay" id="modal-novo">
         <div class="modal-box">
             <h3>➕ Adicionar Novo Equipamento</h3>
@@ -389,7 +384,7 @@
                     <div class="form-group"><label>Quantidade</label><input type="number" id="novo-qtd" value="1" min="1"></div>
                     <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="novo-valor" step="0.01" value="0.00"></div>
                 </div>
-                <div class="form-group"><label id="lbl-forn">Locadora / Fornecedor</label><input type="text" id="novo-forn" list="lista-forns" placeholder="Selecione ou digite o fornecedor..."></div>
+                <div class="form-group"><label id="lbl-forn">Locadora / Fornecedor</label><input type="text" id="novo-forn" list="lista-forns" placeholder="Selecione ou digite the fornecedor..."></div>
                 <div class="grid-duplo">
                     <div class="form-group"><label id="lbl-data-inicio">Data Locação</label><input type="date" id="novo-inicio"></div>
                     <div class="form-group" id="box-vencimento"><label>Data Devolução</label><input type="date" id="novo-vencimento"></div>
@@ -408,7 +403,6 @@
         </div>
     </div>
 
-    <!-- MODAIS DE FORNECEDOR -->
     <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual (Incorreto)</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome Correto</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar Todos</button></div></div></div>
     <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto (Origem)</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com (Destino Correto)</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar e Unificar</button></div></div></div>
 
@@ -423,7 +417,6 @@
         let sortColunaAtual = 'data_inicio';
         let sortDirecaoAsc = false;
 
-        // FASE 5: INICIALIZAÇÃO E CONTROLE DE TEMA (DARK MODE)
         function inicializarTema() {
             const temaSalvo = localStorage.getItem('controle_tema') || 'light';
             if (temaSalvo === 'dark') {
@@ -431,7 +424,6 @@
                 document.getElementById('tema-icone').innerText = '☀️';
                 document.getElementById('tema-texto').innerText = 'Modo Claro';
             }
-            // Define a cor de fonte base global do Chart.js de acordo com o tema
             atualizarCorGraficos();
         }
 
@@ -449,16 +441,16 @@
                 document.getElementById('tema-texto').innerText = 'Modo Claro';
             }
             atualizarCorGraficos();
-            if(dadosFiltrados.length > 0) atualizarDashboard(dadosFiltrados); // Redesenha com novas cores
+            if(dadosFiltrados.length > 0) atualizarDashboard(dadosFiltrados); 
         }
 
         function atualizarCorGraficos() {
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            Chart.defaults.color = isDark ? '#94a3b8' : '#64748b'; // Ajusta cor do texto do gráfico
-            Chart.defaults.borderColor = isDark ? '#334155' : '#e2e8f0'; // Ajusta grade do gráfico
+            Chart.defaults.color = isDark ? '#94a3b8' : '#64748b'; 
+            Chart.defaults.borderColor = isDark ? '#334155' : '#e2e8f0'; 
         }
 
-        inicializarTema(); // Roda no momento do carregamento
+        inicializarTema();
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -480,15 +472,25 @@
         function fecharConfirm() { document.getElementById('modal-confirm').style.display = 'none'; }
         document.getElementById('btn-confirm-action').addEventListener('click', () => { if (confirmCallbackAction) { const action = confirmCallbackAction; confirmCallbackAction = null; fecharConfirm(); action(); } });
 
-        // FASE 5: MEMÓRIA DE ABA
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+        
+        // v1.5.1 FIX: IDs mapeados de forma exata e limpa, eliminando o erro de corte
         function mudarAba(aba) {
-            document.querySelectorAll('.menu-item:not([onclick="toggleTema()"])').forEach(e => e.classList.remove('active'));
+            document.querySelectorAll('.sidebar .menu-item').forEach(e => {
+                if (!e.innerText.includes('Tema') && !e.innerText.includes('Escuro') && !e.innerText.includes('Claro')) {
+                    e.classList.remove('active');
+                }
+            });
             document.querySelectorAll('.secao-tabela').forEach(e => e.classList.remove('animate-show'));
-            document.getElementById('menu-' + aba.substring(0,4)).classList.add('active');
-            document.getElementById('secao-' + aba).classList.add('animate-show');
-            localStorage.setItem('controle_aba', aba); // Salva na memória
+            
+            const menuEl = document.getElementById('menu-' + aba);
+            const secaoEl = document.getElementById('secao-' + aba);
+            
+            if (menuEl) menuEl.classList.add('active');
+            if (secaoEl) secaoEl.classList.add('animate-show');
+            localStorage.setItem('controle_aba', aba); 
         }
+
         function formatarData(dataString) { if (!dataString) return '--'; const p = dataString.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
         function formatarMoeda(valor) { return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
@@ -504,7 +506,6 @@
                 obras.forEach(o => { selObra.add(new Option(o, o)); listObras.appendChild(new Option(o)); });
                 forns.forEach(f => { selForn.add(new Option(f, f)); listForns.appendChild(new Option(f)); });
 
-                // FASE 5: Restaura os filtros da memória ANTES de carregar os dados
                 const savedFiltros = JSON.parse(localStorage.getItem('controle_filtros'));
                 if (savedFiltros) {
                     if ([...selObra.options].some(o => o.value === savedFiltros.obra)) selObra.value = savedFiltros.obra;
@@ -522,7 +523,6 @@
                 if (error) throw error;
                 dadosGlobais = data;
                 
-                // Restaura aba
                 const abaSalva = localStorage.getItem('controle_aba') || 'locacoes';
                 mudarAba(abaSalva);
 
@@ -535,7 +535,6 @@
             const fForn = document.getElementById('filtroForn').value;
             const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
 
-            // FASE 5: Grava filtros na memória
             localStorage.setItem('controle_filtros', JSON.stringify({ obra: fObra, forn: fForn, texto: fTexto }));
 
             dadosFiltrados = dadosGlobais.filter(item => {
@@ -563,7 +562,7 @@
         }
 
         function ordenarColuna(coluna) {
-            if (sortColunaAtual === coluna) { sortDirecaoAsc = !sortDirecaoAsc; } else { sortColunaAtual = coluna; sortDirecaoAsc = true; }
+            if (sortColunaAtual === column || sortColunaAtual === coluna) { sortDirecaoAsc = !sortDirecaoAsc; } else { sortColunaAtual = coluna; sortDirecaoAsc = true; }
             aplicarFiltrosELocalSort();
         }
 
@@ -692,7 +691,8 @@
         async function salvarEdicao() {
             const id = document.getElementById('edit-id').value; const equipamento = document.getElementById('edit-equip').value.trim();
             const fornecedor = document.getElementById('edit-forn').value.trim() || 'Não identificado';
-            const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1; const contrato = document.getElementById('edit-contrato').value.trim(); const unidade = document.getElementById('edit-periodo').value.trim() || 'Mês';
+            const ClubQtd = document.getElementById('edit-qtd').value;
+            const quantidade = parseInt(ClubQtd) || 1; const contrato = document.getElementById('edit-contrato').value.trim(); const unidade = document.getElementById('edit-periodo').value.trim() || 'Mês';
             const valor = parseFloat(document.getElementById('edit-valor').value) || 0; const data_inicio = document.getElementById('edit-inicio').value; const data_fim = document.getElementById('edit-vencimento').value; const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
             showGlobalLoading("Salvando..."); const { error } = await client.from('locacoes').update({ equipamento, fornecedor, quantidade, contrato, unidade, valor, data_inicio, data_fim, valor_indenizacao }).eq('id', id); hideGlobalLoading();
             if(!error) { fecharModalEdicao(); showToast("Salvo com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro ao salvar.", "error"); }
@@ -717,7 +717,7 @@
             const tipo = document.getElementById('novo-tipo').value; const obra = document.getElementById('novo-obra').value.trim(); const equipamento = document.getElementById('novo-equip').value.trim(); const quantidade = parseInt(document.getElementById('novo-qtd').value) || 1; const valor = parseFloat(document.getElementById('novo-valor').value) || 0; const fornecedor = document.getElementById('novo-forn').value.trim() || 'Não identificado';
             if (!obra || !equipamento) { showToast("Preencha obra e equipamento!", "warning"); return; }
             const data_inicio = document.getElementById('novo-inicio').value || new Date().toISOString().split('T')[0];
-            let objSalvar = { obra, fornecedor, equipamento, quantidade, valor, status: 'ativo', data_inicio: data_inicio };
+            let objSalvar = { obra, fornecedor, equipment: equipamento, equipamento, quantidade, valor, status: 'ativo', data_inicio: data_inicio };
 
             if (tipo === 'compra') { 
                 objSalvar.unidade = 'Proprio'; objSalvar.data_fim = data_inicio; objSalvar.contrato = 'Cadastro Manual'; 
