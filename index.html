@@ -11,13 +11,10 @@
     <style>
         :root { --bg: #f8fafc; --text: #1e293b; --text-light: #64748b; --primary: #2563eb; --white: #ffffff; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; }
         
-        /* CORREÇÃO ESTRUTURAL: Body livre de flexbox */
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
-        
-        /* CÁPSULA DA APLICAÇÃO */
         .app-wrapper { display: flex; width: 100%; min-height: 100vh; position: relative; }
 
-        /* MENU LATERAL EXPANSÍVEL */
+        /* MENU LATERAL */
         .sidebar { width: 260px; background: #0f172a; min-height: 100vh; padding: 20px; color: white; display: flex; flex-direction: column; transition: width 0.3s ease; flex-shrink: 0; box-sizing: border-box; z-index: 10;}
         .sidebar.collapsed { width: 85px; align-items: center; }
         .sidebar.collapsed .text-hide { display: none; }
@@ -54,20 +51,19 @@
         .btn-novo { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-novo:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
 
-        /* GRID DE CARDS KPI */
+        /* DASHBOARDS */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .kpi-card { background: var(--white); padding: 18px 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.01); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; transition: 0.2s; }
         .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.03); }
         .kpi-title { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
         .kpi-value { font-size: 1.7rem; font-weight: 800; color: var(--text); }
 
-        /* GRID DE GRÁFICOS */
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .chart-card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); border: 1px solid var(--border); height: 240px; display: flex; flex-direction: column; }
         .chart-card h4 { margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .chart-container { flex: 1; position: relative; min-height: 0; }
 
-        /* TABELA E ANIMAÇÕES */
+        /* TABELAS */
         .secao-tabela { display: none; } 
         .animate-show { display: block; animation: fadeInScale 0.3s ease-out forwards; }
         @keyframes fadeInScale { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -81,7 +77,6 @@
         .table-modern tr:hover { background: #f8fafc; }
         .table-modern td { padding: 16px 12px; vertical-align: middle; }
         
-        /* TEXTOS DA TABELA */
         .group-info { display: flex; flex-direction: column; }
         .main-txt { font-weight: 700; color: var(--text); font-size: 0.95rem; display: flex; align-items: center; }
         .sub-txt { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
@@ -93,7 +88,6 @@
         .status-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; font-weight: bold; background: #e2e8f0; color: #475569; width: fit-content; }
         .status-badge.highlight { background: #dbeafe; color: #1e40af; }
         
-        /* BOTÕES DE AÇÃO */
         .btn-anexo { background: #eff6ff; color: var(--primary); padding: 8px 12px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; border: 1px solid #bfdbfe; transition: 0.2s; }
         .btn-anexo:hover { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
         .btn-sem-anexo { color: #94a3b8; font-size: 0.8rem; font-style: italic; }
@@ -109,7 +103,7 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* MODAIS E TOASTS FIXOS */
+        /* COMPONENTES GLOBAIS FORA DA CAPSULA */
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { min-width: 280px; padding: 15px 20px; border-radius: 8px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.9rem; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-left: 5px solid; }
         .toast.show { transform: translateX(0); }
@@ -153,37 +147,22 @@
             <button class="btn-toggle-menu" onclick="toggleSidebar()">☰</button>
             <h2><span class="icon">🏗️</span> <span class="text-hide">ControleObras</span></h2>
             
-            <div class="menu-item active" id="menu-loc" onclick="mudarAba('locacoes')">
-                <span class="icon">📄</span> <span class="text-hide">Locações Ativas</span>
-            </div>
-            <div class="menu-item" id="menu-comp" onclick="mudarAba('compras')">
-                <span class="icon">🛒</span> <span class="text-hide">Patrimônio Próprio</span>
-            </div>
-            <div class="menu-item" id="menu-forn" onclick="mudarAba('fornecedores')">
-                <span class="icon">🏢</span> <span class="text-hide">Fornecedores</span>
-            </div>
-            <div class="menu-item" id="menu-hist" onclick="mudarAba('historico')">
-                <span class="icon">🕰️</span> <span class="text-hide">Histórico / Arquivo</span>
-            </div>
+            <div class="menu-item active" id="menu-loc" onclick="mudarAba('locacoes')"><span class="icon">📄</span> <span class="text-hide">Locações Ativas</span></div>
+            <div class="menu-item" id="menu-comp" onclick="mudarAba('compras')"><span class="icon">🛒</span> <span class="text-hide">Patrimônio Próprio</span></div>
+            <div class="menu-item" id="menu-forn" onclick="mudarAba('fornecedores')"><span class="icon">🏢</span> <span class="text-hide">Fornecedores</span></div>
+            <div class="menu-item" id="menu-hist" onclick="mudarAba('historico')"><span class="icon">🕰️</span> <span class="text-hide">Histórico / Arquivo</span></div>
         </div>
 
         <div class="main-content">
             <div class="header">
-                <div>
-                    <h1>Gestão de Equipamentos</h1>
-                    <p>Controle financeiro e logística de materiais.</p>
-                </div>
+                <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
                 <span class="badge-v11">Versão 1.1</span>
             </div>
 
             <div class="top-controls">
                 <div class="filter-group">
-                    <select id="filtroObra" onchange="carregarDados()" title="">
-                        <option value="todas" title="">🏢 Todas as Obras</option>
-                    </select>
-                    <select id="filtroForn" onchange="carregarDados()" title="">
-                        <option value="todos" title="">🚚 Todos os Fornecedores</option>
-                    </select>
+                    <select id="filtroObra" onchange="carregarDados()" title=""><option value="todas">🏢 Todas as Obras</option></select>
+                    <select id="filtroForn" onchange="carregarDados()" title=""><option value="todos">🚚 Todos os Fornecedores</option></select>
                     <input type="text" id="filtroContrato" placeholder="🔎 Digite o Nº do Contrato..." onkeyup="carregarDados()">
                 </div>
                 <div class="botoes-topo">
@@ -201,18 +180,9 @@
             </div>
 
             <div class="charts-grid">
-                <div class="chart-card">
-                    <h4>Equipamentos por Obra</h4>
-                    <div class="chart-container"><canvas id="chart-obras"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <h4>Equipamentos por Fornecedor</h4>
-                    <div class="chart-container"><canvas id="chart-fornecedores"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <h4>Distribuição por Status</h4>
-                    <div class="chart-container"><canvas id="chart-status"></canvas></div>
-                </div>
+                <div class="chart-card"><h4>Equipamentos por Obra</h4><div class="chart-container"><canvas id="chart-obras"></canvas></div></div>
+                <div class="chart-card"><h4>Equipamentos por Fornecedor</h4><div class="chart-container"><canvas id="chart-fornecedores"></canvas></div></div>
+                <div class="chart-card"><h4>Distribuição por Status</h4><div class="chart-container"><canvas id="chart-status"></canvas></div></div>
             </div>
 
             <div id="secao-locacoes" class="secao-tabela animate-show">
@@ -259,11 +229,9 @@
             </div>
         </div>
     </div> 
-    <div id="toast-container"></div>
 
-    <div class="modal-overlay" id="global-loader" style="z-index: 10000;">
-        <div class="global-loader-box"><div class="loader" style="margin:0;"></div><span id="global-loader-msg">Processando...</span></div>
-    </div>
+    <div id="toast-container"></div>
+    <div class="modal-overlay" id="global-loader" style="z-index: 10000;"><div class="global-loader-box"><div class="loader" style="margin:0;"></div><span id="global-loader-msg">Processando...</span></div></div>
 
     <div class="modal-overlay" id="modal-confirm" style="z-index: 9999;">
         <div class="modal-box" style="max-width: 400px; text-align: center; padding: 30px;">
@@ -283,15 +251,34 @@
             <div class="form-edit">
                 <input type="hidden" id="edit-id">
                 <div class="form-group"><label>Nome do Equipamento</label><input type="text" id="edit-equip"></div>
+                
                 <div class="form-group">
                     <label>Locadora / Fornecedor Vinculado</label>
                     <select id="edit-forn-select" onchange="verificarNovoFornEdit()" title=""></select>
                     <input type="text" id="edit-forn-input" placeholder="Digite o novo fornecedor..." style="display:none; margin-top:10px;">
                 </div>
+                
                 <div class="grid-duplo">
                     <div class="form-group"><label>Quantidade</label><input type="number" id="edit-qtd" step="1"></div>
                     <div class="form-group"><label>Nº Contrato</label><input type="text" id="edit-contrato"></div>
                 </div>
+
+                <div class="grid-duplo">
+                    <div class="form-group">
+                        <label>Período</label>
+                        <select id="edit-periodo" title="">
+                            <option value="Mês">Mês (30 dias)</option>
+                            <option value="Quinzena">Quinzena (15 dias)</option>
+                            <option value="Dia">Diária</option>
+                            <option value="Proprio">Patrimônio (Próprio)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Data (Venc. ou Compra)</label>
+                        <input type="date" id="edit-vencimento">
+                    </div>
+                </div>
+
                 <div class="grid-duplo">
                     <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="edit-valor" step="0.01"></div>
                     <div class="form-group"><label>Indenização (R$)</label><input type="number" id="edit-indenizacao" step="0.01"></div>
@@ -311,7 +298,7 @@
                 <div class="form-group">
                     <label>Tipo de Entrada</label>
                     <select id="novo-tipo" onchange="toggleCamposNovo()" title="">
-                        <option value="aluguel" title="">📄 Locação (Aluguel)</option><option value="compra" title="">🛒 Patrimônio (Compra)</option>
+                        <option value="aluguel">📄 Locação (Aluguel)</option><option value="compra">🛒 Patrimônio (Compra)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -335,7 +322,7 @@
                         <div class="form-group">
                             <label>Período</label>
                             <select id="novo-periodo" title="">
-                                <option value="Mês" title="">Mês (30 dias)</option><option value="Quinzena" title="">Quinzena (15 dias)</option><option value="Dia" title="">Diária</option>
+                                <option value="Mês">Mês (30 dias)</option><option value="Quinzena">Quinzena (15 dias)</option><option value="Dia">Diária</option>
                             </select>
                         </div>
                     </div>
@@ -399,20 +386,12 @@
 
         let confirmCallbackAction = null;
         function showConfirm(title, message, onConfirm, isDanger = false) {
-            document.getElementById('confirm-title').innerText = title;
-            document.getElementById('confirm-msg').innerText = message;
-            document.getElementById('confirm-icon').innerText = isDanger ? '🚨' : '⚠️';
-            const btnConfirm = document.getElementById('btn-confirm-action');
-            btnConfirm.style.background = isDanger ? 'var(--danger)' : 'var(--primary)';
-            btnConfirm.innerText = isDanger ? 'Sim, Confirmar' : 'Confirmar';
-            confirmCallbackAction = onConfirm; 
-            document.getElementById('modal-confirm').style.display = 'flex';
+            document.getElementById('confirm-title').innerText = title; document.getElementById('confirm-msg').innerText = message; document.getElementById('confirm-icon').innerText = isDanger ? '🚨' : '⚠️';
+            const btnConfirm = document.getElementById('btn-confirm-action'); btnConfirm.style.background = isDanger ? 'var(--danger)' : 'var(--primary)';
+            btnConfirm.innerText = isDanger ? 'Sim, Confirmar' : 'Confirmar'; confirmCallbackAction = onConfirm; document.getElementById('modal-confirm').style.display = 'flex';
         }
         function fecharConfirm() { document.getElementById('modal-confirm').style.display = 'none'; }
-        
-        document.getElementById('btn-confirm-action').addEventListener('click', () => {
-            if (confirmCallbackAction) { const action = confirmCallbackAction; confirmCallbackAction = null; fecharConfirm(); action(); }
-        });
+        document.getElementById('btn-confirm-action').addEventListener('click', () => { if (confirmCallbackAction) { const action = confirmCallbackAction; confirmCallbackAction = null; fecharConfirm(); action(); } });
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
         function mudarAba(aba) {
@@ -433,7 +412,6 @@
             if(data) {
                 const obras = [...new Set(data.map(i => i.obra))].filter(Boolean).sort();
                 const forns = [...new Set(data.map(i => i.fornecedor))].filter(Boolean).sort();
-                
                 const selObra = document.getElementById('filtroObra'); const selForn = document.getElementById('filtroForn');
                 const selObraNovo = document.getElementById('novo-obra-select'); const selFornNovo = document.getElementById('novo-forn-select'); const selFornEdit = document.getElementById('edit-forn-select');
                 
@@ -494,7 +472,6 @@
 
                 renderizarModuloFornecedores();
                 atualizarDashboard(data);
-
             } catch (err) { showToast("Erro de conexão ao carregar os dados.", "error"); }
         }
 
@@ -506,9 +483,7 @@
             data.forEach(item => {
                 let qtd = parseInt(item.quantidade) || 1;
                 total += qtd;
-                if (item.status === 'ativo') { ativos += qtd; contagemStatus['Ativo'] += qtd; } 
-                else { arquivados += qtd; contagemStatus['Arquivado'] += qtd; }
-                
+                if (item.status === 'ativo') { ativos += qtd; contagemStatus['Ativo'] += qtd; } else { arquivados += qtd; contagemStatus['Arquivado'] += qtd; }
                 if (item.obra) { obrasSet.add(item.obra); contagemObras[item.obra] = (contagemObras[item.obra] || 0) + qtd; }
                 if (item.fornecedor) { fornsSet.add(item.fornecedor); contagemForns[item.fornecedor] = (contagemForns[item.fornecedor] || 0) + qtd; }
             });
@@ -520,8 +495,11 @@
             if(chartObras) chartObras.destroy();
             chartObras = new Chart(document.getElementById('chart-obras').getContext('2d'), { type: 'bar', data: { labels: Object.keys(contagemObras), datasets: [{ data: Object.values(contagemObras), backgroundColor: '#2563eb', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
 
+            // FASE 2 FIX: Limitar o tamanho do nome do fornecedor no gráfico para não espremer os dados
+            const labelsFornsCurtas = Object.keys(contagemForns).map(f => f.length > 20 ? f.substring(0, 18) + '...' : f);
+            
             if(chartForns) chartForns.destroy();
-            chartForns = new Chart(document.getElementById('chart-fornecedores').getContext('2d'), { type: 'bar', data: { labels: Object.keys(contagemForns), datasets: [{ data: Object.values(contagemForns), backgroundColor: '#6366f1', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            chartForns = new Chart(document.getElementById('chart-fornecedores').getContext('2d'), { type: 'bar', data: { labels: labelsFornsCurtas, datasets: [{ data: Object.values(contagemForns), backgroundColor: '#6366f1', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { title: function(context) { return Object.keys(contagemForns)[context[0].dataIndex]; } } } } } });
 
             if(chartStatus) chartStatus.destroy();
             chartStatus = new Chart(document.getElementById('chart-status').getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(contagemStatus), datasets: [{ data: Object.values(contagemStatus), backgroundColor: ['#10b981', '#ef4444'] }] }, options: { responsive: true, maintainAspectRatio: false } });
@@ -541,15 +519,15 @@
             const origem = document.getElementById('renomear-forn-origem').value; const novoNome = document.getElementById('renomear-forn-novo').value.trim();
             if (!novoNome || novoNome === origem) { showToast("Nome inválido!", "warning"); return; }
             showConfirm('Renomear Fornecedor', `TODOS os equipamentos de "${origem}" mudarão para "${novoNome}". Confirmar?`, async () => {
-                document.getElementById('modal-renomear-forn').style.display = 'none'; showGlobalLoading("Atualizando fornecedores...");
+                document.getElementById('modal-renomear-forn').style.display = 'none'; showGlobalLoading("Atualizando...");
                 const { error } = await client.from('locacoes').update({ fornecedor: novoNome }).eq('fornecedor', origem); hideGlobalLoading();
-                if(!error) { showToast("Alterado com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro: " + error.message, "error"); }
+                if(!error) { showToast("Alterado com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro.", "error"); }
             });
         }
 
         function abrirMesclarForn(origem) {
             document.getElementById('merge-origem').value = origem; document.getElementById('merge-origem-txt').value = origem; const selDestino = document.getElementById('merge-destino'); selDestino.innerHTML = '';
-            [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort().forEach(f => { if(f !== origem) { let opt = new Option(f,f); opt.title=""; selDestino.add(opt); } });
+            [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort().forEach(f => { if(f !== origem) { let opt = new Option(f, f); opt.title = ""; selDestino.add(opt); } });
             document.getElementById('modal-mesclar-forn').style.display = 'flex';
         }
         function salvarMesclarForn() {
@@ -564,18 +542,33 @@
 
         function abrirEdicao(id) {
             const item = dadosGlobais.find(i => i.id === id); if(!item) return;
-            document.getElementById('edit-id').value = item.id; document.getElementById('edit-equip').value = item.equipamento || '';
+            document.getElementById('edit-id').value = item.id; 
+            document.getElementById('edit-equip').value = item.equipamento || '';
             const selEditForn = document.getElementById('edit-forn-select'); selEditForn.value = item.fornecedor || '';
             document.getElementById('edit-forn-input').style.display = 'none'; document.getElementById('edit-forn-input').value = '';
-            document.getElementById('edit-qtd').value = item.quantidade || 1; document.getElementById('edit-contrato').value = item.contrato || ''; document.getElementById('edit-valor').value = item.valor || 0; document.getElementById('edit-indenizacao').value = item.valor_indenizacao || 0;
+            document.getElementById('edit-qtd').value = item.quantidade || 1; 
+            document.getElementById('edit-contrato').value = item.contrato || ''; 
+            document.getElementById('edit-valor').value = item.valor || 0; 
+            document.getElementById('edit-indenizacao').value = item.valor_indenizacao || 0;
+            
+            // PREENCHER DATA E PERÍODO
+            document.getElementById('edit-periodo').value = item.unidade || 'Mês';
+            document.getElementById('edit-vencimento').value = item.data_fim ? item.data_fim.split('T')[0] : '';
+            
             document.getElementById('modal-editar').style.display = 'flex';
         }
+
         function fecharModalEdicao() { document.getElementById('modal-editar').style.display = 'none'; }
+        
         async function salvarEdicao() {
             const id = document.getElementById('edit-id').value; const equipamento = document.getElementById('edit-equip').value;
             const selectForn = document.getElementById('edit-forn-select').value; const fornecedor = selectForn === 'NOVA' ? document.getElementById('edit-forn-input').value.trim() : (selectForn || 'Não identificado');
             const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1; const contrato = document.getElementById('edit-contrato').value; const valor = parseFloat(document.getElementById('edit-valor').value) || 0; const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
-            showGlobalLoading("Salvando..."); const { error } = await client.from('locacoes').update({ equipamento, fornecedor, quantidade, contrato, valor, valor_indenizacao }).eq('id', id); hideGlobalLoading();
+            const unidade = document.getElementById('edit-periodo').value;
+            const data_fim = document.getElementById('edit-vencimento').value;
+
+            showGlobalLoading("Salvando..."); 
+            const { error } = await client.from('locacoes').update({ equipamento, fornecedor, quantidade, contrato, valor, valor_indenizacao, unidade, data_fim }).eq('id', id); hideGlobalLoading();
             if(!error) { fecharModalEdicao(); showToast("Salvo com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro ao salvar.", "error"); }
         }
 
@@ -583,6 +576,7 @@
             document.getElementById('novo-tipo').value = 'aluguel'; document.getElementById('novo-obra-select').value = ''; document.getElementById('novo-obra-input').style.display = 'none'; document.getElementById('novo-obra-input').value = ''; document.getElementById('novo-equip').value = ''; document.getElementById('novo-qtd').value = '1'; document.getElementById('novo-valor').value = ''; document.getElementById('novo-forn-select').value = ''; document.getElementById('novo-forn-input').style.display = 'none'; document.getElementById('novo-forn-input').value = ''; document.getElementById('novo-contrato').value = ''; document.getElementById('novo-periodo').value = 'Mês'; toggleCamposNovo(); document.getElementById('modal-novo').style.display = 'flex';
         }
         function fecharModalNovo() { document.getElementById('modal-novo').style.display = 'none'; }
+        
         async function salvarNovo() {
             const tipo = document.getElementById('novo-tipo').value; const selObra = document.getElementById('novo-obra-select').value; const obra = selObra === 'NOVA' ? document.getElementById('novo-obra-input').value.trim() : selObra; const equipamento = document.getElementById('novo-equip').value.trim(); const quantidade = parseInt(document.getElementById('novo-qtd').value) || 1; const valor = parseFloat(document.getElementById('novo-valor').value) || 0; const selForn = document.getElementById('novo-forn-select').value; const fornecedor = selForn === 'NOVA' ? document.getElementById('novo-forn-input').value.trim() : (selForn || 'Não identificado');
             if (!obra || !equipamento) { showToast("Preencha obra e equipamento!", "warning"); return; }
