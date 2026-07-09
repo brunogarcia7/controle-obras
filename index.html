@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Obras - Painel Web</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
@@ -30,12 +31,13 @@
 
         /* CONTEÚDO PRINCIPAL */
         .main-content { flex: 1; padding: 30px; box-sizing: border-box; width: 100%; transition: 0.3s; }
-        .header { margin-bottom: 20px; }
+        .header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; }
         .header p { margin: 5px 0 0 0; color: var(--text-light); }
+        .badge-v11 { background: #3b82f6; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; border: 1px solid #60a5fa; }
 
         /* BARRA DE CONTROLES */
-        .top-controls { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid var(--border); margin-bottom: 30px; flex-wrap: wrap; gap: 15px;}
+        .top-controls { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid var(--border); margin-bottom: 25px; flex-wrap: wrap; gap: 15px;}
         .filter-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1;}
         .filter-group select, .filter-group input { height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-family: 'Inter'; font-weight: 600; color: var(--text); outline: none; min-width: 200px; box-sizing: border-box; transition: 0.2s; }
         .filter-group input:focus, .filter-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
@@ -46,6 +48,19 @@
         .btn-print:hover { background: #000; transform: translateY(-1px); }
         .btn-novo { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-novo:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
+
+        /* FASE 2: GRID DE CARDS KPI (DASHBOARD) */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .kpi-card { background: var(--white); padding: 18px 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.01); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; transition: 0.2s; }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.03); }
+        .kpi-title { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 1.7rem; font-weight: 800; color: var(--text); }
+
+        /* FASE 2: GRID DE GRÁFICOS */
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .chart-card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); border: 1px solid var(--border); height: 240px; display: flex; flex-direction: column; }
+        .chart-card h4 { margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .chart-container { flex: 1; position: relative; min-height: 0; }
 
         /* TABELA E ANIMAÇÕES */
         .secao-tabela { display: none; } 
@@ -86,10 +101,7 @@
         .btn-delete { color: var(--danger); background: #fee2e2; } .btn-delete:hover { background: #fca5a5; }
         .btn-desfazer { color: var(--success); background: #dcfce7; } .btn-desfazer:hover { background: #bbf7d0; }
 
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* FASE 1: SISTEMA DE TOASTS */
+        /* SISTEMA DE TOASTS */
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { min-width: 280px; padding: 15px 20px; border-radius: 8px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.9rem; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-left: 5px solid; }
         .toast.show { transform: translateX(0); }
@@ -97,33 +109,16 @@
         .toast.error { border-color: var(--danger); color: #7f1d1d; background: #fef2f2; }
         .toast.warning { border-color: var(--warning); color: #78350f; background: #fffbeb; }
 
-        /* FASE 1: LOADER GLOBAL */
+        /* LOADER GLOBAL */
         .global-loader-box { background: white; padding: 25px 40px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; gap: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: fadeInScale 0.2s ease-out; }
         .global-loader-box span { font-weight: 700; color: var(--text); font-size: 1rem;}
 
-        /* MODAIS */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(3px); }
-        .modal-box { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; animation: fadeInScale 0.2s ease-out;}
-        .modal-box h3 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 0.85rem; font-weight: bold; color: var(--text-light); margin-bottom: 8px; }
-        .form-group input, .form-group select { width: 100%; height: 42px; border-radius: 8px; border: 1px solid var(--border); padding: 0 12px; font-family: 'Inter'; box-sizing: border-box; transition: 0.2s; font-size: 0.95rem; color: var(--text); }
-        .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); outline: none; }
-        .form-group input:disabled { background: #f1f5f9; font-weight: bold; color: #475569; }
-        .grid-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
-        .btn-save-edit { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-save-edit:hover { background: #059669; }
-        .btn-cancel-edit { background: transparent; color: var(--text-light); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-cancel-edit:hover { background: #f1f5f9; color: var(--text); }
-
+        /* Ocultar dashboards ao imprimir */
         @media print {
-            .sidebar, .top-controls, .btn-anexo, td:last-child, th:last-child { display: none !important; }
+            .sidebar, .top-controls, .btn-anexo, td:last-child, th:last-child, .dashboard-grid, .charts-grid { display: none !important; }
             .main-content { padding: 0; margin: 0; max-width: 100%; }
             body { background: white; }
             .card-table { box-shadow: none; border: none; padding: 0; margin-bottom: 40px; }
-            .indeniz-tag { border: 1px solid #000; color: #000; background: transparent; }
             .secao-tabela { display: block !important; }
         }
     </style>
@@ -174,8 +169,11 @@
 
     <div class="main-content">
         <div class="header">
-            <h1>Gestão de Equipamentos</h1>
-            <p>Controle financeiro e logística de materiais.</p>
+            <div>
+                <h1>Gestão de Equipamentos</h1>
+                <p>Controle financeiro e logística de materiais.</p>
+            </div>
+            <span class="badge-v11">Versão 1.1</span>
         </div>
 
         <div class="top-controls">
@@ -191,6 +189,29 @@
             <div class="botoes-topo">
                 <button class="btn-print" onclick="window.print()">🖨️ Imprimir PDF</button>
                 <button class="btn-novo" onclick="abrirModalNovo()">➕ Novo Equipamento</button>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="kpi-card" style="border-left: 4px solid var(--primary);"><span class="kpi-title">Total Equipamentos</span><span class="kpi-value" id="kpi-total">0</span></div>
+            <div class="kpi-card" style="border-left: 4px solid var(--success);"><span class="kpi-title">Itens Ativos</span><span class="kpi-value" id="kpi-ativos">0</span></div>
+            <div class="kpi-card" style="border-left: 4px solid var(--danger);"><span class="kpi-title">Itens Arquivados</span><span class="kpi-value" id="kpi-arquivados">0</span></div>
+            <div class="kpi-card" style="border-left: 4px solid var(--warning);"><span class="kpi-title">Total de Obras</span><span class="kpi-value" id="kpi-obras">0</span></div>
+            <div class="kpi-card" style="border-left: 4px solid #6366f1;"><span class="kpi-title">Fornecedores</span><span class="kpi-value" id="kpi-fornecedores">0</span></div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h4>Equipamentos por Obra</h4>
+                <div class="chart-container"><canvas id="chart-obras"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h4>Equipamentos por Fornecedor</h4>
+                <div class="chart-container"><canvas id="chart-fornecedores"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h4>Distribuição por Status</h4>
+                <div class="chart-container"><canvas id="chart-status"></canvas></div>
             </div>
         </div>
 
@@ -219,7 +240,6 @@
         <div id="secao-fornecedores" class="secao-tabela">
             <div class="card-table">
                 <h3 style="color: #6366f1;">🏢 Gestão de Fornecedores e Locadoras</h3>
-                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px; margin-top: -10px;">Corrija erros de digitação ou mescle fornecedores duplicados.</p>
                 <table class="table-modern" id="tabela-fornecedores">
                     <thead><tr><th>Nome do Fornecedor / Locadora</th><th>Total de Equipamentos</th><th>Ações</th></tr></thead>
                     <tbody id="body-fornecedores"></tbody>
@@ -245,13 +265,11 @@
             <div class="form-edit">
                 <input type="hidden" id="edit-id">
                 <div class="form-group"><label>Nome do Equipamento</label><input type="text" id="edit-equip"></div>
-
                 <div class="form-group">
                     <label>Locadora / Fornecedor Vinculado</label>
                     <select id="edit-forn-select" onchange="verificarNovoFornEdit()" title=""></select>
                     <input type="text" id="edit-forn-input" placeholder="Digite o novo fornecedor..." style="display:none; margin-top:10px;">
                 </div>
-                
                 <div class="grid-duplo">
                     <div class="form-group"><label>Quantidade</label><input type="number" id="edit-qtd" step="1"></div>
                     <div class="form-group"><label>Nº Contrato</label><input type="text" id="edit-contrato"></div>
@@ -275,37 +293,31 @@
                 <div class="form-group">
                     <label>Tipo de Entrada</label>
                     <select id="novo-tipo" onchange="toggleCamposNovo()" title="">
-                        <option value="aluguel" title="">📄 Locação (Aluguel)</option>
-                        <option value="compra" title="">🛒 Patrimônio (Compra)</option>
+                        <option value="aluguel">📄 Locação (Aluguel)</option><option value="compra">🛒 Patrimônio (Compra)</option>
                     </select>
                 </div>
-
                 <div class="form-group">
                     <label>Obra</label>
                     <select id="novo-obra-select" onchange="verificarNovaObra()" title=""></select>
                     <input type="text" id="novo-obra-input" placeholder="Digite o nome da nova obra..." style="display:none; margin-top:10px;">
                 </div>
-
                 <div class="form-group"><label>Equipamento</label><input type="text" id="novo-equip" placeholder="Ex: Betoneira 400L"></div>
-
                 <div class="grid-duplo">
                     <div class="form-group"><label>Quantidade</label><input type="number" id="novo-qtd" value="1" min="1"></div>
                     <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="novo-valor" step="0.01" value="0.00"></div>
                 </div>
-
                 <div class="form-group">
                     <label id="lbl-forn">Locadora / Fornecedor</label>
                     <select id="novo-forn-select" onchange="verificarNovoForn()" title=""></select>
                     <input type="text" id="novo-forn-input" placeholder="Digite o nome do fornecedor..." style="display:none; margin-top:10px;">
                 </div>
-
                 <div id="campos-locacao">
                     <div class="grid-duplo">
                         <div class="form-group"><label>Nº do Contrato</label><input type="text" id="novo-contrato" placeholder="Ex: 011359/A"></div>
                         <div class="form-group">
                             <label>Período</label>
                             <select id="novo-periodo" title="">
-                                <option value="Mês" title="">Mês (30 dias)</option><option value="Quinzena" title="">Quinzena (15 dias)</option><option value="Dia" title="">Diária</option>
+                                <option value="Mês">Mês (30 dias)</option><option value="Quinzena">Quinzena (15 dias)</option><option value="Dia">Diária</option>
                             </select>
                         </div>
                     </div>
@@ -318,35 +330,8 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="modal-renomear-forn">
-        <div class="modal-box">
-            <h3>✏️ Renomear Fornecedor</h3>
-            <div class="form-edit">
-                <input type="hidden" id="renomear-forn-origem">
-                <div class="form-group"><label>Nome Atual (Incorreto)</label><input type="text" id="renomear-forn-origem-txt" disabled></div>
-                <div class="form-group"><label>Novo Nome Correto</label><input type="text" id="renomear-forn-novo" placeholder="Digite o nome correto..."></div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button>
-                <button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar Todos</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-mesclar-forn">
-        <div class="modal-box">
-            <h3>🔗 Mesclar Duplicados</h3>
-            <div class="form-edit">
-                <input type="hidden" id="merge-origem">
-                <div class="form-group"><label>Fornecedor Incorreto (Origem)</label><input type="text" id="merge-origem-txt" disabled></div>
-                <div class="form-group"><label>Mesclar com (Destino Correto)</label><select id="merge-destino" title=""></select></div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button>
-                <button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar e Unificar</button>
-            </div>
-        </div>
-    </div>
+    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar</button></div></div></div>
+    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino" title=""></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar</button></div></div></div>
 
     <script>
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
@@ -354,27 +339,21 @@
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let dadosGlobais = [];
 
-        // --- SISTEMA DE TOASTS E MODAIS ---
+        // Instâncias globais dos gráficos para evitar bugs de sobreposição ao filtrar
+        let chartObras = null, chartForns = null, chartStatus = null;
+
+        // --- SISTEMA DE TOASTS E LOADING ---
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
+            const toast = document.createElement('div'); toast.className = `toast ${type}`;
             let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
             toast.innerHTML = `<span style="font-size: 1.2rem;">${icon}</span> <span>${message}</span>`;
-            container.appendChild(toast);
-            void toast.offsetWidth; 
-            toast.classList.add('show');
+            container.appendChild(toast); void toast.offsetWidth; toast.classList.add('show');
             setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
         }
-
-        function showGlobalLoading(msg = 'Processando...') {
-            document.getElementById('global-loader-msg').innerText = msg;
-            document.getElementById('global-loader').style.display = 'flex';
-        }
-
+        function showGlobalLoading(msg = 'Processando...') { document.getElementById('global-loader-msg').innerText = msg; document.getElementById('global-loader').style.display = 'flex'; }
         function hideGlobalLoading() { document.getElementById('global-loader').style.display = 'none'; }
 
-        // CORREÇÃO DO BUG DO MODAL DE CONFIRMAÇÃO: Segura a ação na memória.
         let confirmCallbackAction = null;
         function showConfirm(title, message, onConfirm, isDanger = false) {
             document.getElementById('confirm-title').innerText = title;
@@ -382,28 +361,13 @@
             document.getElementById('confirm-icon').innerText = isDanger ? '🚨' : '⚠️';
             const btnConfirm = document.getElementById('btn-confirm-action');
             btnConfirm.style.background = isDanger ? 'var(--danger)' : 'var(--primary)';
-            btnConfirm.innerText = isDanger ? 'Sim, Confirmar' : 'Confirmar';
-            confirmCallbackAction = onConfirm; // Salva a ação
-            document.getElementById('modal-confirm').style.display = 'flex';
+            confirmCallbackAction = onConfirm; document.getElementById('modal-confirm').style.display = 'flex';
         }
-
-        function fecharConfirm() {
-            document.getElementById('modal-confirm').style.display = 'none';
-        }
-
-        // Ouve o clique apenas UMA VEZ na inicialização
+        function fecharConfirm() { document.getElementById('modal-confirm').style.display = 'none'; }
         document.getElementById('btn-confirm-action').addEventListener('click', () => {
-            if (confirmCallbackAction) {
-                const actionToRun = confirmCallbackAction; // Copia a ação
-                confirmCallbackAction = null; // Limpa da memória global
-                fecharConfirm(); // Fecha a tela primeiro
-                actionToRun(); // Executa a ação armazenada
-            } else {
-                fecharConfirm();
-            }
+            if (confirmCallbackAction) { const action = confirmCallbackAction; confirmCallbackAction = null; fecharConfirm(); action(); }
         });
 
-        // --- NAVEGAÇÃO E FORMATAÇÃO ---
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
         function mudarAba(aba) {
             document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('active'));
@@ -414,22 +378,9 @@
         function formatarData(dataString) { if (!dataString) return '--'; const p = dataString.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
         function formatarMoeda(valor) { return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-        // --- CONTROLES DE NOVAS OBRAS E FORNECEDORES ---
-        function verificarNovaObra() {
-            const s = document.getElementById('novo-obra-select');
-            const i = document.getElementById('novo-obra-input');
-            if(s.value === 'NOVA') { i.style.display = 'block'; i.focus(); } else { i.style.display = 'none'; }
-        }
-        function verificarNovoForn() {
-            const s = document.getElementById('novo-forn-select');
-            const i = document.getElementById('novo-forn-input');
-            if(s.value === 'NOVA') { i.style.display = 'block'; i.focus(); } else { i.style.display = 'none'; }
-        }
-        function verificarNovoFornEdit() {
-            const s = document.getElementById('edit-forn-select');
-            const i = document.getElementById('edit-forn-input');
-            if(s.value === 'NOVA') { i.style.display = 'block'; i.focus(); } else { i.style.display = 'none'; }
-        }
+        function verificarNovaObra() { const s = document.getElementById('novo-obra-select'); const i = document.getElementById('novo-obra-input'); if(s.value === 'NOVA') { i.style.display = 'block'; i.focus(); } else { i.style.display = 'none'; } }
+        function verificarNovoForn() { const s = document.getElementById('novo-forn-select'); const i = document.getElementById('novo-forn-input'); if(s.value === 'NOVA') { i.style.display = 'block'; i.focus(); } else { i.style.display = 'none'; } }
+        function verificarNovoFornEdit() { const s = document.getElementById('edit-forn-select'); const i = document.getElementById('edit-forn-input'); if(s.value === 'NOVA') { i.style.display = 'block'; i.focus(); } else { i.style.display = 'none'; } }
 
         async function carregarFiltros() {
             const { data } = await client.from('locacoes').select('obra, fornecedor');
@@ -437,30 +388,16 @@
                 const obras = [...new Set(data.map(i => i.obra))].filter(Boolean).sort();
                 const forns = [...new Set(data.map(i => i.fornecedor))].filter(Boolean).sort();
                 
-                // Filtros do topo
-                const selObra = document.getElementById('filtroObra');
-                const selForn = document.getElementById('filtroForn');
-                selObra.innerHTML = '<option value="todas" title="">🏢 Todas as Obras</option>';
-                selForn.innerHTML = '<option value="todos" title="">🚚 Todos os Fornecedores</option>';
-
-                // Selects dos modais
-                const selObraNovo = document.getElementById('novo-obra-select');
-                const selFornNovo = document.getElementById('novo-forn-select');
-                const selFornEdit = document.getElementById('edit-forn-select');
+                const selObra = document.getElementById('filtroObra'); const selForn = document.getElementById('filtroForn');
+                const selObraNovo = document.getElementById('novo-obra-select'); const selFornNovo = document.getElementById('novo-forn-select'); const selFornEdit = document.getElementById('edit-forn-select');
                 
-                selObraNovo.innerHTML = '<option value="" disabled selected title="">Selecione a obra...</option><option value="NOVA" title="" style="font-weight:bold; color:var(--primary);">➕ Cadastrar Nova Obra...</option>';
-                selFornNovo.innerHTML = '<option value="" disabled selected title="">Selecione o fornecedor...</option><option value="NOVA" title="" style="font-weight:bold; color:var(--primary);">➕ Cadastrar Novo Fornecedor...</option>';
-                selFornEdit.innerHTML = '<option value="" disabled title="">Selecione o fornecedor...</option><option value="NOVA" title="" style="font-weight:bold; color:var(--primary);">➕ Digitar Novo Fornecedor...</option>';
+                selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>'; selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
+                selObraNovo.innerHTML = '<option value="" disabled selected>Selecione a obra...</option><option value="NOVA" style="font-weight:bold; color:var(--primary);">➕ Cadastrar Nova Obra...</option>';
+                selFornNovo.innerHTML = '<option value="" disabled selected>Selecione o fornecedor...</option><option value="NOVA" style="font-weight:bold; color:var(--primary);">➕ Cadastrar Novo Fornecedor...</option>';
+                selFornEdit.innerHTML = '<option value="" disabled>Selecione o fornecedor...</option><option value="NOVA" style="font-weight:bold; color:var(--primary);">➕ Digitar Novo Fornecedor...</option>';
 
-                obras.forEach(o => { 
-                    let op1 = new Option(o, o); op1.title = ""; selObra.add(op1);
-                    let op2 = new Option(o, o); op2.title = ""; selObraNovo.add(op2);
-                });
-                forns.forEach(f => { 
-                    let op1 = new Option(f, f); op1.title = ""; selForn.add(op1);
-                    let op2 = new Option(f, f); op2.title = ""; selFornNovo.add(op2);
-                    let op3 = new Option(f, f); op3.title = ""; selFornEdit.add(op3);
-                });
+                obras.forEach(o => { selObra.add(new Option(o, o)); selObraNovo.add(new Option(o, o)); });
+                forns.forEach(f => { selForn.add(new Option(f, f)); selFornNovo.add(new Option(f, f)); selFornEdit.add(new Option(f, f)); });
             }
         }
 
@@ -470,7 +407,6 @@
 
             try {
                 let query = client.from('locacoes').select('*').order('data_inicio', { ascending: false });
-                
                 const filtroObra = document.getElementById('filtroObra').value;
                 const filtroForn = document.getElementById('filtroForn').value;
                 const filtroCont = document.getElementById('filtroContrato').value.trim();
@@ -479,14 +415,10 @@
                 if (filtroForn !== 'todos') query = query.eq('fornecedor', filtroForn);
                 if (filtroCont !== '') query = query.ilike('contrato', `%${filtroCont}%`);
 
-                const { data, error } = await query;
-                if (error) throw error;
+                const { data, error } = await query; if (error) throw error;
                 dadosGlobais = data;
 
-                const bodyLocacoes = document.getElementById('body-locacoes');
-                const bodyCompras = document.getElementById('body-compras');
-                const bodyHistorico = document.getElementById('body-historico');
-                
+                const bodyLocacoes = document.getElementById('body-locacoes'); const bodyCompras = document.getElementById('body-compras'); const bodyHistorico = document.getElementById('body-historico');
                 bodyLocacoes.innerHTML = ''; bodyCompras.innerHTML = ''; bodyHistorico.innerHTML = '';
                 let countLoc = 0, countComp = 0, countHist = 0;
 
@@ -505,20 +437,8 @@
                         botoesAcao = `<span class="status-badge" style="margin-right: 8px;">Arquivado</span> <button class="btn-action-small btn-desfazer" title="Desfazer exclusão (Restaurar)" onclick="restaurarItem(${item.id})">↩️</button>`;
                     }
 
-                    const linhaHTML = `
-                        <tr>
-                            <td><div class="group-info"><span class="main-txt">${item.obra}</span><span class="sub-txt">Forn: ${item.fornecedor}</span></div></td>
-                            <td><span class="main-txt">${badgeQtd} ${item.equipamento}</span></td>
-                            <td><div class="group-info"><span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${formatarData(item.data_fim)}</span>` : ''}</div></td>
-                            <td><div class="group-info">${numContrato}<span class="price-tag">${formatarMoeda(item.valor)}</span>${tagIndenizacao}</div></td>
-                            <td>${btnAnexo}</td>
-                            <td><div class="action-buttons">${botoesAcao}</div></td>
-                        </tr>
-                    `;
-
-                    if (item.status !== 'ativo') { bodyHistorico.innerHTML += linhaHTML; countHist++; } 
-                    else if (item.unidade === 'Proprio') { bodyCompras.innerHTML += linhaHTML; countComp++; } 
-                    else { bodyLocacoes.innerHTML += linhaHTML; countLoc++; }
+                    const linhaHTML = `<tr><td><div class="group-info"><span class="main-txt">${item.obra}</span><span class="sub-txt">Forn: ${item.fornecedor}</span></div></td><td><span class="main-txt">${badgeQtd} ${item.equipamento}</span></td><td><div class="group-info"><span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${formatarData(item.data_fim)}</span>` : ''}</div></td><td><div class="group-info">${numContrato}<span class="price-tag">${formatarMoeda(item.valor)}</span>${tagIndenizacao}</div></td><td>${btnAnexo}</td><td><div class="action-buttons">${botoesAcao}</div></td></tr>`;
+                    if (item.status !== 'ativo') { bodyHistorico.innerHTML += linhaHTML; countHist++; } else if (item.unidade === 'Proprio') { bodyCompras.innerHTML += linhaHTML; countComp++; } else { bodyLocacoes.innerHTML += linhaHTML; countLoc++; }
                 });
 
                 document.querySelectorAll('.loader').forEach(e => e.style.display = 'none');
@@ -527,230 +447,134 @@
                 if (countHist > 0) document.getElementById('tabela-historico').style.display = 'table';
 
                 renderizarModuloFornecedores();
+                // FASE 2: DISPARA A ATUALIZAÇÃO DO DASHBOARD COM OS FILTROS EM TEMPO REAL
+                atualizarDashboard(data);
 
             } catch (err) { showToast("Erro de conexão ao carregar os dados.", "error"); }
         }
 
+        // --- FASE 2: MOTOR DE CÁLCULO E RENDERIZAÇÃO DO DASHBOARD ---
+        function atualizarDashboard(data) {
+            let total = 0; let ativos = 0; let arquivados = 0;
+            let obrasSet = new Set(); let fornsSet = new Set();
+            let contagemObras = {}; let contagemForns = {}; let contagemStatus = { 'Ativo': 0, 'Arquivado': 0 };
+
+            data.forEach(item => {
+                let qtd = parseInt(item.quantidade) || 1;
+                total += qtd;
+                if (item.status === 'ativo') { ativos += qtd; contagemStatus['Ativo'] += qtd; } 
+                else { arquivados += qtd; contagemStatus['Arquivado'] += qtd; }
+                
+                if (item.obra) { obrasSet.add(item.obra); contagemObras[item.obra] = (contagemObras[item.obra] || 0) + qtd; }
+                if (item.fornecedor) { fornsSet.add(item.fornecedor); contagemForns[item.fornecedor] = (contagemForns[item.fornecedor] || 0) + qtd; }
+            });
+
+            document.getElementById('kpi-total').innerText = total;
+            document.getElementById('kpi-ativos').innerText = ativos;
+            document.getElementById('kpi-arquivados').innerText = arquivados;
+            document.getElementById('kpi-obras').innerText = obrasSet.size;
+            document.getElementById('kpi-fornecedores').innerText = fornsSet.size;
+
+            // Gráfico de Obras
+            if(chartObras) chartObras.destroy();
+            chartObras = new Chart(document.getElementById('chart-obras').getContext('2d'), {
+                type: 'bar',
+                data: { labels: Object.keys(contagemObras), datasets: [{ data: Object.values(contagemObras), backgroundColor: '#2563eb', borderRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // Gráfico de Fornecedores
+            if(chartForns) chartForns.destroy();
+            chartForns = new Chart(document.getElementById('chart-fornecedores').getContext('2d'), {
+                type: 'bar',
+                data: { labels: Object.keys(contagemForns), datasets: [{ data: Object.values(contagemForns), backgroundColor: '#6366f1', borderRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // Gráfico de Status
+            if(chartStatus) chartStatus.destroy();
+            chartStatus = new Chart(document.getElementById('chart-status').getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: Object.keys(contagemStatus), datasets: [{ data: Object.values(contagemStatus), backgroundColor: ['#10b981', '#ef4444'] }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
         // --- ABA FORNECEDORES ---
         function renderizarModuloFornecedores() {
-            const bodyForn = document.getElementById('body-fornecedores');
-            bodyForn.innerHTML = '';
-            let contagemForns = {};
-            dadosGlobais.forEach(item => {
-                let f = item.fornecedor || 'Não identificado';
-                contagemForns[f] = (contagemForns[f] || 0) + 1;
-            });
+            const bodyForn = document.getElementById('body-fornecedores'); bodyForn.innerHTML = '';
+            let contagemForns = {}; dadosGlobais.forEach(item => { let f = item.fornecedor || 'Não identificado'; contagemForns[f] = (contagemForns[f] || 0) + 1; });
             Object.keys(contagemForns).sort((a, b) => a.localeCompare(b)).forEach(forn => {
-                bodyForn.innerHTML += `
-                    <tr>
-                        <td><span class="main-txt">${forn}</span></td>
-                        <td><span class="status-badge highlight">${contagemForns[forn]} equipamentos vinculados</span></td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-action-small btn-editar" title="Corrigir Nome (Renomear)" onclick="abrirRenomearForn('${forn}')">✏️</button>
-                                <button class="btn-action-small btn-renovar" title="Mesclar com outro fornecedor correto" onclick="abrirMesclarForn('${forn}')">🔗</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                bodyForn.innerHTML += `<tr><td><span class="main-txt">${forn}</span></td><td><span class="status-badge highlight">${contagemForns[forn]} equipamentos</span></td><td><div class="action-buttons"><button class="btn-action-small btn-editar" title="Renomear" onclick="abrirRenomearForn('${forn}')">✏️</button><button class="btn-action-small btn-renovar" title="Mesclar" onclick="abrirMesclarForn('${forn}')">🔗</button></div></td></tr>`;
             });
             document.getElementById('tabela-fornecedores').style.display = 'table';
         }
 
-        function abrirRenomearForn(origem) {
-            document.getElementById('renomear-forn-origem').value = origem;
-            document.getElementById('renomear-forn-origem-txt').value = origem;
-            document.getElementById('renomear-forn-novo').value = origem;
-            document.getElementById('modal-renomear-forn').style.display = 'flex';
-        }
-
+        function abrirRenomearForn(origem) { document.getElementById('renomear-forn-origem').value = origem; document.getElementById('renomear-forn-origem-txt').value = origem; document.getElementById('renomear-forn-novo').value = origem; document.getElementById('modal-renomear-forn').style.display = 'flex'; }
         function salvarRenomearForn() {
-            const origem = document.getElementById('renomear-forn-origem').value;
-            const novoNome = document.getElementById('renomear-forn-novo').value.trim();
-            if (!novoNome || novoNome === origem) { showToast("O novo nome não pode ser vazio ou igual ao antigo!", "warning"); return; }
-
-            showConfirm('Renomear Fornecedor', `TODOS os equipamentos de "${origem}" passarão a pertencer à "${novoNome}". Confirmar alteração?`, async () => {
-                document.getElementById('modal-renomear-forn').style.display = 'none';
-                showGlobalLoading("Atualizando fornecedores em lote...");
-                const { error } = await client.from('locacoes').update({ fornecedor: novoNome }).eq('fornecedor', origem);
-                hideGlobalLoading();
-                if(!error) { showToast("Nome corrigido com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } 
-                else { showToast("Erro: " + error.message, "error"); carregarDados(); }
+            const origem = document.getElementById('renomear-forn-origem').value; const novoNome = document.getElementById('renomear-forn-novo').value.trim();
+            if (!novoNome || novoNome === origem) { showToast("Nome inválido!", "warning"); return; }
+            showConfirm('Renomear Fornecedor', `TODOS os equipamentos de "${origem}" mudarão para "${novoNome}". Confirmar?`, async () => {
+                document.getElementById('modal-renomear-forn').style.display = 'none'; showGlobalLoading("Atualizando fornecedores...");
+                const { error } = await client.from('locacoes').update({ fornecedor: novoNome }).eq('fornecedor', origem); hideGlobalLoading();
+                if(!error) { showToast("Alterado com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro: " + error.message, "error"); }
             });
         }
 
         function abrirMesclarForn(origem) {
-            document.getElementById('merge-origem').value = origem;
-            document.getElementById('merge-origem-txt').value = origem;
-            const selDestino = document.getElementById('merge-destino');
-            selDestino.innerHTML = '';
-            [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort().forEach(f => {
-                if(f !== origem) {
-                    let opt = new Option(f, f);
-                    opt.title = "";
-                    selDestino.add(opt);
-                }
-            });
+            document.getElementById('merge-origem').value = origem; document.getElementById('merge-origem-txt').value = origem; const selDestino = document.getElementById('merge-destino'); selDestino.innerHTML = '';
+            [...new Set(dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort().forEach(f => { if(f !== origem) selDestino.add(new Option(f, f)); });
             document.getElementById('modal-mesclar-forn').style.display = 'flex';
         }
-
         function salvarMesclarForn() {
-            const origem = document.getElementById('merge-origem').value;
-            const destino = document.getElementById('merge-destino').value;
-            if(!destino) { showToast("Selecione o destino para mesclar!", "warning"); return; }
-            showConfirm('Mesclar Fornecedores', `ATENÇÃO: Todos os itens de "${origem}" serão transferidos para "${destino}". Confirmar?`, async () => {
-                document.getElementById('modal-mesclar-forn').style.display = 'none';
-                showGlobalLoading("Mesclando dados...");
-                const { error } = await client.from('locacoes').update({ fornecedor: destino }).eq('fornecedor', origem);
-                hideGlobalLoading();
-                if(!error) { showToast("Fornecedores mesclados com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } 
-                else { showToast("Erro ao mesclar: " + error.message, "error"); carregarDados(); }
+            const origem = document.getElementById('merge-origem').value; const destino = document.getElementById('merge-destino').value;
+            if(!destino) { showToast("Selecione o destino!", "warning"); return; }
+            showConfirm('Mesclar Fornecedores', `Unificar todos os itens de "${origem}" dentro de "${destino}"?`, async () => {
+                document.getElementById('modal-mesclar-forn').style.display = 'none'; showGlobalLoading("Mesclando...");
+                const { error } = await client.from('locacoes').update({ fornecedor: destino }).eq('fornecedor', origem); hideGlobalLoading();
+                if(!error) { showToast("Mesclado com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro ao mesclar.", "error"); }
             });
         }
 
-        // --- SISTEMA DE EDIÇÃO DE EQUIPAMENTO ---
+        // --- EDICAO E CADASTRO ---
         function abrirEdicao(id) {
-            const item = dadosGlobais.find(i => i.id === id);
-            if(!item) return;
-            
-            document.getElementById('edit-id').value = item.id;
-            document.getElementById('edit-equip').value = item.equipamento || '';
-            
-            const selEditForn = document.getElementById('edit-forn-select');
-            selEditForn.value = item.fornecedor || '';
-            if(!selEditForn.value) selEditForn.value = ''; // reseta se não achar na lista
-            
-            document.getElementById('edit-forn-input').style.display = 'none';
-            document.getElementById('edit-forn-input').value = '';
-
-            document.getElementById('edit-qtd').value = item.quantidade || 1;
-            document.getElementById('edit-contrato').value = item.contrato || '';
-            document.getElementById('edit-valor').value = item.valor || 0;
-            document.getElementById('edit-indenizacao').value = item.valor_indenizacao || 0;
-            
+            const item = dadosGlobais.find(i => i.id === id); if(!item) return;
+            document.getElementById('edit-id').value = item.id; document.getElementById('edit-equip').value = item.equipamento || '';
+            const selEditForn = document.getElementById('edit-forn-select'); selEditForn.value = item.fornecedor || '';
+            document.getElementById('edit-forn-input').style.display = 'none'; document.getElementById('edit-forn-input').value = '';
+            document.getElementById('edit-qtd').value = item.quantidade || 1; document.getElementById('edit-contrato').value = item.contrato || ''; document.getElementById('edit-valor').value = item.valor || 0; document.getElementById('edit-indenizacao').value = item.valor_indenizacao || 0;
             document.getElementById('modal-editar').style.display = 'flex';
         }
-
         function fecharModalEdicao() { document.getElementById('modal-editar').style.display = 'none'; }
-
         async function salvarEdicao() {
-            const id = document.getElementById('edit-id').value;
-            const equipamento = document.getElementById('edit-equip').value;
-            const selectForn = document.getElementById('edit-forn-select').value;
-            const fornecedor = selectForn === 'NOVA' ? document.getElementById('edit-forn-input').value.trim() : (selectForn || 'Não identificado');
-            const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1;
-            const contrato = document.getElementById('edit-contrato').value;
-            const valor = parseFloat(document.getElementById('edit-valor').value) || 0;
-            const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
-
-            showGlobalLoading("Salvando edições...");
-            const { error } = await client.from('locacoes').update({ equipamento, fornecedor, quantidade, contrato, valor, valor_indenizacao }).eq('id', id);
-            hideGlobalLoading();
-
-            if(!error) { fecharModalEdicao(); showToast("Equipamento atualizado!", "success"); carregarFiltros().then(() => carregarDados()); } 
-            else { showToast("Erro ao atualizar o equipamento: " + error.message, "error"); }
-        }
-
-        // --- SISTEMA DE CADASTRO NOVO ---
-        function toggleCamposNovo() {
-            const tipo = document.getElementById('novo-tipo').value;
-            document.getElementById('campos-locacao').style.display = tipo === 'aluguel' ? 'block' : 'none';
-            document.getElementById('lbl-forn').innerText = tipo === 'aluguel' ? 'Locadora' : 'Loja / Fornecedor';
+            const id = document.getElementById('edit-id').value; const equipamento = document.getElementById('edit-equip').value;
+            const selectForn = document.getElementById('edit-forn-select').value; const fornecedor = selectForn === 'NOVA' ? document.getElementById('edit-forn-input').value.trim() : (selectForn || 'Não identificado');
+            const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1; const contrato = document.getElementById('edit-contrato').value; const valor = parseFloat(document.getElementById('edit-valor').value) || 0; const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
+            showGlobalLoading("Salvando..."); const { error } = await client.from('locacoes').update({ equipamento, fornecedor, quantidade, contrato, valor, valor_indenizacao }).eq('id', id); hideGlobalLoading();
+            if(!error) { fecharModalEdicao(); showToast("Salvo com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro ao salvar.", "error"); }
         }
 
         function abrirModalNovo() {
-            document.getElementById('novo-tipo').value = 'aluguel';
-            document.getElementById('novo-obra-select').value = '';
-            document.getElementById('novo-obra-input').style.display = 'none';
-            document.getElementById('novo-obra-input').value = '';
-            document.getElementById('novo-equip').value = '';
-            document.getElementById('novo-qtd').value = '1';
-            document.getElementById('novo-valor').value = '';
-            document.getElementById('novo-forn-select').value = '';
-            document.getElementById('novo-forn-input').style.display = 'none';
-            document.getElementById('novo-forn-input').value = '';
-            document.getElementById('novo-contrato').value = '';
-            document.getElementById('novo-periodo').value = 'Mês';
-            toggleCamposNovo();
-            document.getElementById('modal-novo').style.display = 'flex';
+            document.getElementById('novo-tipo').value = 'aluguel'; document.getElementById('novo-obra-select').value = ''; document.getElementById('novo-obra-input').style.display = 'none'; document.getElementById('novo-obra-input').value = ''; document.getElementById('novo-equip').value = ''; document.getElementById('novo-qtd').value = '1'; document.getElementById('novo-valor').value = ''; document.getElementById('novo-forn-select').value = ''; document.getElementById('novo-forn-input').style.display = 'none'; document.getElementById('novo-forn-input').value = ''; document.getElementById('novo-contrato').value = ''; document.getElementById('novo-periodo').value = 'Mês'; toggleCamposNovo(); document.getElementById('modal-novo').style.display = 'flex';
         }
-
         function fecharModalNovo() { document.getElementById('modal-novo').style.display = 'none'; }
-
         async function salvarNovo() {
-            const tipo = document.getElementById('novo-tipo').value;
-            const selObra = document.getElementById('novo-obra-select').value;
-            const obra = selObra === 'NOVA' ? document.getElementById('novo-obra-input').value.trim() : selObra;
-            const equipamento = document.getElementById('novo-equip').value.trim();
-            const quantidade = parseInt(document.getElementById('novo-qtd').value) || 1;
-            const valor = parseFloat(document.getElementById('novo-valor').value) || 0;
-            const selForn = document.getElementById('novo-forn-select').value;
-            const fornecedor = selForn === 'NOVA' ? document.getElementById('novo-forn-input').value.trim() : (selForn || 'Não identificado');
-            
-            if (!obra || !equipamento) { showToast("Preencha o nome da Obra e do Equipamento!", "warning"); return; }
-
-            const hojeObj = new Date();
-            let objSalvar = { obra, fornecedor, equipamento, quantidade, valor, status: 'ativo', data_inicio: hojeObj.toISOString().split('T')[0] };
-
-            if (tipo === 'compra') {
-                objSalvar.unidade = 'Proprio'; objSalvar.data_fim = objSalvar.data_inicio; objSalvar.contrato = 'Cadastro Manual';
-            } else {
-                const periodo = document.getElementById('novo-periodo').value;
-                let dataFim = new Date(hojeObj);
-                if (periodo === 'Mês') dataFim.setDate(dataFim.getDate() + 30);
-                else if (periodo === 'Quinzena') dataFim.setDate(dataFim.getDate() + 15);
-                else if (periodo === 'Dia') dataFim.setDate(dataFim.getDate() + 1);
-                objSalvar.unidade = periodo; objSalvar.data_fim = dataFim.toISOString().split('T')[0];
-                objSalvar.contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato';
+            const tipo = document.getElementById('novo-tipo').value; const selObra = document.getElementById('novo-obra-select').value; const obra = selObra === 'NOVA' ? document.getElementById('novo-obra-input').value.trim() : selObra; const equipamento = document.getElementById('novo-equip').value.trim(); const quantidade = parseInt(document.getElementById('novo-qtd').value) || 1; const valor = parseFloat(document.getElementById('novo-valor').value) || 0; const selForn = document.getElementById('novo-forn-select').value; const fornecedor = selForn === 'NOVA' ? document.getElementById('novo-forn-input').value.trim() : (selForn || 'Não identificado');
+            if (!obra || !equipamento) { showToast("Preencha obra e equipamento!", "warning"); return; }
+            const hojeObj = new Date(); let objSalvar = { obra, fornecedor, equipamento, quantidade, valor, status: 'ativo', data_inicio: hojeObj.toISOString().split('T')[0] };
+            if (tipo === 'compra') { objSalvar.unidade = 'Proprio'; objSalvar.data_fim = objSalvar.data_inicio; objSalvar.contrato = 'Cadastro Manual'; } else {
+                const periodo = document.getElementById('novo-periodo').value; let dataFim = new Date(hojeObj); if (periodo === 'Mês') dataFim.setDate(dataFim.getDate() + 30); else if (periodo === 'Quinzena') dataFim.setDate(dataFim.getDate() + 15); else dataFim.setDate(dataFim.getDate() + 1);
+                objSalvar.unidade = periodo; objSalvar.data_fim = dataFim.toISOString().split('T')[0]; objSalvar.contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato';
             }
-
-            showGlobalLoading("Cadastrando equipamento...");
-            const { error } = await client.from('locacoes').insert([objSalvar]);
-            hideGlobalLoading();
-
-            if (!error) { showToast("Equipamento adicionado!", "success"); fecharModalNovo(); carregarFiltros().then(() => carregarDados()); } 
-            else { showToast("Erro ao salvar no banco: " + error.message, "error"); }
+            showGlobalLoading("Cadastrando..."); const { error } = await client.from('locacoes').insert([objSalvar]); hideGlobalLoading();
+            if (!error) { showToast("Adicionado com sucesso!", "success"); fecharModalNovo(); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro.", "error"); }
         }
 
-        // --- AÇÕES RÁPIDAS COM MODAL DE CONFIRMAÇÃO ---
-        function arquivarItem(id) {
-            showConfirm("Arquivar Equipamento", "Deseja marcar este item como devolvido/arquivado? Ele sairá da tela principal e irá para o Histórico.", async () => {
-                showGlobalLoading("Movendo para o histórico...");
-                const { error } = await client.from('locacoes').update({ status: 'inativo' }).eq('id', id);
-                hideGlobalLoading();
-                if (error) { showToast("Erro: " + error.message, "error"); } 
-                else { showToast("Equipamento arquivado com sucesso!", "success"); carregarDados(); }
-            }, true);
-        }
-
-        function restaurarItem(id) {
-            showConfirm("Restaurar Equipamento", "Deseja desfazer a exclusão e restaurar este item para a aba de Ativos?", async () => {
-                showGlobalLoading("Restaurando equipamento...");
-                const { error } = await client.from('locacoes').update({ status: 'ativo' }).eq('id', id);
-                hideGlobalLoading();
-                if (error) { showToast("Erro ao restaurar: " + error.message, "error"); } 
-                else { showToast("Equipamento restaurado!", "success"); carregarDados(); }
-            });
-        }
-
-        function renovarItem(id, fim, uni) {
-            showConfirm("Renovar Contrato", `Deseja prorrogar a locação deste equipamento por mais 1 ${uni}?`, async () => {
-                showGlobalLoading("Renovando período...");
-                let d = new Date(fim);
-                d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                if(uni.includes('Mês')) d.setDate(d.getDate() + 30); 
-                else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15);
-                else d.setDate(d.getDate() + 1);
-                
-                const { error } = await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id);
-                hideGlobalLoading();
-                if(!error) { showToast("Período renovado com sucesso!", "success"); carregarDados(); } 
-                else { showToast("Erro ao renovar: " + error.message, "error"); }
-            });
-        }
+        function arquivarItem(id) { showConfirm("Arquivar Item", "Mover este item para o Histórico?", async () => { showGlobalLoading("Arquivando..."); const { error } = await client.from('locacoes').update({ status: 'inativo' }).eq('id', id); hideGlobalLoading(); if (error) showToast("Erro"); else { showToast("Arquivado!", "success"); carregarDados(); } }, true); }
+        function restaurarItem(id) { showConfirm("Restaurar Item", "Mover item de volta para os ativos?", async () => { showGlobalLoading("Restaurando..."); const { error } = await client.from('locacoes').update({ status: 'ativo' }).eq('id', id); hideGlobalLoading(); if (error) showToast("Erro"); else { showToast("Restaurado!", "success"); carregarDados(); } }); }
+        function renovarItem(id, fim, uni) { showConfirm("Renovar Período", "Prorrogar locação por mais um período?", async () => { showGlobalLoading("Renovando..."); let d = new Date(fim); d.setMinutes(d.getMinutes() + d.getTimezoneOffset()); if(uni.includes('Mês')) d.setDate(d.getDate() + 30); else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15); else d.setDate(d.getDate() + 1); const { error } = await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id); hideGlobalLoading(); if(!error) { showToast("Renovado!", "success"); carregarDados(); } else { showToast("Erro."); } }); }
 
         carregarFiltros().then(() => carregarDados());
-
     </script>
 </body>
 </html>
