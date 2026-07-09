@@ -36,15 +36,21 @@
         .header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; }
         .header p { margin: 5px 0 0 0; color: var(--text-light); }
-        .badge-version { background: #3b82f6; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; border: 1px solid #60a5fa; }
+        .badge-version { background: #10b981; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; border: 1px solid #34d399; }
 
-        /* BARRA DE CONTROLES */
+        /* BARRA DE CONTROLES COGNITIVOS */
         .top-controls { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid var(--border); margin-bottom: 25px; flex-wrap: wrap; gap: 15px;}
-        .filter-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1;}
-        .filter-group select, .filter-group input { height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-family: 'Inter'; font-weight: 600; color: var(--text); outline: none; min-width: 200px; box-sizing: border-box; transition: 0.2s; }
+        .filter-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1;}
+        .filter-group select, .filter-group input { height: 40px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-family: 'Inter'; font-weight: 600; color: var(--text); outline: none; min-width: 180px; box-sizing: border-box; transition: 0.2s; }
         .filter-group input:focus, .filter-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .filter-group input::placeholder { font-weight: 400; color: #94a3b8; }
         
+        /* FASE 3: COMPONENTES DE BUSCA E FILTROS INTELIGENTES */
+        .btn-limpar { background: #fef2f2; border: 1px solid #fca5a5; color: var(--danger); padding: 0 15px; height: 40px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .btn-limpar:hover { background: var(--danger); color: white; border-color: var(--danger); }
+        .counter-badge { background: #f1f5f9; color: var(--text-light); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
+        .counter-badge.active { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
+
         .botoes-topo { display: flex; gap: 10px; }
         .btn-print { background: var(--text); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-print:hover { background: #000; transform: translateY(-1px); }
@@ -63,20 +69,28 @@
         .chart-card h4 { margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .chart-container { flex: 1; position: relative; min-height: 0; }
 
-        /* TABELAS */
+        /* FASE 3: CARD DA TABELA COM CABEÇALHO FIXO E SCROLL CONTROLADO */
         .secao-tabela { display: none; } 
         .animate-show { display: block; animation: fadeInScale 0.3s ease-out forwards; }
         @keyframes fadeInScale { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .card-table { background: var(--white); padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 30px; overflow-x: auto; }
+        .card-table { background: var(--white); padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 30px; max-height: 520px; overflow-y: auto; overflow-x: auto; position: relative; }
         .card-table h3 { margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text); border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 10px;}
         
+        /* FASE 3: REGRAS DA TABELA MODERNA (ZEBRADA E STICKY) */
         .table-modern { width: 100%; border-collapse: collapse; min-width: 950px; }
-        .table-modern th { padding: 12px; color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; text-align: left; border-bottom: 1px solid var(--border); }
-        .table-modern tr { transition: 0.2s; border-bottom: 1px solid #f1f5f9; }
-        .table-modern tr:hover { background: #f8fafc; }
-        .table-modern td { padding: 16px 12px; vertical-align: middle; }
+        .table-modern th { padding: 14px 12px; color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; text-align: left; border-bottom: 2px solid var(--border); position: sticky; top: -25px; background: var(--white); z-index: 2; cursor: pointer; user-select: none; transition: background 0.2s; }
+        .table-modern th:hover { background: #f1f5f9; color: var(--primary); }
+        .table-modern tr { transition: 0.15s; border-bottom: 1px solid #f1f5f9; }
         
+        /* LINHAS ZEBRADAS */
+        .table-modern tbody tr:nth-child(even) { background-color: #f8fafc; }
+        .table-modern tbody tr:hover { background-color: #f0fdf4 !important; } /* Cor sutil de destaque no hover */
+        .table-modern td { padding: 14px 12px; vertical-align: middle; }
+        
+        .sort-icon { margin-left: 5px; font-size: 0.7rem; color: var(--primary); display: inline-block; }
+
+        /* TEXTOS DA TABELA */
         .group-info { display: flex; flex-direction: column; }
         .main-txt { font-weight: 700; color: var(--text); font-size: 0.95rem; display: flex; align-items: center; }
         .sub-txt { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
@@ -100,10 +114,7 @@
         .btn-delete { color: var(--danger); background: #fee2e2; } .btn-delete:hover { background: #fca5a5; }
         .btn-desfazer { color: var(--success); background: #dcfce7; } .btn-desfazer:hover { background: #bbf7d0; }
 
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* COMPONENTES GLOBAIS FORA DA CAPSULA */
+        /* COMPONENTES FLUTUANTES */
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { min-width: 280px; padding: 15px 20px; border-radius: 8px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.9rem; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-left: 5px solid; }
         .toast.show { transform: translateX(0); }
@@ -135,7 +146,7 @@
             .sidebar, .top-controls, .btn-anexo, td:last-child, th:last-child, .dashboard-grid, .charts-grid { display: none !important; }
             .main-content { padding: 0; margin: 0; max-width: 100%; }
             body { background: white; }
-            .card-table { box-shadow: none; border: none; padding: 0; margin-bottom: 40px; }
+            .card-table { box-shadow: none; border: none; padding: 0; margin-bottom: 40px; max-height: none; overflow: visible; }
             .secao-tabela { display: block !important; }
         }
     </style>
@@ -156,14 +167,18 @@
         <div class="main-content">
             <div class="header">
                 <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
-                <span class="badge-version">Versão 1.2</span>
+                <span class="badge-version">Versão 1.3</span>
             </div>
 
             <div class="top-controls">
                 <div class="filter-group">
                     <select id="filtroObra" onchange="carregarDados()"><option value="todas">🏢 Todas as Obras</option></select>
                     <select id="filtroForn" onchange="carregarDados()"><option value="todos">🚚 Todos os Fornecedores</option></select>
-                    <input type="text" id="filtroContrato" placeholder="🔎 Digite o Nº do Contrato..." onkeyup="carregarDados()">
+                    
+                    <input type="text" id="filtroContrato" placeholder="🔎 Busca por item, contrato, loja..." onkeyup="aplicarFiltrosELocalSort()">
+                    
+                    <button class="btn-limpar" id="btn-limpar-filtros" onclick="limparFiltros()" style="display: none;">🧹 Limpar Filtros</button>
+                    <span class="counter-badge" id="registro-contador">0 encontrados</span>
                 </div>
                 <div class="botoes-topo">
                     <button class="btn-print" onclick="window.print()">🖨️ Imprimir PDF</button>
@@ -190,7 +205,15 @@
                     <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
                     <div id="loader-loc" class="loader"></div>
                     <table class="table-modern" id="tabela-locacoes" style="display:none;">
-                        <thead><tr><th>Obra / Locadora</th><th>Equipamento</th><th>Período de Aluguel</th><th>Valores / Contrato</th><th>Comprovante</th><th>Ações</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th onclick="ordenarColuna('obra')">Obra / Locadora <span id="sort-obra" class="sort-icon"></span></th>
+                                <th onclick="ordenarColuna('equipamento')">Equipamento <span id="sort-equipamento" class="sort-icon"></span></th>
+                                <th onclick="ordenarColuna('data_fim')">Período de Aluguel <span id="sort-data_fim" class="sort-icon"></span></th>
+                                <th onclick="ordenarColuna('valor')">Valores / Contrato <span id="sort-valor" class="sort-icon"></span></th>
+                                <th>Comprovante</th><th>Ações</th>
+                            </tr>
+                        </thead>
                         <tbody id="body-locacoes"></tbody>
                     </table>
                 </div>
@@ -201,7 +224,15 @@
                     <h3 style="color: var(--success);">🛒 Ferramentas Próprias (Patrimônio)</h3>
                     <div id="loader-comp" class="loader"></div>
                     <table class="table-modern" id="tabela-compras" style="display:none;">
-                        <thead><tr><th>Obra / Loja</th><th>Equipamento</th><th>Data de Compra</th><th>Valores Pagos</th><th>Comprovante</th><th>Ações</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th onclick="ordenarColuna('obra')">Obra / Loja <span id="sort-comp-obra" class="sort-icon"></span></th>
+                                <th onclick="ordenarColuna('equipamento')">Equipamento <span id="sort-comp-equip" class="sort-icon"></span></th>
+                                <th onclick="ordenarColuna('data_inicio')">Data de Compra <span id="sort-comp-data" class="sort-icon"></span></th>
+                                <th onclick="ordenarColuna('valor')">Valores Pagos <span id="sort-comp-valor" class="sort-icon"></span></th>
+                                <th>Comprovante</th><th>Ações</th>
+                            </tr>
+                        </thead>
                         <tbody id="body-compras"></tbody>
                     </table>
                 </div>
@@ -222,7 +253,15 @@
                     <h3 style="color: var(--text-light);">🕰️ Histórico e Itens Devolvidos</h3>
                     <div id="loader-hist" class="loader"></div>
                     <table class="table-modern" id="tabela-historico" style="display:none;">
-                        <thead><tr><th>Obra / Fornecedor</th><th>Equipamento</th><th>Data Base</th><th>Valores</th><th>Comprovante</th><th>Status / Ação</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th onclick="ordenarColuna('obra')">Obra / Fornecedor <span id="sort-hist-obra" class="sort-icon"></span></th>
+                                <th onclick="ordenarColuna('equipamento')">Equipamento <span id="sort-hist-equip" class="sort-icon"></span></th>
+                                <th onclick="ordenarColuna('data_fim')">Data Base <span id="sort-hist-data" class="sort-icon"></span></th>
+                                <th onclick="ordenarColuna('valor')">Valores <span id="sort-hist-valor" class="sort-icon"></span></th>
+                                <th>Comprovante</th><th>Status / Ação</th>
+                            </tr>
+                        </thead>
                         <tbody id="body-historico"></tbody>
                     </table>
                 </div>
@@ -230,13 +269,8 @@
         </div>
     </div> 
 
-    <datalist id="lista-obras"></datalist>
-    <datalist id="lista-forns"></datalist>
-    <datalist id="lista-periodos">
-        <option value="Mês">
-        <option value="Quinzena">
-        <option value="Dia">
-    </datalist>
+    <datalist id="lista-obras"></datalist><datalist id="lista-forns"></datalist>
+    <datalist id="lista-periodos"><option value="Mês"><option value="Quinzena"><option value="Dia"></datalist>
 
     <div id="toast-container"></div>
     <div class="modal-overlay" id="global-loader" style="z-index: 10000;"><div class="global-loader-box"><div class="loader" style="margin:0;"></div><span id="global-loader-msg">Processando...</span></div></div>
@@ -247,7 +281,7 @@
             <h3 id="confirm-title" style="border:none; padding:0; margin-bottom: 10px; color: var(--text);">Confirmação</h3>
             <p id="confirm-msg" style="font-size: 0.95rem; color: var(--text-light); margin-bottom: 30px; line-height: 1.5;"></p>
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button class="btn-cancel-edit" onclick="fecharConfirm()" style="flex:1;">Cancelar</button>
+                <button class="btn-cancel-edit" onclick="fecharConfirm()">Cancelar</button>
                 <button class="btn-save-edit" id="btn-confirm-action" style="flex:1; background: var(--primary);">Confirmar</button>
             </div>
         </div>
@@ -259,27 +293,19 @@
             <div class="form-edit">
                 <input type="hidden" id="edit-id">
                 <div class="form-group"><label>Nome do Equipamento</label><input type="text" id="edit-equip"></div>
-                
-                <div class="form-group">
-                    <label>Locadora / Fornecedor Vinculado</label>
-                    <input type="text" id="edit-forn" list="lista-forns" placeholder="Selecione ou digite um fornecedor...">
-                </div>
-                
+                <div class="form-group"><label>Locadora / Fornecedor Vinculado</label><input type="text" id="edit-forn" list="lista-forns" placeholder="Selecione ou digite um fornecedor..."></div>
                 <div class="grid-duplo">
                     <div class="form-group"><label>Quantidade</label><input type="number" id="edit-qtd" step="1"></div>
                     <div class="form-group"><label>Nº Contrato</label><input type="text" id="edit-contrato"></div>
                 </div>
-
                 <div class="grid-duplo">
-                    <div class="form-group"><label>Período</label><input type="text" id="edit-periodo" list="lista-periodos" placeholder="Ex: Mês (30 dias)"></div>
+                    <div class="form-group"><label>Período</label><input type="text" id="edit-periodo" list="lista-periodos" placeholder="Ex: Mês"></div>
                     <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="edit-valor" step="0.01"></div>
                 </div>
-
                 <div class="grid-duplo">
                     <div class="form-group"><label>Data Locação</label><input type="date" id="edit-inicio"></div>
                     <div class="form-group"><label>Data Devolução</label><input type="date" id="edit-vencimento"></div>
                 </div>
-
                 <div class="form-group"><label>Indenização (R$)</label><input type="number" id="edit-indenizacao" step="0.01"></div>
             </div>
             <div class="modal-actions">
@@ -293,35 +319,18 @@
         <div class="modal-box">
             <h3>➕ Adicionar Novo Equipamento</h3>
             <div class="form-edit">
-                <div class="form-group">
-                    <label>Tipo de Entrada</label>
-                    <select id="novo-tipo" onchange="toggleCamposNovo()">
-                        <option value="aluguel">📄 Locação (Aluguel)</option><option value="compra">🛒 Patrimônio (Compra)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Obra</label>
-                    <input type="text" id="novo-obra" list="lista-obras" placeholder="Selecione ou digite o nome da obra...">
-                </div>
-                
+                <div class="form-group"><label>Tipo de Entrada</label><select id="novo-tipo" onchange="toggleCamposNovo()"><option value="aluguel">📄 Locação (Aluguel)</option><option value="compra">🛒 Patrimônio (Compra)</option></select></div>
+                <div class="form-group"><label>Obra</label><input type="text" id="novo-obra" list="lista-obras" placeholder="Selecione ou digite o nome da obra..."></div>
                 <div class="form-group"><label>Equipamento</label><input type="text" id="novo-equip" placeholder="Ex: Betoneira 400L"></div>
-                
                 <div class="grid-duplo">
                     <div class="form-group"><label>Quantidade</label><input type="number" id="novo-qtd" value="1" min="1"></div>
                     <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="novo-valor" step="0.01" value="0.00"></div>
                 </div>
-                
-                <div class="form-group">
-                    <label id="lbl-forn">Locadora / Fornecedor</label>
-                    <input type="text" id="novo-forn" list="lista-forns" placeholder="Selecione ou digite o fornecedor...">
-                </div>
-
+                <div class="form-group"><label id="lbl-forn">Locadora / Fornecedor</label><input type="text" id="novo-forn" list="lista-forns" placeholder="Selecione ou digite o fornecedor..."></div>
                 <div class="grid-duplo">
                     <div class="form-group"><label id="lbl-data-inicio">Data Locação</label><input type="date" id="novo-inicio"></div>
                     <div class="form-group" id="box-vencimento"><label>Data Devolução</label><input type="date" id="novo-vencimento"></div>
                 </div>
-
                 <div id="campos-locacao">
                     <div class="grid-duplo">
                         <div class="form-group"><label>Nº do Contrato</label><input type="text" id="novo-contrato" placeholder="Ex: 011359/A"></div>
@@ -336,42 +345,21 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="modal-renomear-forn">
-        <div class="modal-box">
-            <h3>✏️ Renomear Fornecedor</h3>
-            <div class="form-edit">
-                <input type="hidden" id="renomear-forn-origem">
-                <div class="form-group"><label>Nome Atual (Incorreto)</label><input type="text" id="renomear-forn-origem-txt" disabled></div>
-                <div class="form-group"><label>Novo Nome Correto</label><input type="text" id="renomear-forn-novo" placeholder="Digite o nome correto..."></div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button>
-                <button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar Todos</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-mesclar-forn">
-        <div class="modal-box">
-            <h3>🔗 Mesclar Duplicados</h3>
-            <div class="form-edit">
-                <input type="hidden" id="merge-origem">
-                <div class="form-group"><label>Fornecedor Incorreto (Origem)</label><input type="text" id="merge-origem-txt" disabled></div>
-                <div class="form-group"><label>Mesclar com (Destino Correto)</label><select id="merge-destino"></select></div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button>
-                <button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar e Unificar</button>
-            </div>
-        </div>
-    </div>
+    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome Correto</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-renomear-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarRenomearForn()">Atualizar Todos</button></div></div></div>
+    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="document.getElementById('modal-mesclar-forn').style.display='none'">Cancelar</button><button class="btn-save-edit" onclick="salvarMesclarForn()">Mesclar e Unificar</button></div></div></div>
 
     <script>
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        let dadosGlobais = [];
+        
+        let dadosGlobais = []; // Cache completo vindo do Supabase
+        let dadosFiltrados = []; // Cache local da tela após filtros aplicados
         let chartObras = null, chartForns = null, chartStatus = null;
+
+        // FASE 3: VARIÁVEIS DE ESTADO DA ORDENAÇÃO LOCAL
+        let sortColunaAtual = 'data_inicio';
+        let sortDirecaoAsc = false;
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -381,7 +369,6 @@
             container.appendChild(toast); void toast.offsetWidth; toast.classList.add('show');
             setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
         }
-
         function showGlobalLoading(msg = 'Processando...') { document.getElementById('global-loader-msg').innerText = msg; document.getElementById('global-loader').style.display = 'flex'; }
         function hideGlobalLoading() { document.getElementById('global-loader').style.display = 'none'; }
 
@@ -404,76 +391,154 @@
         function formatarData(dataString) { if (!dataString) return '--'; const p = dataString.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
         function formatarMoeda(valor) { return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-        // CARREGA FILTROS E PREENCHE DATALISTS
         async function carregarFiltros() {
             const { data } = await client.from('locacoes').select('obra, fornecedor');
             if(data) {
                 const obras = [...new Set(data.map(i => i.obra))].filter(Boolean).sort();
                 const forns = [...new Set(data.map(i => i.fornecedor))].filter(Boolean).sort();
-                
-                const selObra = document.getElementById('filtroObra'); 
-                const selForn = document.getElementById('filtroForn');
-                const listObras = document.getElementById('lista-obras'); 
-                const listForns = document.getElementById('lista-forns');
-                
-                selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>'; 
-                selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
+                const selObra = document.getElementById('filtroObra'); const selForn = document.getElementById('filtroForn');
+                const listObras = document.getElementById('lista-obras'); const listForns = document.getElementById('lista-forns');
+                selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>'; selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
                 listObras.innerHTML = ''; listForns.innerHTML = ''; 
-
                 obras.forEach(o => { selObra.add(new Option(o, o)); listObras.appendChild(new Option(o)); });
                 forns.forEach(f => { selForn.add(new Option(f, f)); listForns.appendChild(new Option(f)); });
             }
         }
 
+        // FASE 3 CENTRALIZAÇÃO: Puxa o banco bruto do Supabase e salva em dadosGlobais
         async function carregarDados() {
             document.querySelectorAll('.loader').forEach(e => e.style.display = 'block');
             document.querySelectorAll('.table-modern').forEach(e => e.style.display = 'none');
-
             try {
-                let query = client.from('locacoes').select('*').order('data_inicio', { ascending: false });
-                const filtroObra = document.getElementById('filtroObra').value;
-                const filtroForn = document.getElementById('filtroForn').value;
-                const filtroCont = document.getElementById('filtroContrato').value.trim();
-                
-                if (filtroObra !== 'todas') query = query.eq('obra', filtroObra);
-                if (filtroForn !== 'todos') query = query.eq('fornecedor', filtroForn);
-                if (filtroCont !== '') query = query.ilike('contrato', `%${filtroCont}%`);
-
-                const { data, error } = await query; if (error) throw error;
+                const { data, error } = await client.from('locacoes').select('*');
+                if (error) throw error;
                 dadosGlobais = data;
+                aplicarFiltrosELocalSort(); // Roda a renderização e filtros locais
+            } catch (err) { showToast("Erro ao conectar no banco de dados.", "error"); }
+        }
 
-                const bodyLocacoes = document.getElementById('body-locacoes'); const bodyCompras = document.getElementById('body-compras'); const bodyHistorico = document.getElementById('body-historico');
-                bodyLocacoes.innerHTML = ''; bodyCompras.innerHTML = ''; bodyHistorico.innerHTML = '';
-                let countLoc = 0, countComp = 0, countHist = 0;
+        // FASE 3 MOTOR: Filtra, ordena e renderiza tudo localmente sem re-pesquisar o Supabase
+        function aplicarFiltrosELocalSort() {
+            const fObra = document.getElementById('filtroObra').value;
+            const fForn = document.getElementById('filtroForn').value;
+            const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
 
-                data.forEach(item => {
-                    const btnAnexo = item.anexo ? `<a href="${item.anexo}" target="_blank" class="btn-anexo">📸 Ver Foto</a>` : `<span class="btn-sem-anexo">Sem anexo</span>`;
-                    const badgeQtd = `<span class="qtd-badge">${item.quantidade || 1} UN</span>`;
-                    const numContrato = item.contrato && item.contrato !== 'NF via IA App' && item.contrato !== 'NF Compra' && item.contrato !== 'Sem Contrato' && item.contrato !== 'Cadastro Manual' ? `<span class="highlight-txt">Contrato: ${item.contrato}</span>` : '';
-                    const tagIndenizacao = item.valor_indenizacao && item.valor_indenizacao > 0 ? `<div class="indeniz-tag">Indenização: ${formatarMoeda(item.valor_indenizacao)}</div>` : '';
+            // 1. Filtragem Inteligente Local
+            dadosFiltrados = dadosGlobais.filter(item => {
+                const matchObra = fObra === 'todas' || item.obra === fObra;
+                const matchForn = fForn === 'todos' || item.fornecedor === fForn;
+                
+                // Pesquisa em múltiplos campos de texto de uma vez só (Smart Search)
+                const textoAlvo = `${item.equipamento} ${item.contrato} ${item.fornecedor} ${item.obra}`.toLowerCase();
+                const matchTexto = fTexto === '' || textoAlvo.includes(fTexto);
+                
+                return matchObra && matchForn && matchTexto;
+            });
 
-                    let botoesAcao = '';
-                    if (item.status === 'ativo') {
-                        botoesAcao += `<button class="btn-action-small btn-editar" title="Editar" onclick="abrirEdicao(${item.id})">✏️</button>`;
-                        if (item.unidade !== 'Proprio') botoesAcao += `<button class="btn-action-small btn-renovar" title="Renovar" onclick="renovarItem(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄</button>`;
-                        botoesAcao += `<button class="btn-action-small btn-delete" title="Arquivar / Devolver" onclick="arquivarItem(${item.id})">🗑️</button>`;
-                    } else {
-                        botoesAcao = `<span class="status-badge" style="margin-right: 8px;">Arquivado</span> <button class="btn-action-small btn-desfazer" title="Desfazer exclusão (Restaurar)" onclick="restaurarItem(${item.id})">↩️</button>`;
-                    }
+            // Gerencia visibilidade do botão de Limpar Filtros
+            const filtroAtivo = fObra !== 'todas' || fForn !== 'todos' || fTexto !== '';
+            document.getElementById('btn-limpar-filtros').style.display = filtroAtivo ? 'flex' : 'none';
 
-                    const linhaHTML = `<tr><td><div class="group-info"><span class="main-txt">${item.obra}</span><span class="sub-txt">Forn: ${item.fornecedor}</span></div></td><td><span class="main-txt">${badgeQtd} ${item.equipamento}</span></td><td><div class="group-info"><span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${formatarData(item.data_fim)}</span>` : ''}</div></td><td><div class="group-info">${numContrato}<span class="price-tag">${formatarMoeda(item.valor)}</span>${tagIndenizacao}</div></td><td>${btnAnexo}</td><td><div class="action-buttons">${botoesAcao}</div></td></tr>`;
-                    if (item.status !== 'ativo') { bodyHistorico.innerHTML += linhaHTML; countHist++; } else if (item.unidade === 'Proprio') { bodyCompras.innerHTML += linhaHTML; countComp++; } else { bodyLocacoes.innerHTML += linhaHTML; countLoc++; }
-                });
+            // 2. Ordenação Local Dinâmica
+            dadosFiltrados.sort((a, b) => {
+                let valA = a[sortColunaAtual];
+                let valB = b[sortColunaAtual];
 
-                document.querySelectorAll('.loader').forEach(e => e.style.display = 'none');
-                if (countLoc > 0) document.getElementById('tabela-locacoes').style.display = 'table';
-                if (countComp > 0) document.getElementById('tabela-compras').style.display = 'table';
-                if (countHist > 0) document.getElementById('tabela-historico').style.display = 'table';
+                // Tratamento para valores numéricos ou nulos
+                if (typeof valA === 'number' || typeof valB === 'number') {
+                    return sortDirecaoAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0);
+                }
+                
+                valA = String(valA || '').toLowerCase();
+                valB = String(valB || '').toLowerCase();
+                return sortDirecaoAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            });
 
-                renderizarModuloFornecedores();
-                atualizarDashboard(data);
+            // Atualiza indicadores visuais de setas (▲/▼)
+            atualizarSetasOrdenacao();
 
-            } catch (err) { showToast("Erro de conexão ao carregar os dados.", "error"); }
+            // 3. Renderização das Tabelas e Dashboards
+            renderizarTabelasTela();
+            atualizarDashboard(dadosFiltrados);
+        }
+
+        // FASE 3 AUXILIAR: Muda a coluna alvo do clique
+        function ordenarColuna(coluna) {
+            if (sortColunaAtual === coluna) {
+                sortDirecaoAsc = !sortDirecaoAsc; // Inverte direção se clicar na mesma
+            } else {
+                sortColunaAtual = coluna;
+                sortDirecaoAsc = true; // Reseta para Crescente se for coluna nova
+            }
+            aplicarFiltrosELocalSort();
+        }
+
+        function atualizarSetasOrdenacao() {
+            // Limpa todos os ícones de setas das colunas
+            document.querySelectorAll('.sort-icon').forEach(span => span.innerText = '');
+            
+            // Desenha a seta na coluna ativa
+            const seta = sortDirecaoAsc ? ' ▲' : ' ▼';
+            const idsSetas = ['sort-obra', 'sort-equipamento', 'sort-data_fim', 'sort-valor', 'sort-comp-obra', 'sort-comp-equip', 'sort-comp-data', 'sort-comp-valor', 'sort-hist-obra', 'sort-hist-equip', 'sort-hist-data', 'sort-hist-valor'];
+            
+            idsSetas.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && id.includes(sortColunaAtual)) {
+                    el.innerText = seta;
+                }
+            });
+        }
+
+        function limparFiltros() {
+            document.getElementById('filtroObra').value = 'todas';
+            document.getElementById('filtroForn').value = 'todos';
+            document.getElementById('filtroContrato').value = '';
+            aplicarFiltrosELocalSort();
+            showToast("Filtros redefinidos!", "success");
+        }
+
+        function renderizarTabelasTela() {
+            const bodyLocacoes = document.getElementById('body-locacoes'); 
+            const bodyCompras = document.getElementById('body-compras'); 
+            const bodyHistorico = document.getElementById('body-historico');
+            
+            bodyLocacoes.innerHTML = ''; bodyCompras.innerHTML = ''; bodyHistorico.innerHTML = '';
+            let countLoc = 0, countComp = 0, countHist = 0;
+
+            dadosFiltrados.forEach(item => {
+                const btnAnexo = item.anexo ? `<a href="${item.anexo}" target="_blank" class="btn-anexo">📸 Ver Foto</a>` : `<span class="btn-sem-anexo">Sem anexo</span>`;
+                const badgeQtd = `<span class="qtd-badge">${item.quantidade || 1} UN</span>`;
+                const numContrato = item.contrato && item.contrato !== 'NF via IA App' && item.contrato !== 'NF Compra' && item.contrato !== 'Sem Contrato' && item.contrato !== 'Cadastro Manual' ? `<span class="highlight-txt">Contrato: ${item.contrato}</span>` : '';
+                const tagIndenizacao = item.valor_indenizacao && item.valor_indenizacao > 0 ? `<div class="indeniz-tag">Indenização: ${formatarMoeda(item.valor_indenizacao)}</div>` : '';
+
+                let botoesAcao = '';
+                if (item.status === 'ativo') {
+                    botoesAcao += `<button class="btn-action-small btn-editar" title="Editar" onclick="abrirEdicao(${item.id})">✏️</button>`;
+                    if (item.unidade !== 'Proprio') botoesAcao += `<button class="btn-action-small btn-renovar" title="Renovar" onclick="renovarItem(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄</button>`;
+                    botoesAcao += `<button class="btn-action-small btn-delete" title="Arquivar" onclick="arquivarItem(${item.id})">🗑️</button>`;
+                } else {
+                    botoesAcao = `<span class="status-badge" style="margin-right: 8px;">Arquivado</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="restaurarItem(${item.id})">↩️</button>`;
+                }
+
+                const linhaHTML = `<tr><td><div class="group-info"><span class="main-txt">${item.obra}</span><span class="sub-txt">Forn: ${item.fornecedor}</span></div></td><td><span class="main-txt">${badgeQtd} ${item.equipamento}</span></td><td><div class="group-info"><span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${formatarData(item.data_fim)}</span>` : ''}</div></td><td><div class="group-info">${numContrato}<span class="price-tag">${formatarMoeda(item.valor)}</span>${tagIndenizacao}</div></td><td>${btnAnexo}</td><td><div class="action-buttons">${botoesAcao}</div></td></tr>`;
+                
+                if (item.status !== 'ativo') { bodyHistorico.innerHTML += linhaHTML; countHist++; } 
+                else if (item.unidade === 'Proprio') { bodyCompras.innerHTML += linhaHTML; countComp++; } 
+                else { bodyLocacoes.innerHTML += linhaHTML; countLoc++; }
+            });
+
+            document.querySelectorAll('.loader').forEach(e => e.style.display = 'none');
+            
+            // Gerencia exibição das tabelas
+            document.getElementById('tabela-locacoes').style.display = countLoc > 0 ? 'table' : 'none';
+            document.getElementById('tabela-compras').style.display = countComp > 0 ? 'table' : 'none';
+            document.getElementById('tabela-historico').style.display = countHist > 0 ? 'table' : 'none';
+
+            // Atualiza o contador gerencial inteligente do topo
+            const contBadge = document.getElementById('registro-contador');
+            contBadge.innerText = `${dadosFiltrados.length} registros encontrados`;
+            if(dadosFiltrados.length !== dadosGlobais.length) contBadge.classList.add('active');
+            else contBadge.classList.remove('active');
         }
 
         function atualizarDashboard(data) {
@@ -496,7 +561,6 @@
             if(chartObras) chartObras.destroy();
             chartObras = new Chart(document.getElementById('chart-obras').getContext('2d'), { type: 'bar', data: { labels: Object.keys(contagemObras), datasets: [{ data: Object.values(contagemObras), backgroundColor: '#2563eb', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
 
-            // FASE 2 FIX: Gráfico Horizontal resolve nomes longos.
             if(chartForns) chartForns.destroy();
             chartForns = new Chart(document.getElementById('chart-fornecedores').getContext('2d'), { type: 'bar', data: { labels: Object.keys(contagemForns), datasets: [{ data: Object.values(contagemForns), backgroundColor: '#6366f1', borderRadius: 5 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
 
@@ -516,7 +580,7 @@
         function abrirRenomearForn(origem) { document.getElementById('renomear-forn-origem').value = origem; document.getElementById('renomear-forn-origem-txt').value = origem; document.getElementById('renomear-forn-novo').value = origem; document.getElementById('modal-renomear-forn').style.display = 'flex'; }
         function salvarRenomearForn() {
             const origem = document.getElementById('renomear-forn-origem').value; const novoNome = document.getElementById('renomear-forn-novo').value.trim();
-            if (!novoNome || novoNome === origem) { showToast("Nome inválido!", "warning"); return; }
+            if (!novoNome || novoNome === origen) { showToast("Nome inválido!", "warning"); return; }
             showConfirm('Renomear Fornecedor', `TODOS os equipamentos de "${origem}" mudarão para "${novoNome}". Confirmar?`, async () => {
                 document.getElementById('modal-renomear-forn').style.display = 'none'; showGlobalLoading("Atualizando...");
                 const { error } = await client.from('locacoes').update({ fornecedor: novoNome }).eq('fornecedor', origem); hideGlobalLoading();
@@ -539,101 +603,44 @@
             });
         }
 
-        // --- SISTEMA DE EDIÇÃO COM DATAS ---
         function abrirEdicao(id) {
             const item = dadosGlobais.find(i => i.id === id); if(!item) return;
-            document.getElementById('edit-id').value = item.id; 
-            document.getElementById('edit-equip').value = item.equipamento || '';
+            document.getElementById('edit-id').value = item.id; document.getElementById('edit-equip').value = item.equipamento || '';
             document.getElementById('edit-forn').value = item.fornecedor || '';
-            document.getElementById('edit-qtd').value = item.quantidade || 1; 
-            document.getElementById('edit-contrato').value = item.contrato || ''; 
-            document.getElementById('edit-periodo').value = item.unidade || 'Mês';
-            document.getElementById('edit-valor').value = item.valor || 0; 
-            document.getElementById('edit-inicio').value = item.data_inicio ? item.data_inicio.split('T')[0] : '';
+            document.getElementById('edit-qtd').value = item.quantidade || 1; document.getElementById('edit-contrato').value = item.contrato || ''; document.getElementById('edit-periodo').value = item.unidade || 'Mês';
+            document.getElementById('edit-valor').value = item.valor || 0; document.getElementById('edit-inicio').value = item.data_inicio ? item.data_inicio.split('T')[0] : '';
             document.getElementById('edit-vencimento').value = item.data_fim ? item.data_fim.split('T')[0] : '';
             document.getElementById('edit-indenizacao').value = item.valor_indenizacao || 0;
-            
             document.getElementById('modal-editar').style.display = 'flex';
         }
-
         function fecharModalEdicao() { document.getElementById('modal-editar').style.display = 'none'; }
-        
         async function salvarEdicao() {
-            const id = document.getElementById('edit-id').value; 
-            const equipamento = document.getElementById('edit-equip').value.trim();
+            const id = document.getElementById('edit-id').value; const equipamento = document.getElementById('edit-equip').value.trim();
             const fornecedor = document.getElementById('edit-forn').value.trim() || 'Não identificado';
-            const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1; 
-            const contrato = document.getElementById('edit-contrato').value.trim(); 
-            const unidade = document.getElementById('edit-periodo').value.trim() || 'Mês';
-            const valor = parseFloat(document.getElementById('edit-valor').value) || 0; 
-            const data_inicio = document.getElementById('edit-inicio').value;
-            const data_fim = document.getElementById('edit-vencimento').value;
-            const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
-
-            showGlobalLoading("Salvando..."); 
-            const { error } = await client.from('locacoes').update({ equipamento, fornecedor, quantidade, contrato, unidade, valor, data_inicio, data_fim, valor_indenizacao }).eq('id', id); hideGlobalLoading();
+            const quantidade = parseInt(document.getElementById('edit-qtd').value) || 1; const contrato = document.getElementById('edit-contrato').value.trim(); const unidade = document.getElementById('edit-periodo').value.trim() || 'Mês';
+            const valor = parseFloat(document.getElementById('edit-valor').value) || 0; const data_inicio = document.getElementById('edit-inicio').value; const data_fim = document.getElementById('edit-vencimento').value; const valor_indenizacao = parseFloat(document.getElementById('edit-indenizacao').value) || 0;
+            showGlobalLoading("Salvando..."); const { error } = await client.from('locacoes').update({ equipamento, fornecedor, quantidade, contrato, unidade, valor, data_inicio, data_fim, valor_indenizacao }).eq('id', id); hideGlobalLoading();
             if(!error) { fecharModalEdicao(); showToast("Salvo com sucesso!", "success"); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro ao salvar.", "error"); }
         }
 
-        // --- SISTEMA DE CADASTRO NOVO (CORRIGIDO) ---
-        function toggleCamposNovo() {
-            const tipo = document.getElementById('novo-tipo').value;
-            document.getElementById('campos-locacao').style.display = tipo === 'aluguel' ? 'block' : 'none';
-            document.getElementById('box-vencimento').style.display = tipo === 'aluguel' ? 'block' : 'none';
-            document.getElementById('lbl-forn').innerText = tipo === 'aluguel' ? 'Locadora' : 'Loja / Fornecedor';
-            document.getElementById('lbl-data-inicio').innerText = tipo === 'aluguel' ? 'Data Locação' : 'Data da Compra';
-        }
-
         function abrirModalNovo() {
-            document.getElementById('novo-tipo').value = 'aluguel'; 
-            document.getElementById('novo-obra').value = ''; 
-            document.getElementById('novo-equip').value = ''; 
-            document.getElementById('novo-qtd').value = '1'; 
-            document.getElementById('novo-valor').value = ''; 
-            document.getElementById('novo-forn').value = ''; 
-            document.getElementById('novo-contrato').value = ''; 
-            document.getElementById('novo-periodo').value = 'Mês'; 
-            
-            const hoje = new Date();
-            document.getElementById('novo-inicio').value = hoje.toISOString().split('T')[0];
-            hoje.setDate(hoje.getDate() + 30);
-            document.getElementById('novo-vencimento').value = hoje.toISOString().split('T')[0];
-            
-            toggleCamposNovo(); 
-            document.getElementById('modal-novo').style.display = 'flex';
+            document.getElementById('novo-tipo').value = 'aluguel'; document.getElementById('novo-obra').value = ''; document.getElementById('novo-equip').value = ''; document.getElementById('novo-qtd').value = '1'; document.getElementById('novo-valor').value = ''; document.getElementById('novo-forn').value = ''; document.getElementById('novo-contrato').value = ''; document.getElementById('novo-periodo').value = 'Mês'; 
+            const hoje = new Date(); document.getElementById('novo-inicio').value = hoje.toISOString().split('T')[0]; hoje.setDate(hoje.getDate() + 30); document.getElementById('novo-vencimento').value = hoje.toISOString().split('T')[0];
+            toggleCamposNovo(); document.getElementById('modal-novo').style.display = 'flex';
         }
-        
         function fecharModalNovo() { document.getElementById('modal-novo').style.display = 'none'; }
-        
         async function salvarNovo() {
-            const tipo = document.getElementById('novo-tipo').value; 
-            const obra = document.getElementById('novo-obra').value.trim(); 
-            const equipamento = document.getElementById('novo-equip').value.trim(); 
-            const quantidade = parseInt(document.getElementById('novo-qtd').value) || 1; 
-            const valor = parseFloat(document.getElementById('novo-valor').value) || 0; 
-            const fornecedor = document.getElementById('novo-forn').value.trim() || 'Não identificado';
-            
+            const tipo = document.getElementById('novo-tipo').value; const obra = document.getElementById('novo-obra').value.trim(); const equipamento = document.getElementById('novo-equip').value.trim(); const quantidade = parseInt(document.getElementById('novo-qtd').value) || 1; const valor = parseFloat(document.getElementById('novo-valor').value) || 0; const fornecedor = document.getElementById('novo-forn').value.trim() || 'Não identificado';
             if (!obra || !equipamento) { showToast("Preencha obra e equipamento!", "warning"); return; }
-            
             const data_inicio = document.getElementById('novo-inicio').value || new Date().toISOString().split('T')[0];
-            
             let objSalvar = { obra, fornecedor, equipamento, quantidade, valor, status: 'ativo', data_inicio: data_inicio };
-
-            if (tipo === 'compra') { 
-                objSalvar.unidade = 'Proprio'; 
-                objSalvar.data_fim = data_inicio; 
-                objSalvar.contrato = 'Cadastro Manual'; 
-            } else {
-                objSalvar.unidade = document.getElementById('novo-periodo').value.trim() || 'Mês'; 
-                objSalvar.data_fim = document.getElementById('novo-vencimento').value || data_inicio; 
-                objSalvar.contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato';
+            if (tipo === 'compra') { objSalvar.unidade = 'Proprio'; objSalvar.data_fim = data_inicio; objSalvar.contrato = 'Cadastro Manual'; } else {
+                objSalvar.unidade = document.getElementById('novo-periodo').value.trim() || 'Mês'; objSalvar.data_fim = document.getElementById('novo-vencimento').value || data_inicio; objSalvar.contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato';
             }
-
             showGlobalLoading("Cadastrando..."); const { error } = await client.from('locacoes').insert([objSalvar]); hideGlobalLoading();
             if (!error) { showToast("Adicionado com sucesso!", "success"); fecharModalNovo(); carregarFiltros().then(() => carregarDados()); } else { showToast("Erro.", "error"); }
         }
 
-        // --- AÇÕES RÁPIDAS ---
         function arquivarItem(id) { showConfirm("Arquivar Item", "Mover este item para o Histórico?", async () => { showGlobalLoading("Arquivando..."); const { error } = await client.from('locacoes').update({ status: 'inativo' }).eq('id', id); hideGlobalLoading(); if (error) showToast("Erro"); else { showToast("Arquivado!", "success"); carregarDados(); } }, true); }
         function restaurarItem(id) { showConfirm("Restaurar Item", "Mover item de volta para os ativos?", async () => { showGlobalLoading("Restaurando..."); const { error } = await client.from('locacoes').update({ status: 'ativo' }).eq('id', id); hideGlobalLoading(); if (error) showToast("Erro"); else { showToast("Restaurado!", "success"); carregarDados(); } }); }
         function renovarItem(id, fim, uni) { showConfirm("Renovar Período", "Prorrogar locação por mais um período?", async () => { showGlobalLoading("Renovando..."); let d = new Date(fim); d.setMinutes(d.getMinutes() + d.getTimezoneOffset()); if(uni.includes('Mês')) d.setDate(d.getDate() + 30); else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15); else d.setDate(d.getDate() + 1); const { error } = await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id); hideGlobalLoading(); if(!error) { showToast("Renovado!", "success"); carregarDados(); } else { showToast("Erro."); } }); }
