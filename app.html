@@ -182,8 +182,8 @@
     }
 
     async function chamarGeminiAPI(base64Data, mimeType) {
-        // Usamos o gemini-1.5-flash para garantir total compatibilidade com PDFs e Imagens nativamente
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // CORREÇÃO DO BUG: Restaurando a versão gemini-2.5-flash atualizada e ativa
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
         let promptTexto = modoAtual === 'compra' 
             ? `Você é um robô. Extraia os materiais do documento anexado. Ache a coluna de Quantidade (Qtd). Retorne APENAS o JSON: { "itens": [ {"quantidade": 1, "equipamento": "nome", "fornecedor": "loja", "valor": 0.00} ] }.`
@@ -312,7 +312,6 @@
         let urlDoAnexo = null;
 
         if (arquivoOriginal) {
-            // Define a extensão correta baseada no MIME type
             const extensao = mimeTypeOriginal === 'application/pdf' ? 'pdf' : 'jpg';
             const nomeUnico = `doc_${Date.now()}.${extensao}`;
             
