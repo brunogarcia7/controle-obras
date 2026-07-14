@@ -93,7 +93,6 @@
         .btn-excel { background: var(--success); color: white; border: none; padding: 0 20px; height: 40px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-excel:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(16,185,129,0.2); }
         
-        /* FASE 7: BOTÃO DE COLUNAS */
         .btn-colunas { background: var(--row-even); color: var(--text); border: 1px solid var(--border); padding: 0 15px; height: 40px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-colunas:hover { border-color: var(--primary); color: var(--primary); }
 
@@ -134,7 +133,7 @@
         .sub-txt { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
         .highlight-txt { font-size: 0.75rem; color: var(--primary); font-weight: 700; margin-bottom: 2px;}
         
-        /* FASE 7: ETIQUETAS DE INDICADORES (SMART ALERTS) */
+        /* ETIQUETAS DE INDICADORES (SMART ALERTS) */
         .smart-alert { font-size: 0.65rem; padding: 3px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; border: 1px solid; display: inline-block; }
         .alert-yellow { background: rgba(245, 158, 11, 0.1); color: var(--warning); border-color: rgba(245, 158, 11, 0.3); }
         .alert-red { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); }
@@ -247,7 +246,8 @@
 
             <div class="header">
                 <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
-                <span class="badge-version">Versão 1.7</span>
+                <!-- v1.7.1 -->
+                <span class="badge-version">Versão 1.7.1</span>
             </div>
 
             <div class="top-controls">
@@ -265,7 +265,6 @@
                     </label>
                     <button class="btn-print" onclick="prepararImpressao()">🖨️ Imprimir PDF</button>
                     <button class="btn-excel" onclick="exportarExcel()">📊 Exportar Excel</button>
-                    <!-- FASE 7: BOTÃO CONFIGURAR COLUNAS -->
                     <button class="btn-colunas" onclick="abrirModalColunas()">⚙️ Colunas</button>
                     <button class="btn-novo" onclick="abrirModalNovo()">➕ Novo</button>
                 </div>
@@ -276,7 +275,8 @@
                 <div class="kpi-card" style="border-left: 4px solid var(--primary);"><span class="kpi-title">Total Equipamentos</span><span class="kpi-value" id="kpi-total">0</span></div>
                 <div class="kpi-card" style="border-left: 4px solid var(--success);"><span class="kpi-title">Itens Ativos</span><span class="kpi-value" id="kpi-ativos">0</span></div>
                 <div class="kpi-card" style="border-left: 4px solid var(--danger);"><span class="kpi-title">Itens Arquivados</span><span class="kpi-value" id="kpi-arquivados">0</span></div>
-                <div class="kpi-card" style="border-left: 4px solid var(--warning);"><span class="kpi-title">Total de Obras</span><span class="kpi-value" id="kpi-obras">0</span></div>
+                <!-- ATUALIZAÇÃO v1.7.1: Contratos Ativos -->
+                <div class="kpi-card" style="border-left: 4px solid var(--warning);"><span class="kpi-title">Contratos Ativos</span><span class="kpi-value" id="kpi-contratos">0</span></div>
                 <div class="kpi-card" style="border-left: 4px solid #6366f1;"><span class="kpi-title">Fornecedores</span><span class="kpi-value" id="kpi-fornecedores">0</span></div>
             </div>
 
@@ -286,7 +286,7 @@
                 <div class="chart-card"><h4>Distribuição por Status</h4><div class="chart-container"><canvas id="chart-status"></canvas></div></div>
             </div>
 
-            <!-- TABELAS REGULARES (AGORA COM CLASSES COL-* PARA OCULTAÇÃO DINÂMICA) -->
+            <!-- TABELAS REGULARES -->
             <div id="secao-locacoes" class="secao-tabela animate-show">
                 <div class="card-table">
                     <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
@@ -408,7 +408,7 @@
         </div>
     </div>
 
-    <!-- FASE 7: MODAL DE COLUNAS PERSONALIZADAS -->
+    <!-- MODAL DE COLUNAS PERSONALIZADAS -->
     <div class="modal-overlay" id="modal-colunas">
         <div class="modal-box" style="max-width: 350px;">
             <h3>⚙️ Personalizar Colunas</h3>
@@ -500,7 +500,6 @@
         let dadosFiltrados = []; 
         let chartObras = null, chartForns = null, chartStatus = null;
 
-        // FASE 7: ESTADO DAS COLUNAS VISÍVEIS
         const colunasPadrao = { obra: true, equip: true, periodo: true, valor: true, anexo: true, acoes: true };
         let colunasAtivas = JSON.parse(localStorage.getItem('controle_colunas')) || colunasPadrao;
 
@@ -540,7 +539,7 @@
             showToast("Visualização das tabelas atualizada!", "success");
         }
 
-        aplicarEstiloColunas(); // Aplica imediatamente ao carregar
+        aplicarEstiloColunas();
 
         function registrarLog(acao, detalhe) {
             let logs = JSON.parse(localStorage.getItem('controle_logs')) || [];
@@ -737,7 +736,6 @@
             dadosFiltrados.forEach(item => {
                 const btnAnexo = item.anexo ? `<a href="${item.anexo}" target="_blank" class="btn-anexo">📸 Ver Foto</a>` : `<span class="btn-sem-anexo">Sem anexo</span>`;
                 
-                // FASE 7: INDICADORES E ALERTAS INTELIGENTES
                 let alertasHTML = '';
                 if (!item.fornecedor || item.fornecedor === 'Não identificado') {
                     alertasHTML += `<span class="smart-alert alert-yellow" title="Fornecedor ausente">⚠️ Sem Fornecedor</span>`;
@@ -762,7 +760,7 @@
                 const linhaHTML = `
                     <tr>
                         <td class="col-obra"><div class="group-info"><span class="main-txt">${item.obra}</span><span class="sub-txt">Forn: ${item.fornecedor}</span></div></td>
-                        <td class="col-equip"><span class="main-txt">${badgeQtd} ${item.equipamento} ${alertasHTML}</span></td>
+                        <td class="col-equip"><span class="main-txt">${badgeQtd} ${item.equipamento}</span><div style="margin-top:4px;">${alertasHTML}</div></td>
                         <td class="col-periodo"><div class="group-info"><span class="main-txt">${item.unidade === 'Proprio' ? formatarData(item.data_inicio) : item.unidade}</span>${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${formatarData(item.data_fim)}</span>` : ''}</div></td>
                         <td class="col-valor"><div class="group-info">${numContrato}<span class="price-tag">${formatarMoeda(item.valor)}</span>${tagIndenizacao}</div></td>
                         <td class="col-anexo">${btnAnexo}</td>
@@ -783,20 +781,38 @@
             if(dadosFiltrados.length !== dadosGlobais.length) contBadge.classList.add('active'); else contBadge.classList.remove('active');
         }
 
+        // v1.7.1 - Lógica corrigida para Contratos Ativos
         function atualizarDashboard(data) {
             let total = 0; let ativos = 0; let arquivados = 0;
-            let obrasSet = new Set(); let fornsSet = new Set();
+            let fornsSet = new Set();
+            let contratosAtivosSet = new Set();
             let contagemObras = {}; let contagemForns = {}; let contagemStatus = { 'Ativo': 0, 'Arquivado': 0 };
 
             data.forEach(item => {
-                let qtd = parseInt(item.quantidade) || 1; total += qtd;
-                if (item.status === 'ativo') { ativos += qtd; contagemStatus['Ativo'] += qtd; } else { arquivados += qtd; contagemStatus['Arquivado'] += qtd; }
-                if (item.obra) { obrasSet.add(item.obra); contagemObras[item.obra] = (contagemObras[item.obra] || 0) + qtd; }
+                let qtd = parseInt(item.quantidade) || 1; 
+                total += qtd;
+                
+                if (item.status === 'ativo') { 
+                    ativos += qtd; 
+                    contagemStatus['Ativo'] += qtd; 
+                    
+                    // Conta contratos válidos únicos
+                    if (item.contrato && item.contrato !== 'NF via IA App' && item.contrato !== 'NF Compra' && item.contrato !== 'Sem Contrato' && item.contrato !== 'Cadastro Manual') {
+                        contratosAtivosSet.add(item.contrato);
+                    }
+                } else { 
+                    arquivados += qtd; 
+                    contagemStatus['Arquivado'] += qtd; 
+                }
+                
+                if (item.obra) { contagemObras[item.obra] = (contagemObras[item.obra] || 0) + qtd; }
                 if (item.fornecedor) { fornsSet.add(item.fornecedor); contagemForns[item.fornecedor] = (contagemForns[item.fornecedor] || 0) + qtd; }
             });
 
-            document.getElementById('kpi-total').innerText = total; document.getElementById('kpi-ativos').innerText = ativos;
-            document.getElementById('kpi-arquivados').innerText = arquivados; document.getElementById('kpi-obras').innerText = obrasSet.size;
+            document.getElementById('kpi-total').innerText = total; 
+            document.getElementById('kpi-ativos').innerText = ativos;
+            document.getElementById('kpi-arquivados').innerText = arquivados; 
+            document.getElementById('kpi-contratos').innerText = contratosAtivosSet.size; // Novo valor do card
             document.getElementById('kpi-fornecedores').innerText = fornsSet.size;
 
             if(chartObras) chartObras.destroy(); chartObras = new Chart(document.getElementById('chart-obras').getContext('2d'), { type: 'bar', data: { labels: Object.keys(contagemObras), datasets: [{ data: Object.values(contagemObras), backgroundColor: '#2563eb', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
@@ -895,20 +911,37 @@
         function exportarExcel() {
             if (dadosFiltrados.length === 0) { showToast("Nenhum dado filtrado para exportar.", "warning"); return; }
             showGlobalLoading("Gerando Excel...");
+
             setTimeout(() => {
                 const incHist = document.getElementById('check-print-hist').checked;
                 const dadosParaExportar = incHist ? dadosFiltrados : dadosFiltrados.filter(i => i.status === 'ativo');
+
                 if (dadosParaExportar.length === 0) { hideGlobalLoading(); showToast("Nenhum item ATIVO para exportar.", "warning"); return; }
 
                 const dadosExcel = dadosParaExportar.map(item => ({
-                    "Status": item.status === 'ativo' ? 'Ativo' : 'Arquivado', "Obra": item.obra || "-", "Fornecedor": item.fornecedor || "-", "Equipamento": item.equipamento || "-",
-                    "Quantidade": item.quantidade || 1, "Nº Contrato": item.contrato || "-", "Período/Unidade": item.unidade || "-",
-                    "Data Locação/Compra": item.data_inicio ? formatarData(item.data_inicio) : "-", "Data Vencimento": item.data_fim ? formatarData(item.data_fim) : "-",
-                    "Valor Total (R$)": parseFloat(item.valor) || 0, "Indenização (R$)": parseFloat(item.valor_indenizacao) || 0
+                    "Status": item.status === 'ativo' ? 'Ativo' : 'Arquivado',
+                    "Obra": item.obra || "-",
+                    "Fornecedor": item.fornecedor || "-",
+                    "Equipamento": item.equipamento || "-",
+                    "Quantidade": item.quantidade || 1,
+                    "Nº Contrato": item.contrato || "-",
+                    "Período/Unidade": item.unidade || "-",
+                    "Data Locação/Compra": item.data_inicio ? formatarData(item.data_inicio) : "-",
+                    "Data Vencimento": item.data_fim ? formatarData(item.data_fim) : "-",
+                    "Valor Total (R$)": parseFloat(item.valor) || 0,
+                    "Indenização (R$)": parseFloat(item.valor_indenizacao) || 0
                 }));
-                const worksheet = XLSX.utils.json_to_sheet(dadosExcel); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "Equipamentos");
-                const wscols = [ {wch: 12}, {wch: 25}, {wch: 35}, {wch: 40}, {wch: 12}, {wch: 18}, {wch: 15}, {wch: 20}, {wch: 20}, {wch: 15}, {wch: 15} ]; worksheet['!cols'] = wscols;
-                const dataHoje = new Date().toISOString().split('T')[0]; XLSX.writeFile(workbook, `Controle_Obras_${dataHoje}.xlsx`);
+
+                const worksheet = XLSX.utils.json_to_sheet(dadosExcel);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Equipamentos");
+
+                const wscols = [ {wch: 12}, {wch: 25}, {wch: 35}, {wch: 40}, {wch: 12}, {wch: 18}, {wch: 15}, {wch: 20}, {wch: 20}, {wch: 15}, {wch: 15} ];
+                worksheet['!cols'] = wscols;
+
+                const dataHoje = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(workbook, `Controle_Obras_${dataHoje}.xlsx`);
+
                 hideGlobalLoading(); registrarLog('Exportação', `Gerou Excel de ${dadosExcel.length} itens`); showToast("Planilha gerada com sucesso!", "success");
             }, 500);
         }
@@ -916,12 +949,18 @@
         function prepararImpressao() {
             const incHist = document.getElementById('check-print-hist').checked;
             if (!incHist) { document.body.classList.add('ocultar-historico-print'); } else { document.body.classList.remove('ocultar-historico-print'); }
-            const fObra = document.getElementById('filtroObra').options[document.getElementById('filtroObra').selectedIndex].text; const fForn = document.getElementById('filtroForn').options[document.getElementById('filtroForn').selectedIndex].text; const fTexto = document.getElementById('filtroContrato').value.trim();
+
+            const fObra = document.getElementById('filtroObra').options[document.getElementById('filtroObra').selectedIndex].text;
+            const fForn = document.getElementById('filtroForn').options[document.getElementById('filtroForn').selectedIndex].text;
+            const fTexto = document.getElementById('filtroContrato').value.trim();
+
             let filtros = `<strong>Filtros aplicados:</strong> Obra: ${fObra} | Fornecedor: ${fForn}`;
-            if (fTexto) filtros += ` | Pesquisa: "${fTexto}"`; if (!incHist) filtros += ` | <i>Histórico Omitido</i>`;
+            if (fTexto) filtros += ` | Pesquisa: "${fTexto}"`;
+            if (!incHist) filtros += ` | <i>Histórico Omitido</i>`;
             
             document.getElementById('print-filters').innerHTML = filtros;
-            const hoje = new Date(); document.getElementById('print-date').innerText = `Gerado em: ${hoje.toLocaleDateString('pt-BR')} às ${hoje.toLocaleTimeString('pt-BR')}`;
+            const hoje = new Date();
+            document.getElementById('print-date').innerText = `Gerado em: ${hoje.toLocaleDateString('pt-BR')} às ${hoje.toLocaleTimeString('pt-BR')}`;
             const qtdPrint = incHist ? dadosFiltrados.length : dadosFiltrados.filter(i => i.status === 'ativo').length;
             document.getElementById('print-count').innerText = `Total de Registros Impressos: ${qtdPrint}`;
 
