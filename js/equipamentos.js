@@ -41,12 +41,21 @@ const Equipamentos = {
             if(!error) objSalvar.anexo = DB.client.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
         }
 
-        Utils.showLoader("Cadastrando..."); const { error } = await DB.client.from('locacoes').insert([objSalvar]); Utils.hideLoader();
-        if (!error) { Utils.registrarLog('Novo Cadastro', `Item: ${equipamento}`); Utils.showToast("Salvo!", "success"); UI.fecharModal('modal-novo'); App.carregarDados(); } else { Utils.showToast("Erro.", "error"); }
+        Utils.showLoader("Cadastrando..."); 
+        const { data, error } = await DB.client.from('locacoes').insert([objSalvar]).select(); 
+        Utils.hideLoader();
+        
+        if (!error && data && data.length > 0) { 
+            State.dadosGlobais.unshift(data[0]); 
+            Utils.registrarLog('Novo Cadastro', `Item: ${equipamento}`); 
+            Utils.showToast("Salvo!", "success"); 
+            UI.fecharModal('modal-novo'); 
+            App.aplicarFiltrosELocalSort(); 
+        } else { Utils.showToast("Erro.", "error"); }
     },
 
     abrirEdicao: (id) => {
-        const item = State.dadosGlobais.find(i => i.id === id); if(!item) return;
+        const item = State.dadosGlobais.find(i => i.id == id); if(!item) return;
         document.getElementById('edit-id').value = item.id; document.getElementById('edit-equip').value = item.equipamento || '';
         document.getElementById('edit-forn').value = item.fornecedor || ''; document.getElementById('edit-qtd').value = item.quantidade || 1; document.getElementById('edit-contrato').value = item.contrato || ''; document.getElementById('edit-periodo').value = item.unidade || 'Mês';
         document.getElementById('edit-valor').value = item.valor || 0; document.getElementById('edit-inicio').value = item.data_inicio ? item.data_inicio.split('T')[0] : ''; document.getElementById('edit-vencimento').value = item.data_fim ? item.data_fim.split('T')[0] : ''; document.getElementById('edit-indenizacao').value = item.valor_indenizacao || 0;
@@ -65,33 +74,53 @@ const Equipamentos = {
             if(!error) objUpdate.anexo = DB.client.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
         }
 
-        Utils.showLoader("Salvando..."); const { error } = await DB.client.from('locacoes').update(objUpdate).eq('id', id); Utils.hideLoader();
-        if(!error) { Utils.registrarLog('Edição', `Atualizou o item: ${equipamento}`); UI.fecharModal('modal-editar'); Utils.showToast("Salvo com sucesso!", "success"); App.carregarDados(); } else { Utils.showToast("Erro ao salvar.", "error"); }
+        Utils.showLoader("Salvando..."); 
+        const { data, error } = await DB.client.from('locacoes').update(objUpdate).eq('id', id).select(); 
+        Utils.hideLoader();
+        
+        if(!error && data && data.length > 0) { 
+            const idx = State.dadosGlobais.findIndex(i => i.id == id);
+            if(idx > -1) State.dadosGlobais[idx] = data[0];
+            Utils.registrarLog('Edição', `Atualizou o item: ${equipamento}`); 
+            UI.fecharModal('modal-editar'); 
+            Utils.showToast("Salvo com sucesso!", "success"); 
+            App.aplicarFiltrosELocalSort(); 
+        } else { Utils.showToast("Erro ao salvar.", "error"); }
     },
 
-    devolverItem: (id, equipNome) => Utils.showConfirm("Devolver Equipamento", "Deseja marcar este item como devolvido?", async () => { Utils.showLoader("Devolvendo..."); await DB.client.from('locacoes').update({ status: 'inativo' }).eq('id', id); Utils.hideLoader(); Utils.registrarLog('Devolução', `Moveu para devolvidos: ${equipNome}`); Utils.showToast("Devolvido!", "success"); App.carregarDados(); }, false),
-    excluirPermanenteItem: (id, equipNome) => Utils.showConfirm("Excluir Permanentemente", "Deseja mover para a lixeira (Itens Excluídos)?", async () => { Utils.showLoader("Excluindo..."); await DB.client.from('locacoes').update({ status: 'excluido' }).eq('id', id); Utils.hideLoader(); Utils.registrarLog('Exclusão Permanente', `Moveu para excluídos: ${equipNome}`); Utils.showToast("Excluído!", "success"); App.carregarDados(); }, true),
-    restaurarItem: (id, equipNome) => Utils.showConfirm("Restaurar Item", "Mover item de volta para os ATIVOS?", async () => { Utils.showLoader("Restaurando..."); await DB.client.from('locacoes').update({ status: 'ativo' }).eq('id', id); Utils.hideLoader(); Utils.registrarLog('Restauração', `Voltou para os ativos: ${equipNome}`); Utils.showToast("Restaurado!", "success"); App.carregarDados(); }),
-    renovarItem: (id, fim, uni) => Utils.showConfirm("Renovar Período", "Prorrogar locação?", async () => { Utils.showLoader("Renovando..."); let d = new Date(fim); d.setMinutes(d.getMinutes() + d.getTimezoneOffset()); if(uni.includes('Mês')) d.setDate(d.getDate() + 30); else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15); else d.setDate(d.getDate() + 1); await DB.client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id); Utils.hideLoader(); Utils.registrarLog('Renovação', `Prorrogou contrato ID: ${id}`); Utils.showToast("Renovado!", "success"); App.carregarDados(); }),
-
-    abrirRenomearForn: (origem) => { document.getElementById('renomear-forn-origem').value = origem; document.getElementById('renomear-forn-origem-txt').value = origem; document.getElementById('renomear-forn-novo').value = origem; UI.abrirModal('modal-renomear-forn'); },
-    salvarRenomearForn: () => {
-        const origem = document.getElementById('renomear-forn-origem').value; const novoNome = document.getElementById('renomear-forn-novo').value.trim();
-        if (!novoNome || novoNome === origem) return Utils.showToast("Nome inválido!", "warning");
-        Utils.showConfirm('Renomear Fornecedor', `TODOS os equipamentos de "${origem}" mudarão para "${novoNome}".`, async () => {
-            UI.fecharModal('modal-renomear-forn'); Utils.showLoader("Atualizando..."); await DB.client.from('locacoes').update({ fornecedor: novoNome }).eq('fornecedor', origem); Utils.hideLoader(); Utils.registrarLog('Renomeou Fornecedor', `De ${origem} para ${novoNome}`); Utils.showToast("Alterado com sucesso!", "success"); App.carregarDados();
-        });
-    },
-    abrirMesclarForn: (origem) => {
-        document.getElementById('merge-origem').value = origem; document.getElementById('merge-origem-txt').value = origem; const selDestino = document.getElementById('merge-destino'); selDestino.innerHTML = '';
-        [...new Set(State.dadosGlobais.map(i => i.fornecedor))].filter(Boolean).sort().forEach(f => { if(f !== origem) { selDestino.add(new Option(f, f)); } });
-        UI.abrirModal('modal-mesclar-forn');
-    },
-    salvarMesclarForn: () => {
-        const origem = document.getElementById('merge-origem').value; const destino = document.getElementById('merge-destino').value;
-        if(!destino) return Utils.showToast("Selecione o destino!", "warning");
-        Utils.showConfirm('Mesclar Fornecedores', `Unificar "${origem}" dentro de "${destino}"?`, async () => {
-            UI.fecharModal('modal-mesclar-forn'); Utils.showLoader("Mesclando..."); await DB.client.from('locacoes').update({ fornecedor: destino }).eq('fornecedor', origem); Utils.hideLoader(); Utils.registrarLog('Mesclou Fornecedores', `Transferiu de ${origem} para ${destino}`); Utils.showToast("Mesclado!", "success"); App.carregarDados();
-        });
-    }
+    devolverItem: (id, equipNome) => Utils.showConfirm("Devolver Equipamento", "Deseja marcar este item como devolvido?", async () => { 
+        Utils.showLoader("Devolvendo..."); const { error } = await DB.client.from('locacoes').update({ status: 'inativo' }).eq('id', id); Utils.hideLoader(); 
+        if (!error) { 
+            const idx = State.dadosGlobais.findIndex(i => i.id == id); if(idx > -1) State.dadosGlobais[idx].status = 'inativo';
+            Utils.registrarLog('Devolução', `Moveu para devolvidos: ${equipNome}`); Utils.showToast("Devolvido!", "success"); App.aplicarFiltrosELocalSort(); 
+        } else { Utils.showToast("Erro", "error"); } 
+    }, false),
+    
+    excluirPermanenteItem: (id, equipNome) => Utils.showConfirm("Excluir Permanentemente", "Deseja mover para a lixeira (Itens Excluídos)?", async () => { 
+        Utils.showLoader("Excluindo..."); const { error } = await DB.client.from('locacoes').update({ status: 'excluido' }).eq('id', id); Utils.hideLoader(); 
+        if (!error) { 
+            const idx = State.dadosGlobais.findIndex(i => i.id == id); if(idx > -1) State.dadosGlobais[idx].status = 'excluido';
+            Utils.registrarLog('Exclusão Permanente', `Moveu para excluídos: ${equipNome}`); Utils.showToast("Excluído!", "success"); App.aplicarFiltrosELocalSort(); 
+        } else { Utils.showToast("Erro", "error"); } 
+    }, true),
+    
+    restaurarItem: (id, equipNome) => Utils.showConfirm("Restaurar Item", "Mover item de volta para os ATIVOS?", async () => { 
+        Utils.showLoader("Restaurando..."); const { error } = await DB.client.from('locacoes').update({ status: 'ativo' }).eq('id', id); Utils.hideLoader(); 
+        if (!error) { 
+            const idx = State.dadosGlobais.findIndex(i => i.id == id); if(idx > -1) State.dadosGlobais[idx].status = 'ativo';
+            Utils.registrarLog('Restauração', `Voltou para os ativos: ${equipNome}`); Utils.showToast("Restaurado!", "success"); App.aplicarFiltrosELocalSort(); 
+        } else { Utils.showToast("Erro", "error"); } 
+    }),
+    
+    renovarItem: (id, fim, uni) => Utils.showConfirm("Renovar Período", "Prorrogar locação?", async () => { 
+        Utils.showLoader("Renovando..."); 
+        let d = new Date(fim); d.setMinutes(d.getMinutes() + d.getTimezoneOffset()); 
+        if(uni.includes('Mês')) d.setDate(d.getDate() + 30); else if (uni.includes('Quinzena')) d.setDate(d.getDate() + 15); else d.setDate(d.getDate() + 1); 
+        const novaDataFim = d.toISOString().split('T')[0];
+        const { error } = await DB.client.from('locacoes').update({ data_fim: novaDataFim }).eq('id', id); Utils.hideLoader(); 
+        if(!error) { 
+            const idx = State.dadosGlobais.findIndex(i => i.id == id); if(idx > -1) State.dadosGlobais[idx].data_fim = novaDataFim;
+            Utils.registrarLog('Renovação', `Prorrogou contrato ID: ${id}`); Utils.showToast("Renovado!", "success"); App.aplicarFiltrosELocalSort(); 
+        } else { Utils.showToast("Erro.", "error"); } 
+    })
 };
