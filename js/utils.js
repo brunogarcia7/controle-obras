@@ -3,8 +3,8 @@ const Utils = {
     formatarMoeda: (v) => parseFloat(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
     
     escapeStr: (str) => {
-        if (str === null || str === undefined) return '';
-        return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+        if (!str) return '';
+        return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, ' ');
     },
     
     showToast: (message, type = 'success') => {
