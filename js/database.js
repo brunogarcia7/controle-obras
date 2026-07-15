@@ -19,21 +19,14 @@ const DB = {
         Utils.showLoader('Salvando no banco...');
         try {
             let res;
-            if (id) {
-                res = await DB.client.from('locacoes').update(payload).eq('id', id);
-            } else {
-                res = await DB.client.from('locacoes').insert([payload]);
-            }
+            if (id) res = await DB.client.from('locacoes').update(payload).eq('id', id);
+            else res = await DB.client.from('locacoes').insert([payload]);
             if (res.error) throw res.error;
             Utils.registrarLog(id ? 'Edição' : 'Novo', `Item: ${payload.equipamento}`);
             return true;
         } catch(e) {
-            Utils.showToast("Erro ao salvar.", "error"); 
-            console.error(e);
-            return false;
-        } finally { 
-            Utils.hideLoader(); 
-        }
+            Utils.showToast("Erro ao salvar.", "error"); return false;
+        } finally { Utils.hideLoader(); }
     },
 
     mudarStatus: async (id, status, nomeItem) => {
@@ -44,7 +37,6 @@ const DB = {
             Utils.registrarLog('Status alterado', `${nomeItem} movido para ${status}`);
             return true;
         }
-        Utils.showToast("Erro ao mudar status.", "error");
         return false;
     }
 };
