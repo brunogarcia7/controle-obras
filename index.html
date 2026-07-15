@@ -82,6 +82,7 @@
         .kpi-title { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
         .kpi-value { font-size: 1.7rem; font-weight: 800; color: var(--text); }
 
+        /* TABELAS */
         .secao-tabela { display: none; } 
         .animate-show { display: block; animation: fadeInScale 0.3s ease-out forwards; }
         @keyframes fadeInScale { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -127,21 +128,30 @@
         @media print {
             @page { size: A4 landscape; margin: 15mm; }
             body { background: white; color: black; -webkit-print-color-adjust: exact; }
-            .sidebar, .top-controls, .dashboard-grid, .btn-anexo, .action-buttons, th.col-acoes, td.col-acoes, th.col-anexo, td.col-anexo { display: none !important; }
             
-            #secao-sistema { display: none !important; }
+            /* Esconde todo o layout inútil */
+            .sidebar, .top-controls, .dashboard-grid, .btn-anexo, .action-buttons, 
+            th.col-acoes, td.col-acoes, th.col-anexo, td.col-anexo, .header, 
+            #toast-container, .modal-overlay { display: none !important; }
+            
+            /* Força os botões de edição a sumir (segurança extra) */
+            .btn-action-small { display: none !important; }
             
             #print-header { display: block !important; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; }
             .main-content { padding: 0; margin: 0; width: 100%; }
-            .card-table { box-shadow: none; border: none; padding: 0; margin: 0; max-height: none; overflow: visible; background: white;}
-            .table-modern { border: 1px solid #000; }
-            .table-modern th, .table-modern td { border: 1px solid #ccc; padding: 10px; font-size: 0.85rem; color: #000; }
+            
+            .card-table { box-shadow: none; border: none; padding: 0; margin: 0 0 30px 0; max-height: none; overflow: visible; background: white; page-break-inside: avoid;}
+            .table-modern { border: 1px solid #000; width: 100%; }
+            .table-modern th, .table-modern td { border: 1px solid #ccc; padding: 8px; font-size: 0.8rem; color: #000; }
             .table-modern th { background-color: #eee !important; color: #000; position: static; }
-            .status-badge, .indeniz-tag, .qtd-badge, .smart-alert { border: 1px solid #000; color: #000; background: transparent; }
+            
+            /* Remove cores das badges no papel para economizar tinta */
+            .status-badge, .indeniz-tag, .qtd-badge, .smart-alert { border: 1px solid #000; color: #000 !important; background: transparent !important; }
             tr { page-break-inside: avoid; }
-            .secao-tabela { display: block !important; }
-            body.ocultar-historico-print #secao-historico, body.ocultar-historico-print #secao-excluidos { display: none !important; }
-            #tabela-locacoes[style*="display: none"], #tabela-compras[style*="display: none"], #tabela-historico[style*="display: none"], #tabela-fornecedores[style*="display: none"], #tabela-excluidos[style*="display: none"] { display: none !important; }
+            
+            /* Só exibe as tabelas que o JavaScript der a ordem (.print-visible) */
+            .secao-tabela { display: none !important; }
+            .secao-tabela.print-visible { display: block !important; }
         }
 
         /* MODAIS E TOASTS */
@@ -172,6 +182,7 @@
         .btn-cancel-edit { background: transparent; color: var(--text-light); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-cancel-edit:hover { background: var(--row-even); color: var(--text); }
         
+        /* BACKUP */
         .backup-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
         .backup-box { background: var(--row-even); border: 1px solid var(--border); border-radius: 12px; padding: 25px; text-align: center; transition: 0.2s; }
         .backup-box:hover { border-color: var(--primary); }
@@ -250,7 +261,6 @@
                 <div class="kpi-card" style="border-left: 4px solid #6366f1;"><span class="kpi-title">Fornecedores</span><span class="kpi-value" id="kpi-fornecedores">0</span></div>
             </div>
 
-            <!-- LOCAÇÕES ATIVAS -->
             <div id="secao-locacoes" class="secao-tabela animate-show">
                 <div class="card-table">
                     <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
@@ -272,7 +282,6 @@
                 </div>
             </div>
 
-            <!-- PATRIMÔNIO -->
             <div id="secao-compras" class="secao-tabela">
                 <div class="card-table">
                     <h3 style="color: var(--success);">🛒 Ferramentas Próprias (Patrimônio)</h3>
@@ -294,18 +303,16 @@
                 </div>
             </div>
 
-            <!-- FORNECEDORES -->
             <div id="secao-fornecedores" class="secao-tabela">
                 <div class="card-table">
                     <h3 style="color: #6366f1;">🏢 Gestão de Fornecedores e Locadoras</h3>
                     <table class="table-modern" id="tabela-fornecedores">
-                        <thead><tr><th>Nome do Fornecedor / Locadora</th><th>Total de Equipamentos Ativos</th><th>Ações</th></tr></thead>
+                        <thead><tr><th class="col-obra">Nome do Fornecedor / Locadora</th><th class="col-equip">Total de Equipamentos Ativos</th><th class="col-acoes">Ações</th></tr></thead>
                         <tbody id="body-fornecedores"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- EQUIPAMENTOS DEVOLVIDOS (INATIVOS) -->
             <div id="secao-historico" class="secao-tabela">
                 <div class="card-table">
                     <h3 style="color: var(--text-light);">↩️ Equipamentos Devolvidos (Histórico)</h3>
@@ -328,7 +335,6 @@
                 </div>
             </div>
 
-            <!-- ITENS EXCLUÍDOS PERMANENTE -->
             <div id="secao-excluidos" class="secao-tabela">
                 <div class="card-table">
                     <h3 style="color: var(--danger);">🗑️ Itens Excluídos Permanentemente</h3>
@@ -351,7 +357,6 @@
                 </div>
             </div>
 
-            <!-- SISTEMA & BACKUP -->
             <div id="secao-sistema" class="secao-tabela">
                 <div class="backup-card-grid">
                     <div class="backup-box">
@@ -402,7 +407,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE COLUNAS PERSONALIZADAS -->
     <div class="modal-overlay" id="modal-colunas">
         <div class="modal-box" style="max-width: 350px;">
             <h3>⚙️ Personalizar Colunas</h3>
@@ -422,7 +426,6 @@
         </div>
     </div>
 
-    <!-- MODAL EDITAR COM OPÇÃO DE SUBSTITUIR ANEXO/PDF -->
     <div class="modal-overlay" id="modal-editar">
         <div class="modal-box">
             <h3>✏️ Editar Equipamento</h3>
@@ -462,7 +465,6 @@
         </div>
     </div>
 
-    <!-- MODAL NOVO EQUIPAMENTO -->
     <div class="modal-overlay" id="modal-novo">
         <div class="modal-box">
             <h3>➕ Adicionar Novo Equipamento</h3>
@@ -503,11 +505,9 @@
         </div>
     </div>
 
-    <!-- MODAIS DE FORNECEDOR -->
-    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-renomear-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarRenomearForn()">Atualizar</button></div></div></div>
-    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-mesclar-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarMesclarForn()">Mesclar</button></div></div></div>
+    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual (Incorreto)</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome Correto</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-renomear-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarRenomearForn()">Atualizar Todos</button></div></div></div>
+    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto (Origem)</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com (Destino Correto)</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-mesclar-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarMesclarForn()">Mesclar e Unificar</button></div></div></div>
 
-    <!-- SCRIPTS MODULARES -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/database.js"></script>
