@@ -4,8 +4,12 @@ const Exportacao = {
         Utils.showLoader("Gerando Excel...");
         setTimeout(() => {
             const incHist = document.getElementById('check-print-hist').checked;
-            const dadosParaExportar = incHist ? State.dadosFiltrados : State.dadosFiltrados.filter(i => i.status === 'ativo');
-            if (dadosParaExportar.length === 0) { Utils.hideLoader(); return Utils.showToast("Nenhum item ATIVO para exportar.", "warning"); }
+            const dadosParaExportar = incHist ? State.dadosFiltrados : State.dadosFiltrados.filter(i => i.status === 'ativo' || i.unidade === 'Proprio');
+            
+            if (dadosParaExportar.length === 0) { 
+                Utils.hideLoader(); 
+                return Utils.showToast("Nenhum item ATIVO para exportar.", "warning"); 
+            }
 
             const dadosExcel = dadosParaExportar.map(item => ({
                 "Status": item.status === 'ativo' ? 'Ativo' : item.status === 'inativo' ? 'Devolvido' : 'Excluído',
@@ -23,20 +27,43 @@ const Exportacao = {
 
     prepararImpressao: () => {
         const incHist = document.getElementById('check-print-hist').checked;
-        if (!incHist) document.body.classList.add('ocultar-historico-print'); else document.body.classList.remove('ocultar-historico-print');
-        const fObra = document.getElementById('filtroObra').options[document.getElementById('filtroObra').selectedIndex].text; const fForn = document.getElementById('filtroForn').options[document.getElementById('filtroForn').selectedIndex].text; const fTexto = document.getElementById('filtroContrato').value.trim();
+        
+        // Regra inteligente de exibição de tabelas no papel
+        document.querySelectorAll('.secao-tabela').forEach(sec => {
+            const table = sec.querySelector('table');
+            // Ignora aba Sistema e Fornecedores na impressão principal e esconde se tabela estiver vazia
+            if (sec.id !== 'secao-sistema' && sec.id !== 'secao-fornecedores' && table && table.style.display !== 'none') {
+                if (!incHist && (sec.id === 'secao-historico' || sec.id === 'secao-excluidos')) {
+                    sec.classList.remove('print-visible');
+                } else {
+                    sec.classList.add('print-visible');
+                }
+            } else {
+                sec.classList.remove('print-visible');
+            }
+        });
+
+        const fObra = document.getElementById('filtroObra').options[document.getElementById('filtroObra').selectedIndex].text; 
+        const fForn = document.getElementById('filtroForn').options[document.getElementById('filtroForn').selectedIndex].text; 
+        const fTexto = document.getElementById('filtroContrato').value.trim();
+        
         let filtros = `<strong>Filtros aplicados:</strong> Obra: ${fObra} | Fornecedor: ${fForn}`;
-        if (fTexto) filtros += ` | Pesquisa: "${fTexto}"`; if (!incHist) filtros += ` | <i>Histórico Omitido</i>`;
+        if (fTexto) filtros += ` | Pesquisa: "${fTexto}"`; 
+        if (!incHist) filtros += ` | <i>Histórico Omitido</i>`;
         
         document.getElementById('print-filters').innerHTML = filtros;
-        const hoje = new Date(); document.getElementById('print-date').innerText = `Gerado em: ${hoje.toLocaleDateString('pt-BR')} às ${hoje.toLocaleTimeString('pt-BR')}`;
-        const qtdPrint = incHist ? State.dadosFiltrados.length : State.dadosFiltrados.filter(i => i.status === 'ativo').length;
+        const hoje = new Date(); 
+        document.getElementById('print-date').innerText = `Gerado em: ${hoje.toLocaleDateString('pt-BR')} às ${hoje.toLocaleTimeString('pt-BR')}`;
+        
+        const qtdPrint = incHist ? State.dadosFiltrados.length : State.dadosFiltrados.filter(i => i.status === 'ativo' || i.unidade === 'Proprio').length;
         document.getElementById('print-count').innerText = `Total de Registros Impressos: ${qtdPrint}`;
-        Utils.registrarLog('Impressão', `Gerou relatório para ${qtdPrint} itens`); window.print();
+
+        Utils.registrarLog('Impressão', `Gerou relatório para ${qtdPrint} itens`); 
+        window.print();
     },
 
     exportarBackupJSON: () => {
-        if(State.dadosInteressados ? State.dadosGlobais.length === 0 : State.dadosGlobais.length === 0) return Utils.showToast("Nenhum dado para backup.", "warning");
+        if(State.dadosGlobais.length === 0) return Utils.showToast("Nenhum dado para backup.", "warning");
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(State.dadosGlobais));
         const btn = document.createElement('a'); btn.setAttribute("href", dataStr); btn.setAttribute("download", "backup_obras_" + new Date().toISOString().split('T')[0] + ".json");
         document.body.appendChild(btn); btn.click(); btn.remove();
