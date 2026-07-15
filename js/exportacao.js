@@ -36,7 +36,7 @@ const Exportacao = {
     },
 
     exportarBackupJSON: () => {
-        if(State.dadosGlobais.length === 0) return Utils.showToast("Nenhum dado para backup.", "warning");
+        if(State.dadosInteressados ? State.dadosGlobais.length === 0 : State.dadosGlobais.length === 0) return Utils.showToast("Nenhum dado para backup.", "warning");
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(State.dadosGlobais));
         const btn = document.createElement('a'); btn.setAttribute("href", dataStr); btn.setAttribute("download", "backup_obras_" + new Date().toISOString().split('T')[0] + ".json");
         document.body.appendChild(btn); btn.click(); btn.remove();
