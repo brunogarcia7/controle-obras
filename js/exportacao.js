@@ -28,10 +28,8 @@ const Exportacao = {
     prepararImpressao: () => {
         const incHist = document.getElementById('check-print-hist').checked;
         
-        // Regra inteligente de exibição de tabelas no papel
         document.querySelectorAll('.secao-tabela').forEach(sec => {
             const table = sec.querySelector('table');
-            // Ignora aba Sistema e Fornecedores na impressão principal e esconde se tabela estiver vazia
             if (sec.id !== 'secao-sistema' && sec.id !== 'secao-fornecedores' && table && table.style.display !== 'none') {
                 if (!incHist && (sec.id === 'secao-historico' || sec.id === 'secao-excluidos')) {
                     sec.classList.remove('print-visible');
