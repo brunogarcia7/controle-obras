@@ -93,7 +93,6 @@ const App = {
         App.aplicarFiltrosELocalSort(); Utils.showToast("Filtros limpos!", "success");
     },
 
-    // O "Ouvido Global" que faz todos os botões da tela funcionarem
     bindEventos: () => {
         document.body.addEventListener('click', (e) => {
             const btn = e.target.closest('.btn-action-small');
