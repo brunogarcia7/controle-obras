@@ -1,433 +1,120 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>App Almoxarife - Controle Total</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <style>
-        :root { --bg-app: #f1f5f9; --header: #1e293b; --card: #ffffff; --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --text: #334155; --text-light: #94a3b8; --danger: #ef4444; --v21: #06b6d4; }
-        body { font-family: 'Inter', sans-serif; background-color: #333; margin: 0; display: flex; justify-content: center; }
-        .mobile-container { width: 100%; max-width: 420px; height: 100vh; background-color: var(--bg-app); position: relative; overflow-y: auto; display: flex; flex-direction: column; }
-        
-        .header { background-color: var(--header); color: white; padding: 25px 20px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
-        .header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-        .header p { margin: 5px 0 0 0; color: #cbd5e1; font-size: 0.85rem; }
-        .badge-v21 { background: var(--v21); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; font-weight: 800; border: 1px solid #0891b2;}
-        
-        .content { padding: 20px; flex: 1; }
-        
-        .form-group { margin-bottom: 20px; }
-        label { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-top: 8px; display: block;}
-        select, input[type="text"], input[type="number"] { width: 100%; height: 45px; border-radius: 10px; border: 2px solid #cbd5e1; padding: 0 15px; font-size: 1rem; margin-top: 5px; background: white; font-family: 'Inter', sans-serif; box-sizing: border-box;}
-
-        .grid-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .btn-acao { background: var(--card); border: 2px solid transparent; border-radius: 16px; padding: 15px 10px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05);}
-        .btn-acao .icon-box { width: 45px; height: 45px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.6rem; margin-bottom: 10px; }
-        .btn-acao h3 { margin: 0; font-size: 0.9rem; color: var(--text); font-weight: 700; }
-        
-        .btn-compra { border-color: rgba(16, 185, 129, 0.3); } .btn-compra .icon-box { background: #dcfce7; color: var(--success); }
-        .btn-aluguel { border-color: rgba(37, 99, 235, 0.3); } .btn-aluguel .icon-box { background: #dbeafe; color: var(--primary); }
-        .btn-lista { border-color: rgba(245, 158, 11, 0.3); grid-column: 1 / -1; flex-direction: row; justify-content: center; }
-        .btn-lista .icon-box { margin-bottom: 0; margin-right: 15px; background: #fef3c7; color: var(--warning); }
-
-        #lista-ativos-mobile { margin-top: 20px; display: none; }
-        .card-ativo { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .card-ativo h4 { margin: 0; font-size: 1rem; color: var(--text); }
-        .card-ativo p { margin: 5px 0; font-size: 0.8rem; color: var(--text-light); }
-        .btn-renovar-mob { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; margin-top: 10px; cursor: pointer; width: 100%;}
-
-        #ai-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.98); display: none; flex-direction: column; justify-content: flex-start; align-items: center; color: white; z-index: 100; padding: 40px 20px; box-sizing: border-box; overflow-y: auto;}
-        .loader { border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid var(--success); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; flex-shrink: 0;}
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        #resultado-ia { background: white; color: var(--text); padding: 15px; border-radius: 12px; width: 100%; display: none; margin-bottom: 20px;}
-        .item-lido { border-bottom: 2px solid #e2e8f0; padding: 15px 0; }
-        .item-lido:last-child { border-bottom: none; padding-bottom: 0;}
-        
-        .fallback-box { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 10px; }
-        .grid-duplo { display: grid; grid-template-columns: 80px 1fr; gap: 10px; }
-
-        .btn-confirmar { background: var(--success); color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 700; margin-bottom: 10px; flex-shrink: 0;}
-        .btn-cancelar { background: transparent; color: white; border: 1px solid white; padding: 10px; border-radius: 12px; width: 100%; font-size: 1rem; flex-shrink: 0;}
-        input[type="file"] { display: none; }
-        
-        #erro-box { display: none; background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 20px; width: 100%; border: 1px solid #f87171; text-align: center;}
-    </style>
-</head>
-<body>
-
-<div class="mobile-container">
-    <div class="header">
-        <h1>👷 Almoxarifado <span class="badge-v21">v1.8</span></h1>
-        <p>Leitor Inteligente de PDFs, Contratos e NFs</p>
-    </div>
-
-    <div class="content">
-        <div class="form-group">
-            <label style="margin-top:0;">1. Selecione a Obra</label>
-            <select id="obraSelect">
-                <option value="" disabled selected>Carregando obras...</option>
-            </select>
-        </div>
-
-        <div class="grid-botoes">
-            <button class="btn-acao btn-compra" onclick="iniciarLeitura('compra')">
-                <div class="icon-box">🛒</div>
-                <h3>Nova Compra</h3>
-            </button>
-            <button class="btn-acao btn-aluguel" onclick="iniciarLeitura('aluguel')">
-                <div class="icon-box">📄</div>
-                <h3>Nova Locação</h3>
-            </button>
-            <button class="btn-acao btn-lista" onclick="toggleAtivos()">
-                <div class="icon-box">🛠️</div>
-                <h3>Ver Equipamentos</h3>
-            </button>
-        </div>
-
-        <div id="lista-ativos-mobile">
-            <label>Equipamentos em Obra:</label>
-            <div id="container-cards"></div>
-        </div>
-
-        <input type="file" id="cam-entrada" accept="image/*,application/pdf" onchange="processarUpload(event)">
-    </div>
-
-    <div id="ai-modal">
-        <div class="loader" id="ai-loader"></div>
-        <div id="modal-text">Analisando o documento...</div>
-        
-        <div id="erro-box"></div>
-        
-        <div id="resultado-ia"></div>
-        <button class="btn-confirmar" id="btn-salvar" onclick="salvarNoBanco()" style="display:none;">✅ Confirmar e Salvar</button>
-        <button class="btn-cancelar" onclick="fecharModal()">Voltar / Cancelar</button>
-    </div>
-</div>
-
-<script>
-    const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
-    
-    const G_P1 = 'AIzaSyD_yorwczN1p3Wc'; 
-    const G_P2 = 'asUrfVYChF8w6E4QvP0'; 
-    const GEMINI_API_KEY = G_P1 + G_P2;
-
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let itensLidosPelaIA = [];
-    let modoAtual = '';
-    let arquivoOriginal = null; 
-    let mimeTypeOriginal = '';
-
-    async function carregarObras() {
-        const sel = document.getElementById('obraSelect');
-        const padrao = ["Vinícola", "Sede Start Química", "Tamboré"];
-        try {
-            const { data } = await client.from('locacoes').select('obra');
-            let obrasBanco = data ? [...new Set(data.map(i => i.obra))].filter(Boolean) : [];
-            let lista = [...new Set([...padrao, ...obrasBanco])].sort();
-            sel.innerHTML = '<option value="" disabled selected>Selecione a obra...</option>';
-            lista.forEach(o => sel.add(new Option(o, o)));
-        } catch (e) {
-            sel.innerHTML = '<option value="" disabled selected>Selecione a obra...</option>';
-            padrao.forEach(o => sel.add(new Option(o, o)));
-        }
-    }
-    carregarObras();
-
-    function iniciarLeitura(modo) {
-        if(!document.getElementById('obraSelect').value) { alert("Selecione a obra primeiro!"); return; }
-        modoAtual = modo;
-        document.getElementById('cam-entrada').click();
-    }
-
-    async function processarUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        arquivoOriginal = file; 
-        mimeTypeOriginal = file.type;
-        
-        let textoModal = modoAtual === 'compra' ? "Lendo Nota Fiscal de Compra..." : "Lendo Contrato de Locação...";
-        abrirModal(textoModal);
-        
-        // Verifica se é PDF ou Imagem
-        if (mimeTypeOriginal === 'application/pdf') {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64PDF = e.target.result.split(',')[1];
-                chamarGeminiAPI(base64PDF, 'application/pdf');
-            };
-            reader.readAsDataURL(file);
-        } else {
-            const img = new Image();
-            img.src = URL.createObjectURL(file);
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1200;
-                const scale = MAX_WIDTH / img.width;
-                canvas.width = MAX_WIDTH; canvas.height = img.height * scale;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                chamarGeminiAPI(canvas.toDataURL('image/jpeg', 0.8).split(',')[1], 'image/jpeg');
-            };
-            img.onerror = function() {
-                fecharModal();
-                alert("Erro ao ler a imagem. Tente novamente.");
-            };
-        }
-    }
-
-    async function chamarGeminiAPI(base64Data, mimeType) {
-        // CORREÇÃO DO BUG: Restaurando a versão gemini-2.5-flash atualizada e ativa
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-        
-        let promptTexto = modoAtual === 'compra' 
-            ? `Você é um robô. Extraia os materiais do documento anexado. Ache a coluna de Quantidade (Qtd). Retorne APENAS o JSON: { "itens": [ {"quantidade": 1, "equipamento": "nome", "fornecedor": "loja", "valor": 0.00} ] }.`
-            : `Você é um robô. Extraia os equipamentos do contrato anexado. Olhe atentamente para a coluna "Qtd" ou "Quantidade" na tabela. Retorne APENAS o JSON: { "itens": [ {"quantidade": numero_da_coluna_qtd, "equipamento": "nome", "fornecedor": "locadora", "contrato_numero": "numero", "periodo": "Mensal", "valor": 0.00} ] }. Se a quantidade não estiver visível, coloque 1.`;
-
-        const corpoRequisicao = {
-            contents: [{ parts: [{ text: promptTexto }, { inlineData: { mimeType: mimeType, data: base64Data } }] }]
-        };
-
-        try {
-            const resposta = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpoRequisicao) });
-            const dados = await resposta.json();
+const App = {
+    carregarFiltrosSelect: async () => {
+        const { data } = await DB.client.from('locacoes').select('obra, fornecedor');
+        if(data) {
+            const obras = [...new Set(data.map(i => i.obra))].filter(Boolean).sort();
+            const forns = [...new Set(data.map(i => i.fornecedor))].filter(Boolean).sort();
+            const selObra = document.getElementById('filtroObra'); const selForn = document.getElementById('filtroForn');
+            const listObras = document.getElementById('lista-obras'); const listForns = document.getElementById('lista-forns');
             
-            if (!resposta.ok) {
-                let msgErro = dados.error ? dados.error.message : "Erro na API do Google";
-                if (msgErro.includes("high demand") || msgErro.includes("High demand")) {
-                    throw new Error("⏳ Os servidores do Google estão congestionados neste exato momento. Por favor, aguarde uns 30 segundos e tente enviar novamente.");
-                }
-                throw new Error(msgErro);
+            if(selObra && selForn) {
+                selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>'; 
+                selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
+                obras.forEach(o => { selObra.add(new Option(o, o)); if(listObras) listObras.appendChild(new Option(o)); });
+                forns.forEach(f => { selForn.add(new Option(f, f)); if(listForns) listForns.appendChild(new Option(f)); });
             }
 
-            let textoResposta = dados.candidates[0].content.parts[0].text;
-            let inicioJson = textoResposta.indexOf('{');
-            let fimJson = textoResposta.lastIndexOf('}');
+            const savedFiltros = JSON.parse(localStorage.getItem('controle_filtros'));
+            if (savedFiltros) {
+                if (selObra && [...selObra.options].some(o => o.value === savedFiltros.obra)) selObra.value = savedFiltros.obra;
+                if (selForn && [...selForn.options].some(o => o.value === savedFiltros.forn)) selForn.value = savedFiltros.forn;
+                const fieldContrato = document.getElementById('filtroContrato');
+                if(fieldContrato) fieldContrato.value = savedFiltros.texto || '';
+            }
+        }
+    },
+
+    carregarDados: async () => {
+        try {
+            await App.carregarFiltrosSelect();
+            await DB.carregarDados();
+            const abaSalva = localStorage.getItem('controle_aba') || 'locacoes';
+            UI.mudarAba(abaSalva);
+            App.aplicarFiltrosELocalSort(); 
+        } catch (errorLoad) {
+            alert("Erro Fatal de Inicialização: " + errorLoad.message);
+        }
+    },
+
+    aplicarFiltrosELocalSort: () => {
+        try {
+            const fObra = document.getElementById('filtroObra').value; 
+            const fForn = document.getElementById('filtroForn').value; 
+            const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
             
-            if (inicioJson !== -1 && fimJson !== -1) {
-                let jsonLimpo = textoResposta.substring(inicioJson, fimJson + 1);
-                itensLidosPelaIA = JSON.parse(jsonLimpo).itens || [];
-                mostrarResultadoNaTela();
-            } else {
-                throw new Error("A IA processou o documento, mas não encontrou uma tabela de equipamentos visível.");
-            }
+            localStorage.setItem('controle_filtros', JSON.stringify({ obra: fObra, forn: fForn, texto: fTexto }));
 
-        } catch (erro) {
-            document.getElementById('ai-loader').style.display = 'none';
-            document.getElementById('modal-text').innerText = "Aviso do Sistema";
-            document.getElementById('erro-box').style.display = 'block';
-            document.getElementById('erro-box').innerText = erro.message;
+            State.dadosFiltrados = State.dadosGlobais.filter(item => {
+                const matchObra = fObra === 'todas' || item.obra === fObra; 
+                const matchForn = fForn === 'todos' || item.fornecedor === fForn;
+                
+                const equip = item.equipamento ? String(item.equipamento) : '';
+                const contr = item.contrato ? String(item.contrato) : '';
+                const forn = item.fornecedor ? String(item.fornecedor) : '';
+                const obr = item.obra ? String(item.obra) : '';
+
+                const textoAlvo = `${equip} ${contr} ${forn} ${obr}`.toLowerCase();
+                const matchTexto = fTexto === '' || textoAlvo.includes(fTexto);
+                return matchObra && matchForn && matchTexto;
+            });
+
+            const btnLimpar = document.getElementById('btn-limpar-filtros');
+            if(btnLimpar) btnLimpar.style.display = (fObra !== 'todas' || fForn !== 'todos' || fTexto !== '') ? 'flex' : 'none';
+
+            State.dadosFiltrados.sort((a, b) => {
+                let valA = a[State.sortColunaAtual]; let valB = b[State.sortColunaAtual];
+                if (typeof valA === 'number' || typeof valB === 'number') { return State.sortDirecaoAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0); }
+                valA = String(valA || '').toLowerCase(); valB = String(valB || '').toLowerCase();
+                return State.sortDirecaoAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            });
+
+            App.atualizarSetasOrdenacao(); 
+            UI.renderizarTabelas(); 
+            UI.atualizarKPIsEDashboards(); 
+            UI.renderizarModuloFornecedores();
+        } catch (errorFilter) {
+            console.error("Erro ao aplicar filtros: ", errorFilter);
         }
-    }
+    },
 
-    function mostrarResultadoNaTela() {
-        document.getElementById('ai-loader').style.display = 'none';
-        
-        if (itensLidosPelaIA.length === 0) {
-            document.getElementById('erro-box').style.display = 'block';
-            document.getElementById('erro-box').innerText = "A tabela retornou vazia. Tente focar melhor nos itens ou envie outro arquivo.";
-            document.getElementById('modal-text').innerText = "Nada encontrado";
-            return;
-        }
+    ordenarColuna: (coluna) => {
+        if (State.sortColunaAtual === coluna) { State.sortDirecaoAsc = !State.sortDirecaoAsc; } else { State.sortColunaAtual = coluna; State.sortDirecaoAsc = true; }
+        App.aplicarFiltrosELocalSort();
+    },
 
-        document.getElementById('modal-text').innerText = "Revise as Quantidades e Dados:";
-        const divResultado = document.getElementById('resultado-ia');
-        divResultado.style.display = 'block';
-        document.getElementById('btn-salvar').style.display = 'block';
-        divResultado.innerHTML = '';
-        
-        itensLidosPelaIA.forEach((item, index) => {
-            let htmlFormularioExtra = '';
-            let qtd = item.quantidade || 1; 
+    atualizarSetasOrdenacao: () => {
+        document.querySelectorAll('.sort-icon').forEach(span => span.innerText = ''); const seta = State.sortDirecaoAsc ? ' ▲' : ' ▼';
+        const idsSetas = ['sort-obra', 'sort-equipamento', 'sort-data_fim', 'sort-contrato', 'sort-valor', 'sort-comp-obra', 'sort-comp-equip', 'sort-comp-data', 'sort-comp-contrato', 'sort-comp-valor', 'sort-hist-obra', 'sort-hist-equip', 'sort-hist-data', 'sort-hist-contrato', 'sort-hist-valor', 'sort-ex-obra', 'sort-ex-equip', 'sort-ex-data', 'sort-ex-contrato', 'sort-ex-valor'];
+        idsSetas.forEach(id => { const el = document.getElementById(id); if (el && id.includes(State.sortColunaAtual)) { el.innerText = seta; } });
+    },
 
-            if (modoAtual === 'aluguel') {
-                let ctr = item.contrato_numero || '';
-                let val = item.valor || '';
-                let txtPeriodo = (item.periodo || '').toLowerCase();
-                let selMes = txtPeriodo.includes('mês') || txtPeriodo.includes('mensal') ? 'selected' : '';
-                let selQuinzena = txtPeriodo.includes('quinzena') ? 'selected' : '';
-                let selDia = txtPeriodo.includes('dia') && !txtPeriodo.includes('28 dia') && !txtPeriodo.includes('30 dia') ? 'selected' : '';
+    limparFiltros: () => {
+        document.getElementById('filtroObra').value = 'todas'; document.getElementById('filtroForn').value = 'todos'; document.getElementById('filtroContrato').value = '';
+        App.aplicarFiltrosELocalSort(); Utils.showToast("Filtros limpos!", "success");
+    },
 
-                if(!selMes && !selQuinzena && !selDia) selMes = 'selected';
+    bindEventos: () => {
+        document.body.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-action-small');
+            if (!btn) return;
+            
+            const action = btn.dataset.action;
+            const id = btn.dataset.id;
+            const nome = btn.dataset.nome;
 
-                htmlFormularioExtra = `
-                    <div class="fallback-box">
-                        <div class="grid-duplo">
-                            <div>
-                                <label>Qtd.</label>
-                                <input type="number" id="man-qtd-${index}" value="${qtd}" style="font-weight:bold; color:var(--primary);">
-                            </div>
-                            <div>
-                                <label>Nº do Contrato</label>
-                                <input type="text" id="man-contrato-${index}" value="${ctr}">
-                            </div>
-                        </div>
-                        <label>Período</label>
-                        <select id="man-periodo-${index}">
-                            <option value="Mês" ${selMes}>Mês (Padrão 30 dias)</option>
-                            <option value="Quinzena" ${selQuinzena}>Quinzena (15 dias)</option>
-                            <option value="Dia" ${selDia}>Diária</option>
-                        </select>
-                        <label>Valor Total da Locação (R$)</label>
-                        <input type="number" id="man-valor-${index}" value="${val}">
-                    </div>`;
-            } else {
-                htmlFormularioExtra = `
-                    <div class="fallback-box">
-                        <div class="grid-duplo">
-                            <div>
-                                <label>Qtd.</label>
-                                <input type="number" id="man-qtd-${index}" value="${qtd}" style="font-weight:bold; color:var(--success);">
-                            </div>
-                            <div>
-                                <label>Valor Total (R$)</label>
-                                <input type="number" id="man-valor-${index}" value="${item.valor || 0}">
-                            </div>
-                        </div>
-                        <label>Loja/Fornecedor</label>
-                        <input type="text" id="man-forn-${index}" value="${item.fornecedor || ''}">
-                    </div>`;
-            }
-
-            divResultado.innerHTML += `
-                <div class="item-lido">
-                    <strong style="font-size:1.1rem; color:var(--text);">${item.equipamento}</strong><br>
-                    <span style="color:#64748b; font-size:0.8rem;">Origem: ${item.fornecedor || 'Não identificado'}</span>
-                    ${htmlFormularioExtra}
-                </div>`;
+            if (action === 'editar') Equipamentos.abrirEdicao(id);
+            if (action === 'devolver') Equipamentos.devolverItem(id, nome);
+            if (action === 'excluir') Equipamentos.excluirPermanenteItem(id, nome);
+            if (action === 'restaurar') Equipamentos.restaurarItem(id, nome);
+            if (action === 'renovar') Equipamentos.renovarItem(id, btn.dataset.fim, btn.dataset.uni);
+            if (action === 'renomear-forn') Equipamentos.abrirRenomearForn(nome);
+            if (action === 'mesclar-forn') Equipamentos.abrirMesclarForn(nome);
         });
     }
+};
 
-    async function salvarNoBanco() {
-        document.getElementById('modal-text').innerText = "Enviando arquivo para a nuvem...";
-        document.getElementById('resultado-ia').style.display = 'none';
-        document.getElementById('btn-salvar').style.display = 'none';
-        document.getElementById('ai-loader').style.display = 'block';
-
-        let urlDoAnexo = null;
-
-        if (arquivoOriginal) {
-            const extensao = mimeTypeOriginal === 'application/pdf' ? 'pdf' : 'jpg';
-            const nomeUnico = `doc_${Date.now()}.${extensao}`;
-            
-            const { data: uploadData, error: uploadError } = await client.storage
-                .from('comprovantes')
-                .upload(nomeUnico, arquivoOriginal);
-
-            if (!uploadError) {
-                const { data: publicData } = client.storage.from('comprovantes').getPublicUrl(nomeUnico);
-                urlDoAnexo = publicData.publicUrl;
-            } else {
-                console.error("Erro no upload do anexo:", uploadError);
-            }
-        }
-
-        document.getElementById('modal-text').innerText = "Salvando materiais no sistema...";
-        const obra = document.getElementById('obraSelect').value;
-        const hojeObj = new Date();
-        const hojeIso = hojeObj.toISOString().split('T')[0];
-        let dadosParaSalvar = [];
-
-        for (let i = 0; i < itensLidosPelaIA.length; i++) {
-            let item = itensLidosPelaIA[i];
-            let qtdManual = parseInt(document.getElementById(`man-qtd-${i}`).value) || 1; 
-            
-            if (modoAtual === 'compra') {
-                let valorManual = parseFloat(document.getElementById(`man-valor-${i}`).value) || 0;
-                let fornManual = document.getElementById(`man-forn-${i}`).value || 'Não identificado';
-                
-                dadosParaSalvar.push({
-                    obra: obra, fornecedor: fornManual, equipamento: item.equipamento,
-                    unidade: 'Proprio', data_inicio: hojeIso, data_fim: hojeIso, 
-                    contrato: 'NF via IA App', valor: valorManual, status: 'ativo',
-                    anexo: urlDoAnexo, quantidade: qtdManual
-                });
-            } else {
-                let contratoManual = document.getElementById(`man-contrato-${i}`).value || 'Sem Contrato';
-                let periodoManual = document.getElementById(`man-periodo-${i}`).value;
-                let valorManual = parseFloat(document.getElementById(`man-valor-${i}`).value) || 0;
-                
-                let dataFim = new Date(hojeObj);
-                if (periodoManual === 'Mês') dataFim.setDate(dataFim.getDate() + 30);
-                else if (periodoManual === 'Quinzena') dataFim.setDate(dataFim.getDate() + 15);
-                else if (periodoManual === 'Dia') dataFim.setDate(dataFim.getDate() + 1);
-
-                dadosParaSalvar.push({
-                    obra: obra, fornecedor: item.fornecedor || 'Locadora', equipamento: item.equipamento,
-                    unidade: periodoManual, data_inicio: hojeIso, data_fim: dataFim.toISOString().split('T')[0],
-                    contrato: contratoManual, valor: valorManual, status: 'ativo',
-                    anexo: urlDoAnexo, quantidade: qtdManual
-                });
-            }
-        }
-
-        const { error } = await client.from('locacoes').insert(dadosParaSalvar);
-
-        if (!error) {
-            alert("✅ Sucesso! Os itens e as quantidades foram salvos.");
-            fecharModal();
-        } else {
-            document.getElementById('modal-text').innerText = "Erro ao salvar no banco";
-            document.getElementById('ai-loader').style.display = 'none';
-            const erroBox = document.getElementById('erro-box');
-            erroBox.style.display = 'block';
-            erroBox.innerText = error.message;
-        }
-    }
-
-    async function toggleAtivos() {
-        const obra = document.getElementById('obraSelect').value;
-        if(!obra) { alert("Selecione a obra primeiro!"); return; }
-        const div = document.getElementById('lista-ativos-mobile');
-        div.style.display = div.style.display === 'block' ? 'none' : 'block';
-        if(div.style.display === 'block') {
-            const { data } = await client.from('locacoes').select('*').eq('obra', obra).eq('status', 'ativo');
-            const cont = document.getElementById('container-cards');
-            cont.innerHTML = data.length ? '' : '<p style="font-size:0.9rem; color:#64748b;">Nenhum item alocado nesta obra no momento.</p>';
-            data.forEach(item => {
-                let dataBr = item.data_fim ? item.data_fim.split('-').reverse().join('/') : 'Patrimônio';
-                let qtdExibida = item.quantidade ? `${item.quantidade}x ` : '';
-                cont.innerHTML += `
-                    <div class="card-ativo">
-                        <h4>${qtdExibida}${item.equipamento}</h4>
-                        <p>Forn: ${item.fornecedor} | Fim: <strong>${dataBr}</strong></p>
-                        ${item.unidade !== 'Proprio' ? `<button class="btn-renovar-mob" onclick="renovarMob(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄 RENOVAR PERÍODO</button>` : ''}
-                    </div>`;
-            });
-        }
-    }
-
-    window.renovarMob = async (id, fim, uni) => {
-        let d = new Date(fim);
-        d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-        if(uni === 'Mês') d.setDate(d.getDate() + 30); 
-        else if (uni === 'Quinzena') d.setDate(d.getDate() + 15);
-        else d.setDate(d.getDate() + 1);
-        await client.from('locacoes').update({ data_fim: d.toISOString().split('T')[0] }).eq('id', id);
-        alert("Período renovado com sucesso!"); 
-        toggleAtivos();
-    }
-
-    function abrirModal(texto) {
-        document.getElementById('ai-modal').style.display = 'flex';
-        document.getElementById('ai-loader').style.display = 'block';
-        document.getElementById('resultado-ia').style.display = 'none';
-        document.getElementById('erro-box').style.display = 'none';
-        document.getElementById('btn-salvar').style.display = 'none';
-        document.getElementById('modal-text').innerText = texto;
-    }
-
-    function fecharModal() {
-        document.getElementById('ai-modal').style.display = 'none';
-        document.getElementById('cam-entrada').value = '';
-        arquivoOriginal = null;
-        mimeTypeOriginal = '';
-    }
-</script>
-</body>
-</html>
+window.onload = () => {
+    UI.inicializarTema();
+    App.bindEventos();
+    App.carregarDados();
+};
