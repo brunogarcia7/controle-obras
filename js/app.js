@@ -40,7 +40,8 @@ const App = {
             return matchObra && matchForn && matchTexto;
         });
 
-        document.getElementById('btn-limpar-filtros').style.display = (fObra !== 'todas' || fForn !== 'todos' || fTexto !== '') ? 'flex' : 'none';
+        const btnLimpar = document.getElementById('btn-limpar-filtros');
+        if(btnLimpar) btnLimpar.style.display = (fObra !== 'todas' || fForn !== 'todos' || fTexto !== '') ? 'flex' : 'none';
 
         State.dadosFiltrados.sort((a, b) => {
             let valA = a[State.sortColunaAtual]; let valB = b[State.sortColunaAtual];
