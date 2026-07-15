@@ -2,6 +2,12 @@ const Utils = {
     formatarData: (d) => d ? d.split('-').reverse().join('/') : '--',
     formatarMoeda: (v) => parseFloat(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
     
+    // Protege o código contra aspas inseridas pelo usuário
+    escapeStr: (str) => {
+        if (str === null || str === undefined) return '';
+        return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+    },
+    
     showToast: (message, type = 'success') => {
         const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`;
         let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
