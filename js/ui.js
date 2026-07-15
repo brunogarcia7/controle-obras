@@ -56,7 +56,7 @@ const UI = {
         const tbody = document.getElementById('body-logs'); if(!tbody) return;
         let logs = JSON.parse(localStorage.getItem('controle_logs')) || [];
         tbody.innerHTML = '';
-        if(logs.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">Nenhum log.</td></tr>'; return; }
+        if(logs.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">Nenhum log registrado.</td></tr>'; return; }
         logs.forEach(l => {
             let cor = l.acao.includes('Exclu') || l.acao.includes('Arquiv') ? 'var(--danger)' : l.acao.includes('Edit') || l.acao.includes('Renova') ? 'var(--warning)' : 'var(--success)';
             tbody.innerHTML += `<tr><td style="font-size:0.8rem; color:var(--text-light);">${l.data}</td><td><span style="color:${cor}; font-weight:bold; font-size:0.8rem;">${l.acao}</span></td><td style="font-size:0.85rem; font-weight:600;">${l.detalhe}</td></tr>`;
@@ -81,72 +81,73 @@ const UI = {
     },
 
     renderizarTabelas: () => {
-        const bLoc = document.getElementById('body-locacoes'); const bComp = document.getElementById('body-compras'); 
-        const bHist = document.getElementById('body-historico'); const bExc = document.getElementById('body-excluidos');
-        
-        let arrLoc = [], arrComp = [], arrHist = [], arrExc = [];
-        const hojeISO = new Date().toISOString().split('T')[0];
-
-        State.dadosFiltrados.forEach(item => {
-            let btnAnexo = `<span class="btn-sem-anexo">Sem anexo</span>`;
-            if (item.anexo) {
-                if (item.anexo.toLowerCase().includes('pdf')) btnAnexo = `<a href="${item.anexo}" target="_blank" class="btn-anexo pdf-style">📄 Ver PDF</a>`;
-                else btnAnexo = `<a href="${item.anexo}" target="_blank" class="btn-anexo">📸 Ver Foto</a>`;
-            }
+        try {
+            const bLoc = document.getElementById('body-locacoes'); const bComp = document.getElementById('body-compras'); 
+            const bHist = document.getElementById('body-historico'); const bExc = document.getElementById('body-excluidos');
             
-            let alertas = '';
-            if (!item.fornecedor || item.fornecedor === 'Não identificado') alertas += `<span class="smart-alert alert-yellow" title="Fornecedor ausente">⚠️ Sem Fornecedor</span>`;
-            if (item.status === 'ativo' && item.unidade !== 'Proprio' && item.data_fim && item.data_fim < hojeISO) alertas += `<span class="smart-alert alert-red" title="Vencido">🚨 Vencido</span>`;
+            let arrLoc = [], arrComp = [], arrHist = [], arrExc = [];
+            const hojeISO = new Date().toISOString().split('T')[0];
 
-            const badgeQtd = `<span class="qtd-badge">${item.quantidade || 1} UN</span>`;
-            const ctrStr = item.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(item.contrato) ? `<span class="highlight-txt">${item.contrato}</span>` : '--';
-            const indeniz = item.valor_indenizacao && item.valor_indenizacao > 0 ? `<br><div class="indeniz-tag">Indenização: ${Utils.formatarMoeda(item.valor_indenizacao)}</div>` : '';
+            State.dadosFiltrados.forEach(item => {
+                let btnAnexo = `<span class="btn-sem-anexo">Sem anexo</span>`;
+                if (item.anexo && typeof item.anexo === 'string') {
+                    if (item.anexo.toLowerCase().includes('pdf')) btnAnexo = `<a href="${item.anexo}" target="_blank" class="btn-anexo pdf-style">📄 Ver PDF</a>`;
+                    else btnAnexo = `<a href="${item.anexo}" target="_blank" class="btn-anexo">📸 Ver Foto</a>`;
+                }
+                
+                let alertas = '';
+                if (!item.fornecedor || item.fornecedor === 'Não identificado') alertas += `<span class="smart-alert alert-yellow" title="Fornecedor ausente">⚠️ Sem Fornecedor</span>`;
+                if (item.status === 'ativo' && item.unidade !== 'Proprio' && item.data_fim && item.data_fim < hojeISO) alertas += `<span class="smart-alert alert-red" title="Vencido">🚨 Vencido</span>`;
 
-            const safeEquip = Utils.escapeStr(item.equipamento);
+                const badgeQtd = `<span class="qtd-badge">${item.quantidade || 1} UN</span>`;
+                const ctrStr = item.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(item.contrato) ? `<span class="highlight-txt">${item.contrato}</span>` : '--';
+                const indeniz = item.valor_indenizacao && item.valor_indenizacao > 0 ? `<br><div class="indeniz-tag">Indenização: ${Utils.formatarMoeda(item.valor_indenizacao)}</div>` : '';
 
-            let botoesAcao = '';
-            if (item.status === 'ativo') {
-                botoesAcao += `<button class="btn-action-small btn-editar" title="Editar" onclick="Equipamentos.abrirEdicao(${item.id})">✏️</button>`;
-                if (item.unidade !== 'Proprio') botoesAcao += `<button class="btn-action-small btn-renovar" title="Renovar" onclick="Equipamentos.renovarItem(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄</button>`;
-                botoesAcao += `<button class="btn-action-small btn-desfazer" title="Devolver (Histórico)" onclick="Equipamentos.devolverItem(${item.id}, '${safeEquip}')">↩️</button>`;
-                botoesAcao += `<button class="btn-action-small btn-delete" title="Excluir Permanente" onclick="Equipamentos.excluirPermanenteItem(${item.id}, '${safeEquip}')">🗑️</button>`;
-            } else if (item.status === 'inativo') {
-                botoesAcao = `<span class="status-badge" style="margin-right:8px;">Devolvido</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="Equipamentos.restaurarItem(${item.id}, '${safeEquip}')">🔄</button>`;
-            } else if (item.status === 'excluido') {
-                botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--danger); color:white;">Excluído</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="Equipamentos.restaurarItem(${item.id}, '${safeEquip}')">🔄</button>`;
-            }
+                const safeEquip = Utils.escapeStr(item.equipamento);
 
-            const tr = `<tr>
-                <td class="col-obra"><div class="group-info"><span class="main-txt">${item.obra}</span><span class="sub-txt">Forn: ${item.fornecedor}</span></div></td>
-                <td class="col-equip"><span class="main-txt">${badgeQtd} ${item.equipamento}</span><div style="margin-top:4px;">${alertas}</div></td>
-                <td class="col-periodo"><div class="group-info"><span class="main-txt">${item.unidade === 'Proprio' ? Utils.formatarData(item.data_inicio) : item.unidade}</span>${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${Utils.formatarData(item.data_fim)}</span>` : ''}</div></td>
-                <td class="col-contrato"><div class="group-info"><span class="main-txt">${ctrStr}</span></div></td>
-                <td class="col-valor"><div class="group-info"><span class="price-tag">${Utils.formatarMoeda(item.valor)}</span>${indeniz}</div></td>
-                <td class="col-anexo">${btnAnexo}</td>
-                <td class="col-acoes"><div class="action-buttons">${botoesAcao}</div></td>
-            </tr>`;
+                let botoesAcao = '';
+                if (item.status === 'ativo') {
+                    botoesAcao += `<button class="btn-action-small btn-editar" title="Editar" onclick="Equipamentos.abrirEdicao(${item.id})">✏️</button>`;
+                    if (item.unidade !== 'Proprio') botoesAcao += `<button class="btn-action-small btn-renovar" title="Renovar" onclick="Equipamentos.renovarItem(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄</button>`;
+                    botoesAcao += `<button class="btn-action-small btn-desfazer" title="Devolver" onclick="Equipamentos.devolverItem(${item.id}, '${safeEquip}')">↩️</button>`;
+                    botoesAcao += `<button class="btn-action-small btn-delete" title="Excluir" onclick="Equipamentos.excluirPermanenteItem(${item.id}, '${safeEquip}')">🗑️</button>`;
+                } else if (item.status === 'inativo') {
+                    botoesAcao = `<span class="status-badge" style="margin-right:8px;">Devolvido</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="Equipamentos.restaurarItem(${item.id}, '${safeEquip}')">🔄</button>`;
+                } else if (item.status === 'excluido') {
+                    botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--danger); color:white;">Excluído</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="Equipamentos.restaurarItem(${item.id}, '${safeEquip}')">🔄</button>`;
+                }
+
+                const tr = `<tr>
+                    <td class="col-obra"><div class="group-info"><span class="main-txt">${item.obra || '--'}</span><span class="sub-txt">Forn: ${item.fornecedor || '--'}</span></div></td>
+                    <td class="col-equip"><span class="main-txt">${badgeQtd} ${item.equipamento || '--'}</span><div style="margin-top:4px;">${alertas}</div></td>
+                    <td class="col-periodo"><div class="group-info"><span class="main-txt">${item.unidade === 'Proprio' ? Utils.formatarData(item.data_inicio) : (item.unidade || 'Mês')}</span>${item.unidade !== 'Proprio' ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${Utils.formatarData(item.data_fim)}</span>` : ''}</div></td>
+                    <td class="col-contrato"><div class="group-info"><span class="main-txt">${ctrStr}</span></div></td>
+                    <td class="col-valor"><div class="group-info"><span class="price-tag">${Utils.formatarMoeda(item.valor)}</span>${indeniz}</div></td>
+                    <td class="col-anexo">${btnAnexo}</td>
+                    <td class="col-acoes"><div class="action-buttons">${botoesAcao}</div></td>
+                </tr>`;
+                
+                if (item.status === 'excluido') arrExc.push(tr);
+                else if (item.status === 'inativo') arrHist.push(tr);
+                else if (item.unidade === 'Proprio') arrComp.push(tr);
+                else arrLoc.push(tr);
+            });
+
+            if(bLoc) bLoc.innerHTML = arrLoc.join('');
+            if(bComp) bComp.innerHTML = arrComp.join('');
+            if(bHist) bHist.innerHTML = arrHist.join('');
+            if(bExc) bExc.innerHTML = arrExc.join('');
+
+            document.querySelectorAll('.loader').forEach(e => e.style.display = 'none');
             
-            if (item.status === 'excluido') { arrExc.push(tr); }
-            else if (item.status === 'inativo') { arrHist.push(tr); } 
-            else if (item.unidade === 'Proprio') { arrComp.push(tr); } 
-            else { arrLoc.push(tr); }
-        });
+            const tbLoc = document.getElementById('tabela-locacoes'); if(tbLoc) tbLoc.style.display = arrLoc.length > 0 ? 'table' : 'none';
+            const tbComp = document.getElementById('tabela-compras'); if(tbComp) tbComp.style.display = arrComp.length > 0 ? 'table' : 'none';
+            const tbHist = document.getElementById('tabela-historico'); if(tbHist) tbHist.style.display = arrHist.length > 0 ? 'table' : 'none';
+            const tbExc = document.getElementById('tabela-excluidos'); if(tbExc) tbExc.style.display = arrExc.length > 0 ? 'table' : 'none';
 
-        if(bLoc) bLoc.innerHTML = arrLoc.join('');
-        if(bComp) bComp.innerHTML = arrComp.join('');
-        if(bHist) bHist.innerHTML = arrHist.join('');
-        if(bExc) bExc.innerHTML = arrExc.join('');
-
-        document.querySelectorAll('.loader').forEach(e => e.style.display = 'none');
-        const tbLoc = document.getElementById('tabela-locacoes'); if(tbLoc) tbLoc.style.display = arrLoc.length > 0 ? 'table' : 'none';
-        const tbComp = document.getElementById('tabela-compras'); if(tbComp) tbComp.style.display = arrComp.length > 0 ? 'table' : 'none';
-        const tbHist = document.getElementById('tabela-historico'); if(tbHist) tbHist.style.display = arrHist.length > 0 ? 'table' : 'none';
-        const tbExc = document.getElementById('tabela-excluidos'); if(tbExc) tbExc.style.display = arrExc.length > 0 ? 'table' : 'none';
-
-        const contBadge = document.getElementById('registro-contador'); 
-        if(contBadge) {
-            contBadge.innerText = `${State.dadosFiltrados.length} encontrados`;
-            if(State.dadosFiltrados.length !== State.dadosGlobais.length) contBadge.classList.add('active'); else contBadge.classList.remove('active');
+        } catch (errorRender) {
+            alert("Erro de Renderização de Tabelas: " + errorRender.message);
+            console.error(errorRender);
         }
     },
 
