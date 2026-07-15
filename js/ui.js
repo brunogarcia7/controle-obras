@@ -1,5 +1,9 @@
+let _savedCols = JSON.parse(localStorage.getItem('controle_colunas')) || {};
+// Trava de segurança: Força a exibição da coluna de ações caso o bug tenha ocultado
+if (_savedCols.acoes === false || _savedCols.acoes === undefined) _savedCols.acoes = true;
+
 const UI = {
-    colunasAtivas: JSON.parse(localStorage.getItem('controle_colunas')) || CONFIG.COLUNAS_PADRAO,
+    colunasAtivas: { ...CONFIG.COLUNAS_PADRAO, ..._savedCols },
 
     inicializarTema: () => {
         if (localStorage.getItem('controle_tema') === 'dark') { 
@@ -20,7 +24,18 @@ const UI = {
     },
 
     toggleSidebar: () => document.getElementById('sidebar').classList.toggle('collapsed'),
-    abrirModal: (id) => document.getElementById(id).style.display = 'flex',
+    
+    abrirModal: (id) => {
+        // Carrega as caixinhas marcadas corretamente antes de abrir o modal
+        if (id === 'modal-colunas') {
+            ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo', 'acoes'].forEach(key => {
+                const chk = document.getElementById(`chk-col-${key}`);
+                if (chk) chk.checked = UI.colunasAtivas[key];
+            });
+        }
+        document.getElementById(id).style.display = 'flex';
+    },
+    
     fecharModal: (id) => document.getElementById(id).style.display = 'none',
 
     mudarAba: (aba) => {
@@ -46,7 +61,8 @@ const UI = {
 
     salvarColunas: () => {
         ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo', 'acoes'].forEach(key => {
-            UI.colunasAtivas[key] = document.getElementById(`chk-col-${key}`).checked;
+            const chk = document.getElementById(`chk-col-${key}`);
+            if (chk) UI.colunasAtivas[key] = chk.checked;
         });
         localStorage.setItem('controle_colunas', JSON.stringify(UI.colunasAtivas));
         UI.aplicarEstiloColunas(); UI.fecharModal('modal-colunas'); Utils.showToast("Visualização atualizada!", "success");
@@ -105,7 +121,6 @@ const UI = {
 
                 const safeEquip = Utils.escapeStr(item.equipamento);
 
-                // GERAÇÃO REFEITA DOS BOTÕES COM DATA-ATTRIBUTES PARA TODAS AS ABAS
                 let botoesAcao = '';
                 if (item.status === 'ativo') {
                     botoesAcao += `<button class="btn-action-small" data-action="editar" data-id="${item.id}" title="Editar">✏️</button>`;
