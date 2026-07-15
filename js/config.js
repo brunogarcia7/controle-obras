@@ -7,7 +7,8 @@ const CONFIG = {
 const State = {
     dadosGlobais: [],
     dadosFiltrados: [],
-    sortColuna: 'data_inicio',
-    sortAsc: false,
-    abaAtiva: localStorage.getItem('controle_aba') || 'locacoes'
+    sortColunaAtual: 'data_inicio',
+    sortDirecaoAsc: false,
+    base64AnexoTemporario: null,
+    mimeTypeTemporario: ''
 };
