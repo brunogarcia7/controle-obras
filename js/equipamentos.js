@@ -42,7 +42,7 @@ const Equipamentos = {
         }
 
         Utils.showLoader("Cadastrando..."); const { error } = await DB.client.from('locacoes').insert([objSalvar]); Utils.hideLoader();
-        if (!error) { Utils.registrarLog('Novo Cadastro', `Item: ${equipamento}`); Utils.showToast("Salvo!", "success"); UI.fecharModal('modal-novo'); App.carregarDados(); } else { Utils.showToast("Erro.", "error"); }
+        if (!error) { Utils.registrarLog('Novo Cadastro', `Item: ${equipment}`); Utils.showToast("Salvo!", "success"); UI.fecharModal('modal-novo'); App.carregarDados(); } else { Utils.showToast("Erro.", "error"); }
     },
 
     abrirEdicao: (id) => {
@@ -66,7 +66,7 @@ const Equipamentos = {
         }
 
         Utils.showLoader("Salvando..."); const { error } = await DB.client.from('locacoes').update(objUpdate).eq('id', id); Utils.hideLoader();
-        if(!error) { Utils.registrarLog('Edição', `Atualizou o item: ${equipamento}`); UI.fecharModal('modal-editar'); Utils.showToast("Salvo com sucesso!", "success"); App.carregarDados(); } else { Utils.showToast("Erro ao salvar.", "error"); }
+        if(!error) { Utils.registrarLog('Edição', `Atualizou o item: ${equipment}`); UI.fecharModal('modal-editar'); Utils.showToast("Salvo com sucesso!", "success"); App.carregarDados(); } else { Utils.showToast("Erro ao salvar.", "error"); }
     },
 
     devolverItem: (id, equipNome) => Utils.showConfirm("Devolver Equipamento", "Deseja marcar este item como devolvido?", async () => { Utils.showLoader("Devolvendo..."); await DB.client.from('locacoes').update({ status: 'inativo' }).eq('id', id); Utils.hideLoader(); Utils.registrarLog('Devolução', `Moveu para devolvidos: ${equipNome}`); Utils.showToast("Devolvido!", "success"); App.carregarDados(); }, false),
