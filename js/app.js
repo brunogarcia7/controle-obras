@@ -1,78 +1,78 @@
 const App = {
-    init: () => {
-        UI.inicializarTema();
-        App.bindEventos();
-        App.recarregarTudo();
+    carregarFiltrosSelect: async () => {
+        const { data } = await DB.client.from('locacoes').select('obra, fornecedor');
+        if(data) {
+            const obras = [...new Set(data.map(i => i.obra))].filter(Boolean).sort();
+            const forns = [...new Set(data.map(i => i.fornecedor))].filter(Boolean).sort();
+            const selObra = document.getElementById('filtroObra'); const selForn = document.getElementById('filtroForn');
+            const listObras = document.getElementById('lista-obras'); const listForns = document.getElementById('lista-forns');
+            selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>'; selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
+            listObras.innerHTML = ''; listForns.innerHTML = ''; 
+            obras.forEach(o => { selObra.add(new Option(o, o)); listObras.appendChild(new Option(o)); });
+            forns.forEach(f => { selForn.add(new Option(f, f)); listForns.appendChild(new Option(f)); });
+
+            const savedFiltros = JSON.parse(localStorage.getItem('controle_filtros'));
+            if (savedFiltros) {
+                if ([...selObra.options].some(o => o.value === savedFiltros.obra)) selObra.value = savedFiltros.obra;
+                if ([...selForn.options].some(o => o.value === savedFiltros.forn)) selForn.value = savedFiltros.forn;
+                document.getElementById('filtroContrato').value = savedFiltros.texto || '';
+            }
+        }
     },
 
-    recarregarTudo: async () => {
+    carregarDados: async () => {
+        document.querySelectorAll('.loader').forEach(e => e.style.display = 'block');
+        await App.carregarFiltrosSelect();
         await DB.carregarDados();
-        App.aplicarFiltros();
+        const abaSalva = localStorage.getItem('controle_aba') || 'locacoes';
+        UI.mudarAba(abaSalva);
+        App.aplicarFiltrosELocalSort(); 
     },
 
-    bindEventos: () => {
-        // EVENT DELEGATION OTIMIZADO (Um único ouvinte para a tabela inteira)
-        document.getElementById('tabelas-container').addEventListener('click', e => {
-            const btn = e.target.closest('button[data-action]');
-            if(!btn) return;
-            const action = btn.dataset.action;
-            const id = btn.dataset.id;
-            const nome = btn.dataset.nome;
+    aplicarFiltrosELocalSort: () => {
+        const fObra = document.getElementById('filtroObra').value; const fForn = document.getElementById('filtroForn').value; const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
+        localStorage.setItem('controle_filtros', JSON.stringify({ obra: fObra, forn: fForn, texto: fTexto }));
 
-            if(action === 'editar') Equipamentos.abrirEdicao(id);
-            if(action === 'devolver') Equipamentos.alterarStatus(id, 'inativo', nome);
-            if(action === 'excluir') Equipamentos.alterarStatus(id, 'excluido', nome);
-            if(action === 'restaurar') Equipamentos.alterarStatus(id, 'ativo', nome);
-        });
-
-        // Filtros (Busca instantânea)
-        document.getElementById('filtroContrato').addEventListener('keyup', App.aplicarFiltros);
-    },
-
-    aplicarFiltros: () => {
-        const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
         State.dadosFiltrados = State.dadosGlobais.filter(item => {
-            if(!fTexto) return true;
-            return `${item.equipamento} ${item.contrato} ${item.fornecedor}`.toLowerCase().includes(fTexto);
+            const matchObra = fObra === 'todas' || item.obra === fObra; const matchForn = fForn === 'todos' || item.fornecedor === fForn;
+            const textoAlvo = `${item.equipamento} ${item.contrato} ${item.fornecedor} ${item.obra}`.toLowerCase();
+            const matchTexto = fTexto === '' || textoAlvo.includes(fTexto);
+            return matchObra && matchForn && matchTexto;
         });
 
-        UI.atualizarKPIs();
-        App.renderizarTabelasRapido();
+        document.getElementById('btn-limpar-filtros').style.display = (fObra !== 'todas' || fForn !== 'todos' || fTexto !== '') ? 'flex' : 'none';
+
+        State.dadosFiltrados.sort((a, b) => {
+            let valA = a[State.sortColunaAtual]; let valB = b[State.sortColunaAtual];
+            if (typeof valA === 'number' || typeof valB === 'number') { return State.sortDirecaoAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0); }
+            valA = String(valA || '').toLowerCase(); valB = String(valB || '').toLowerCase();
+            return State.sortDirecaoAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        });
+
+        App.atualizarSetasOrdenacao(); 
+        UI.renderizarTabelas(); 
+        UI.atualizarKPIsEDashboards(); 
+        UI.renderizarModuloFornecedores();
     },
 
-    renderizarTabelasRapido: () => {
-        // RENDERIZAÇÃO EM MEMÓRIA (DOM FRAGMENT STRING - 100x mais rápido)
-        let htmlTabelas = `<div class="card-table"><table class="table-modern">
-            <thead><tr>
-                <th class="col-obra">Obra/Forn</th>
-                <th class="col-equip">Equipamento</th>
-                <th class="col-periodo">Período</th>
-                <th class="col-contrato">Contrato</th>
-                <th class="col-valor">Valor (R$)</th>
-                <th class="col-anexo">Anexo</th>
-                <th class="col-acoes">Ações</th>
-            </tr></thead><tbody>`;
-        
-        State.dadosFiltrados.forEach(i => {
-            // A ordem de botões solicitada na Versão 1.8: Editar, Renovar, Devolver, Excluir Permanente
-            htmlTabelas += `<tr>
-                <td class="col-obra">${i.obra} <br><small>${i.fornecedor}</small></td>
-                <td class="col-equip"><b>${i.quantidade}x</b> ${i.equipamento}</td>
-                <td class="col-periodo">${Utils.formatarData(i.data_inicio)} até ${Utils.formatarData(i.data_fim)}</td>
-                <td class="col-contrato">${i.contrato || '--'}</td>
-                <td class="col-valor">${Utils.formatarMoeda(i.valor)}</td>
-                <td class="col-anexo">${i.anexo ? '✅ Sim' : '❌ Não'}</td>
-                <td class="col-acoes">
-                    <button data-action="editar" data-id="${i.id}" class="btn-action-small">✏️</button>
-                    <button data-action="devolver" data-id="${i.id}" data-nome="${i.equipamento}" class="btn-action-small">↩️</button>
-                    <button data-action="excluir" data-id="${i.id}" data-nome="${i.equipamento}" class="btn-action-small">🗑️</button>
-                </td>
-            </tr>`;
-        });
+    ordenarColuna: (coluna) => {
+        if (State.sortColunaAtual === coluna) { State.sortDirecaoAsc = !State.sortDirecaoAsc; } else { State.sortColunaAtual = coluna; State.sortDirecaoAsc = true; }
+        App.aplicarFiltrosELocalSort();
+    },
 
-        htmlTabelas += `</tbody></table></div>`;
-        document.getElementById('tabelas-container').innerHTML = htmlTabelas;
+    atualizarSetasOrdenacao: () => {
+        document.querySelectorAll('.sort-icon').forEach(span => span.innerText = ''); const seta = State.sortDirecaoAsc ? ' ▲' : ' ▼';
+        const idsSetas = ['sort-obra', 'sort-equipamento', 'sort-data_fim', 'sort-contrato', 'sort-valor', 'sort-comp-obra', 'sort-comp-equip', 'sort-comp-data', 'sort-comp-contrato', 'sort-comp-valor', 'sort-hist-obra', 'sort-hist-equip', 'sort-hist-data', 'sort-hist-contrato', 'sort-hist-valor', 'sort-ex-obra', 'sort-ex-equip', 'sort-ex-data', 'sort-ex-contrato', 'sort-ex-valor'];
+        idsSetas.forEach(id => { const el = document.getElementById(id); if (el && id.includes(State.sortColunaAtual)) { el.innerText = seta; } });
+    },
+
+    limparFiltros: () => {
+        document.getElementById('filtroObra').value = 'todas'; document.getElementById('filtroForn').value = 'todos'; document.getElementById('filtroContrato').value = '';
+        App.aplicarFiltrosELocalSort(); Utils.showToast("Filtros limpos!", "success");
     }
 };
 
-window.onload = App.init;
+window.onload = () => {
+    UI.inicializarTema();
+    App.carregarDados();
+};
