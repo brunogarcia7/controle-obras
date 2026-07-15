@@ -32,7 +32,7 @@ const App = {
             UI.mudarAba(abaSalva);
             App.aplicarFiltrosELocalSort(); 
         } catch (errorLoad) {
-            alert("Erro Fatal de Inicialização: " + errorLoad.message);
+            console.error(errorLoad);
         }
     },
 
@@ -73,7 +73,7 @@ const App = {
             UI.atualizarKPIsEDashboards(); 
             UI.renderizarModuloFornecedores();
         } catch (errorFilter) {
-            console.error("Erro ao aplicar filtros: ", errorFilter);
+            console.error(errorFilter);
         }
     },
 
