@@ -52,7 +52,6 @@ const UI = {
         if(!UI.colunasAtivas.contrato) css += '.col-contrato { display: none !important; } ';
         if(!UI.colunasAtivas.valor) css += '.col-valor { display: none !important; } ';
         if(!UI.colunasAtivas.anexo) css += '.col-anexo { display: none !important; } ';
-        // Removida a linha que ocultava a classe .col-acoes. Agora ela é blindada!
         document.getElementById('dynamic-columns-style').innerHTML = css;
     },
 
@@ -62,16 +61,14 @@ const UI = {
             if (chk) UI.colunasAtivas[key] = chk.checked;
         });
         localStorage.setItem('controle_colunas', JSON.stringify(UI.colunasAtivas));
-        UI.aplicarEstiloColunas(); 
-        UI.fecharModal('modal-colunas'); 
-        Utils.showToast("Visualização atualizada!", "success");
+        UI.aplicarEstiloColunas(); UI.fecharModal('modal-colunas'); Utils.showToast("Visualização atualizada!", "success");
     },
 
     renderizarLogs: () => {
         const tbody = document.getElementById('body-logs'); if(!tbody) return;
         let logs = JSON.parse(localStorage.getItem('controle_logs')) || [];
         tbody.innerHTML = '';
-        if(logs.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">Nenhum log registrado.</td></tr>'; return; }
+        if(logs.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px;">Nenhum log registrado.</td></tr>'; return; }
         logs.forEach(l => {
             let cor = l.acao.includes('Exclu') || l.acao.includes('Arquiv') ? 'var(--danger)' : l.acao.includes('Edit') || l.acao.includes('Renova') ? 'var(--warning)' : 'var(--success)';
             tbody.innerHTML += `<tr><td style="font-size:0.8rem; color:var(--text-light);">${l.data}</td><td><span style="color:${cor}; font-weight:bold; font-size:0.8rem;">${l.acao}</span></td><td style="font-size:0.85rem; font-weight:600;">${l.detalhe}</td></tr>`;
@@ -81,12 +78,8 @@ const UI = {
     atualizarKPIsEDashboards: () => {
         let t = 0, at = 0, arq = 0, forn = new Set(), cont = new Set();
         State.dadosFiltrados.forEach(i => {
-            let q = parseInt(i.quantidade) || 1; 
-            t += q;
-            if (i.status === 'ativo') { 
-                at += q; 
-                if (i.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(i.contrato)) cont.add(i.contrato); 
-            } 
+            let q = parseInt(i.quantidade) || 1; t += q;
+            if (i.status === 'ativo') { at += q; if (i.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(i.contrato)) cont.add(i.contrato); } 
             else if (i.status === 'inativo') { arq += q; }
             if (i.status !== 'excluido' && i.fornecedor && i.fornecedor !== 'Não identificado') forn.add(i.fornecedor);
         });
@@ -111,25 +104,24 @@ const UI = {
                 }
                 
                 let alertas = '';
-                if (!item.fornecedor || item.fornecedor === 'Não identificado') alertas += `<span class="smart-alert alert-yellow" title="Fornecedor ausente">⚠️ Sem Fornecedor</span>`;
-                if (item.status === 'ativo' && item.unidade !== 'Proprio' && item.data_fim && item.data_fim < hojeISO) alertas += `<span class="smart-alert alert-red" title="Vencido">🚨 Vencido</span>`;
+                if (!item.fornecedor || item.fornecedor === 'Não identificado') alertas += `<span class="smart-alert alert-yellow">⚠️ Sem Fornecedor</span>`;
+                if (item.status === 'ativo' && item.unidade !== 'Proprio' && item.data_fim && item.data_fim < hojeISO) alertas += `<span class="smart-alert alert-red">🚨 Vencido</span>`;
 
                 const badgeQtd = `<span class="qtd-badge">${item.quantidade || 1} UN</span>`;
                 const ctrStr = item.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(item.contrato) ? `<span class="highlight-txt">${item.contrato}</span>` : '--';
                 const indeniz = item.valor_indenizacao && item.valor_indenizacao > 0 ? `<br><div class="indeniz-tag">Indenização: ${Utils.formatarMoeda(item.valor_indenizacao)}</div>` : '';
-
                 const safeEquip = Utils.escapeStr(item.equipamento);
 
                 let botoesAcao = '';
                 if (item.status === 'ativo') {
-                    botoesAcao += `<button class="btn-action-small" data-action="editar" data-id="${item.id}" title="Editar">✏️</button>`;
-                    if (item.unidade !== 'Proprio') botoesAcao += `<button class="btn-action-small" data-action="renovar" data-id="${item.id}" data-fim="${item.data_fim}" data-uni="${item.unidade}" title="Renovar">🔄</button>`;
-                    botoesAcao += `<button class="btn-action-small" data-action="devolver" data-id="${item.id}" data-nome="${safeEquip}" title="Devolver (Histórico)">↩️</button>`;
-                    botoesAcao += `<button class="btn-action-small" data-action="excluir" data-id="${item.id}" data-nome="${safeEquip}" title="Excluir Permanente">🗑️</button>`;
+                    botoesAcao += `<button class="btn-action-small" data-action="editar" data-id="${item.id}">✏️</button>`;
+                    if (item.unidade !== 'Proprio') botoesAcao += `<button class="btn-action-small" data-action="renovar" data-id="${item.id}" data-fim="${item.data_fim}" data-uni="${item.unidade}">🔄</button>`;
+                    botoesAcao += `<button class="btn-action-small" data-action="devolver" data-id="${item.id}" data-nome="${safeEquip}">↩️</button>`;
+                    botoesAcao += `<button class="btn-action-small" data-action="excluir" data-id="${item.id}" data-nome="${safeEquip}">🗑️</button>`;
                 } else if (item.status === 'inativo') {
-                    botoesAcao = `<span class="status-badge" style="margin-right:8px;">Devolvido</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Restaurar para Ativos">🔄</button>`;
+                    botoesAcao = `<span class="status-badge" style="margin-right:8px;">Devolvido</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}">🔄</button>`;
                 } else if (item.status === 'excluido') {
-                    botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--danger); color:white;">Excluído</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Restaurar para Ativos">🔄</button>`;
+                    botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--danger); color:white;">Excluído</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}">🔄</button>`;
                 }
 
                 const tr = `<tr>
@@ -154,14 +146,13 @@ const UI = {
             if(bExc) bExc.innerHTML = arrExc.join('');
 
             document.querySelectorAll('.loader').forEach(e => e.style.display = 'none');
-            
             const tbLoc = document.getElementById('tabela-locacoes'); if(tbLoc) tbLoc.style.display = arrLoc.length > 0 ? 'table' : 'none';
             const tbComp = document.getElementById('tabela-compras'); if(tbComp) tbComp.style.display = arrComp.length > 0 ? 'table' : 'none';
             const tbHist = document.getElementById('tabela-historico'); if(tbHist) tbHist.style.display = arrHist.length > 0 ? 'table' : 'none';
             const tbExc = document.getElementById('tabela-excluidos'); if(tbExc) tbExc.style.display = arrExc.length > 0 ? 'table' : 'none';
 
         } catch (errorRender) {
-            console.error("Erro de Renderização de Tabelas: ", errorRender);
+            console.error(errorRender);
         }
     },
 
@@ -174,9 +165,8 @@ const UI = {
         });
         Object.keys(contagemForns).sort((a, b) => a.localeCompare(b)).forEach(forn => {
             const safeForn = Utils.escapeStr(forn);
-            bodyForn.innerHTML += `<tr><td class="col-obra"><span class="main-txt">${forn}</span></td><td class="col-equip"><span class="status-badge highlight">${contagemForns[forn]} equipamentos</span></td><td class="col-acoes"><div class="action-buttons"><button class="btn-action-small" data-action="renomear-forn" data-nome="${safeForn}" title="Renomear">✏️</button><button class="btn-action-small" data-action="mesclar-forn" data-nome="${safeForn}" title="Mesclar">🔗</button></div></td></tr>`;
+            bodyForn.innerHTML += `<tr><td class="col-obra"><span class="main-txt">${forn}</span></td><td class="col-equip"><span class="status-badge highlight">${contagemForns[forn]} ativos</span></td><td class="col-acoes"><div class="action-buttons"><button class="btn-action-small" data-action="renomear-forn" data-nome="${safeForn}">✏️</button><button class="btn-action-small" data-action="mesclar-forn" data-nome="${safeForn}">🔗</button></div></td></tr>`;
         });
-        const tbForn = document.getElementById('tabela-fornecedores');
-        if(tbForn) tbForn.style.display = Object.keys(contagemForns).length > 0 ? 'table' : 'none';
+        const tbForn = document.getElementById('tabela-fornecedores'); if(tbForn) tbForn.style.display = Object.keys(contagemForns).length > 0 ? 'table' : 'none';
     }
 };
