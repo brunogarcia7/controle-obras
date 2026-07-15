@@ -93,7 +93,8 @@ const App = {
         App.aplicarFiltrosELocalSort(); Utils.showToast("Filtros limpos!", "success");
     },
 
-    bindEvents: () => {
+    // O "Ouvido Global" que faz todos os botões da tela funcionarem
+    bindEventos: () => {
         document.body.addEventListener('click', (e) => {
             const btn = e.target.closest('.btn-action-small');
             if (!btn) return;
@@ -107,12 +108,14 @@ const App = {
             if (action === 'excluir') Equipamentos.excluirPermanenteItem(id, nome);
             if (action === 'restaurar') Equipamentos.restaurarItem(id, nome);
             if (action === 'renovar') Equipamentos.renovarItem(id, btn.dataset.fim, btn.dataset.uni);
+            if (action === 'renomear-forn') Equipamentos.abrirRenomearForn(nome);
+            if (action === 'mesclar-forn') Equipamentos.abrirMesclarForn(nome);
         });
     }
 };
 
 window.onload = () => {
     UI.inicializarTema();
-    App.bindEvents();
+    App.bindEventos();
     App.carregarDados();
 };
