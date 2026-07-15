@@ -73,7 +73,7 @@ const App = {
             UI.atualizarKPIsEDashboards(); 
             UI.renderizarModuloFornecedores();
         } catch (errorFilter) {
-            alert("Erro ao aplicar filtros: " + errorFilter.message);
+            console.error("Erro ao aplicar filtros: ", errorFilter);
         }
     },
 
@@ -91,10 +91,28 @@ const App = {
     limparFiltros: () => {
         document.getElementById('filtroObra').value = 'todas'; document.getElementById('filtroForn').value = 'todos'; document.getElementById('filtroContrato').value = '';
         App.aplicarFiltrosELocalSort(); Utils.showToast("Filtros limpos!", "success");
+    },
+
+    bindEvents: () => {
+        document.body.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-action-small');
+            if (!btn) return;
+            
+            const action = btn.dataset.action;
+            const id = btn.dataset.id;
+            const nome = btn.dataset.nome;
+
+            if (action === 'editar') Equipamentos.abrirEdicao(id);
+            if (action === 'devolver') Equipamentos.devolverItem(id, nome);
+            if (action === 'excluir') Equipamentos.excluirPermanenteItem(id, nome);
+            if (action === 'restaurar') Equipamentos.restaurarItem(id, nome);
+            if (action === 'renovar') Equipamentos.renovarItem(id, btn.dataset.fim, btn.dataset.uni);
+        });
     }
 };
 
 window.onload = () => {
     UI.inicializarTema();
+    App.bindEvents();
     App.carregarDados();
 };
