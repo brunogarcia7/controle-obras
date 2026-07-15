@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Obras - Painel Web</title>
+    <title>⛏️ Gestão de Equipamentos</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -122,13 +122,15 @@
         .btn-action-small { background: var(--row-even); border: 1px solid var(--border); color: var(--text-light); border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
         .btn-action-small:hover { transform: scale(1.05); filter: brightness(0.9); }
 
-        /* IMPRESSÃO CORPORATIVA */
+        /* IMPRESSÃO CORPORATIVA OTIMIZADA */
         #print-header { display: none; }
         @media print {
             @page { size: A4 landscape; margin: 15mm; }
             body { background: white; color: black; -webkit-print-color-adjust: exact; }
             .sidebar, .top-controls, .dashboard-grid, .btn-anexo, .action-buttons, th.col-acoes, td.col-acoes, th.col-anexo, td.col-anexo { display: none !important; }
+            
             #secao-sistema { display: none !important; }
+            
             #print-header { display: block !important; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; }
             .main-content { padding: 0; margin: 0; width: 100%; }
             .card-table { box-shadow: none; border: none; padding: 0; margin: 0; max-height: none; overflow: visible; background: white;}
@@ -142,6 +144,7 @@
             #tabela-locacoes[style*="display: none"], #tabela-compras[style*="display: none"], #tabela-historico[style*="display: none"], #tabela-fornecedores[style*="display: none"], #tabela-excluidos[style*="display: none"] { display: none !important; }
         }
 
+        /* MODAIS E TOASTS */
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { min-width: 280px; padding: 15px 20px; border-radius: 8px; background: var(--white); color: var(--text); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.9rem; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-left: 5px solid; }
         .toast.show { transform: translateX(0); }
@@ -247,9 +250,11 @@
                 <div class="kpi-card" style="border-left: 4px solid #6366f1;"><span class="kpi-title">Fornecedores</span><span class="kpi-value" id="kpi-fornecedores">0</span></div>
             </div>
 
+            <!-- LOCAÇÕES ATIVAS -->
             <div id="secao-locacoes" class="secao-tabela animate-show">
                 <div class="card-table">
                     <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
+                    <div id="loader-loc" class="loader" style="display:none;"></div>
                     <table class="table-modern" id="tabela-locacoes" style="display:none;">
                         <thead>
                             <tr>
@@ -267,9 +272,11 @@
                 </div>
             </div>
 
+            <!-- PATRIMÔNIO -->
             <div id="secao-compras" class="secao-tabela">
                 <div class="card-table">
                     <h3 style="color: var(--success);">🛒 Ferramentas Próprias (Patrimônio)</h3>
+                    <div id="loader-comp" class="loader" style="display:none;"></div>
                     <table class="table-modern" id="tabela-compras" style="display:none;">
                         <thead>
                             <tr>
@@ -287,6 +294,7 @@
                 </div>
             </div>
 
+            <!-- FORNECEDORES -->
             <div id="secao-fornecedores" class="secao-tabela">
                 <div class="card-table">
                     <h3 style="color: #6366f1;">🏢 Gestão de Fornecedores e Locadoras</h3>
@@ -297,10 +305,12 @@
                 </div>
             </div>
 
+            <!-- EQUIPAMENTOS DEVOLVIDOS (INATIVOS) -->
             <div id="secao-historico" class="secao-tabela">
                 <div class="card-table">
                     <h3 style="color: var(--text-light);">↩️ Equipamentos Devolvidos (Histórico)</h3>
                     <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px; margin-top: -10px;">Apenas locações encerradas e equipamentos devolvidos.</p>
+                    <div id="loader-hist" class="loader" style="display:none;"></div>
                     <table class="table-modern" id="tabela-historico" style="display:none;">
                         <thead>
                             <tr>
@@ -318,10 +328,12 @@
                 </div>
             </div>
 
+            <!-- ITENS EXCLUÍDOS PERMANENTE -->
             <div id="secao-excluidos" class="secao-tabela">
                 <div class="card-table">
                     <h3 style="color: var(--danger);">🗑️ Itens Excluídos Permanentemente</h3>
                     <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px; margin-top: -10px;">Equipamentos descartados ou removidos por erro. Os dados continuam armazenados para auditoria.</p>
+                    <div id="loader-excluidos" class="loader" style="display:none;"></div>
                     <table class="table-modern" id="tabela-excluidos" style="display:none;">
                         <thead>
                             <tr>
@@ -339,6 +351,7 @@
                 </div>
             </div>
 
+            <!-- SISTEMA & BACKUP -->
             <div id="secao-sistema" class="secao-tabela">
                 <div class="backup-card-grid">
                     <div class="backup-box">
@@ -389,6 +402,7 @@
         </div>
     </div>
 
+    <!-- MODAL DE COLUNAS PERSONALIZADAS -->
     <div class="modal-overlay" id="modal-colunas">
         <div class="modal-box" style="max-width: 350px;">
             <h3>⚙️ Personalizar Colunas</h3>
@@ -408,6 +422,7 @@
         </div>
     </div>
 
+    <!-- MODAL EDITAR COM OPÇÃO DE SUBSTITUIR ANEXO/PDF -->
     <div class="modal-overlay" id="modal-editar">
         <div class="modal-box">
             <h3>✏️ Editar Equipamento</h3>
@@ -447,6 +462,7 @@
         </div>
     </div>
 
+    <!-- MODAL NOVO EQUIPAMENTO -->
     <div class="modal-overlay" id="modal-novo">
         <div class="modal-box">
             <h3>➕ Adicionar Novo Equipamento</h3>
@@ -487,9 +503,11 @@
         </div>
     </div>
 
+    <!-- MODAIS DE FORNECEDOR -->
     <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-renomear-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarRenomearForn()">Atualizar</button></div></div></div>
     <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-mesclar-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarMesclarForn()">Mesclar</button></div></div></div>
 
+    <!-- SCRIPTS MODULARES -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/database.js"></script>
