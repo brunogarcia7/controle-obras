@@ -2,14 +2,14 @@ const DB = {
     client: supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY),
     
     carregarDados: async () => {
-        Utils.showLoader('A carregar base de dados...');
+        Utils.showLoader('Conectando ao banco...');
         try {
             const { data, error } = await DB.client.from('locacoes').select('*');
             if (error) throw error;
             State.dadosGlobais = data || [];
         } catch (err) {
             Utils.showToast("Erro ao conectar no banco.", "error");
-            console.error(err);
+            alert("Erro Supabase: " + err.message);
         } finally {
             Utils.hideLoader();
         }
