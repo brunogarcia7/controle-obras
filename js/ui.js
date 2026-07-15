@@ -56,7 +56,7 @@ const UI = {
         const tbody = document.getElementById('body-logs'); if(!tbody) return;
         let logs = JSON.parse(localStorage.getItem('controle_logs')) || [];
         tbody.innerHTML = '';
-        if(logs.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">Nenhum log.</td></tr>'; return; }
+        if(logs.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">Nenhum log registrado.</td></tr>'; return; }
         logs.forEach(l => {
             let cor = l.acao.includes('Exclu') || l.acao.includes('Arquiv') ? 'var(--danger)' : l.acao.includes('Edit') || l.acao.includes('Renova') ? 'var(--warning)' : 'var(--success)';
             tbody.innerHTML += `<tr><td style="font-size:0.8rem; color:var(--text-light);">${l.data}</td><td><span style="color:${cor}; font-weight:bold; font-size:0.8rem;">${l.acao}</span></td><td style="font-size:0.85rem; font-weight:600;">${l.detalhe}</td></tr>`;
@@ -65,7 +65,7 @@ const UI = {
 
     atualizarKPIsEDashboards: () => {
         let t = 0, at = 0, arq = 0, forn = new Set(), cont = new Set();
-        State.dadosGlobais.forEach(i => {
+        State.dadosFiltrados.forEach(i => {
             let q = parseInt(i.quantidade) || 1; 
             t += q;
             if (i.status === 'ativo') { 
@@ -105,6 +105,7 @@ const UI = {
 
                 const safeEquip = Utils.escapeStr(item.equipamento);
 
+                // GERAÇÃO REFEITA DOS BOTÕES COM DATA-ATTRIBUTES PARA TODAS AS ABAS
                 let botoesAcao = '';
                 if (item.status === 'ativo') {
                     botoesAcao += `<button class="btn-action-small" data-action="editar" data-id="${item.id}" title="Editar">✏️</button>`;
@@ -112,9 +113,9 @@ const UI = {
                     botoesAcao += `<button class="btn-action-small" data-action="devolver" data-id="${item.id}" data-nome="${safeEquip}" title="Devolver (Histórico)">↩️</button>`;
                     botoesAcao += `<button class="btn-action-small" data-action="excluir" data-id="${item.id}" data-nome="${safeEquip}" title="Excluir Permanente">🗑️</button>`;
                 } else if (item.status === 'inativo') {
-                    botoesAcao = `<span class="status-badge" style="margin-right:8px;">Devolvido</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Restaurar">🔄</button>`;
+                    botoesAcao = `<span class="status-badge" style="margin-right:8px;">Devolvido</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Restaurar para Ativos">🔄</button>`;
                 } else if (item.status === 'excluido') {
-                    botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--danger); color:white;">Excluído</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Restaurar">🔄</button>`;
+                    botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--danger); color:white;">Excluído</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Restaurar para Ativos">🔄</button>`;
                 }
 
                 const tr = `<tr>
@@ -159,7 +160,7 @@ const UI = {
         });
         Object.keys(contagemForns).sort((a, b) => a.localeCompare(b)).forEach(forn => {
             const safeForn = Utils.escapeStr(forn);
-            bodyForn.innerHTML += `<tr><td class="col-obra"><span class="main-txt">${forn}</span></td><td class="col-equip"><span class="status-badge highlight">${contagemForns[forn]} equipamentos</span></td><td class="col-acoes"><div class="action-buttons"><button class="btn-action-small btn-editar" title="Renomear" data-action="renomear-forn" data-nome="${safeForn}">✏️</button><button class="btn-action-small btn-renovar" title="Mesclar" data-action="mesclar-forn" data-nome="${safeForn}">🔗</button></div></td></tr>`;
+            bodyForn.innerHTML += `<tr><td class="col-obra"><span class="main-txt">${forn}</span></td><td class="col-equip"><span class="status-badge highlight">${contagemForns[forn]} equipamentos</span></td><td class="col-acoes"><div class="action-buttons"><button class="btn-action-small" data-action="renomear-forn" data-nome="${safeForn}" title="Renomear">✏️</button><button class="btn-action-small" data-action="mesclar-forn" data-nome="${safeForn}" title="Mesclar">🔗</button></div></td></tr>`;
         });
         const tbForn = document.getElementById('tabela-fornecedores');
         if(tbForn) tbForn.style.display = Object.keys(contagemForns).length > 0 ? 'table' : 'none';
