@@ -4,8 +4,7 @@ const UI = {
     inicializarTema: () => {
         if (localStorage.getItem('controle_tema') === 'dark') { 
             document.documentElement.setAttribute('data-theme', 'dark'); 
-            document.getElementById('tema-icone').innerText = '☀️'; 
-            document.getElementById('tema-texto').innerText = 'Modo Claro'; 
+            document.getElementById('tema-icone').innerText = '☀️'; document.getElementById('tema-texto').innerText = 'Modo Claro'; 
         }
         UI.aplicarEstiloColunas();
     },
@@ -80,9 +79,9 @@ const UI = {
     renderizarTabelas: () => {
         const bLoc = document.getElementById('body-locacoes'); const bComp = document.getElementById('body-compras'); 
         const bHist = document.getElementById('body-historico'); const bExc = document.getElementById('body-excluidos');
-        bLoc.innerHTML = ''; bComp.innerHTML = ''; bHist.innerHTML = ''; bExc.innerHTML = '';
         
-        let cLoc = 0, cComp = 0, cHist = 0, cExc = 0;
+        // Renderização ultra-rápida na memória
+        let arrLoc = [], arrComp = [], arrHist = [], arrExc = [];
         const hojeISO = new Date().toISOString().split('T')[0];
 
         State.dadosFiltrados.forEach(item => {
@@ -100,16 +99,19 @@ const UI = {
             const ctrStr = item.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(item.contrato) ? `<span class="highlight-txt">${item.contrato}</span>` : '--';
             const indeniz = item.valor_indenizacao && item.valor_indenizacao > 0 ? `<br><div class="indeniz-tag">Indenização: ${Utils.formatarMoeda(item.valor_indenizacao)}</div>` : '';
 
+            // Limpa o nome para não bugar botões
+            const safeEquip = (item.equipamento || '').replace(/'/g, "\\'");
+
             let botoesAcao = '';
             if (item.status === 'ativo') {
                 botoesAcao += `<button class="btn-action-small btn-editar" title="Editar" onclick="Equipamentos.abrirEdicao(${item.id})">✏️</button>`;
                 if (item.unidade !== 'Proprio') botoesAcao += `<button class="btn-action-small btn-renovar" title="Renovar" onclick="Equipamentos.renovarItem(${item.id}, '${item.data_fim}', '${item.unidade}')">🔄</button>`;
-                botoesAcao += `<button class="btn-action-small btn-desfazer" title="Devolver (Histórico)" onclick="Equipamentos.devolverItem(${item.id}, '${item.equipamento}')">↩️</button>`;
-                botoesAcao += `<button class="btn-action-small btn-delete" title="Excluir Permanente" onclick="Equipamentos.excluirPermanenteItem(${item.id}, '${item.equipamento}')">🗑️</button>`;
+                botoesAcao += `<button class="btn-action-small btn-desfazer" title="Devolver (Histórico)" onclick="Equipamentos.devolverItem(${item.id}, '${safeEquip}')">↩️</button>`;
+                botoesAcao += `<button class="btn-action-small btn-delete" title="Excluir Permanente" onclick="Equipamentos.excluirPermanenteItem(${item.id}, '${safeEquip}')">🗑️</button>`;
             } else if (item.status === 'inativo') {
-                botoesAcao = `<span class="status-badge" style="margin-right:8px;">Devolvido</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="Equipamentos.restaurarItem(${item.id}, '${item.equipamento}')">🔄</button>`;
+                botoesAcao = `<span class="status-badge" style="margin-right:8px;">Devolvido</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="Equipamentos.restaurarItem(${item.id}, '${safeEquip}')">🔄</button>`;
             } else if (item.status === 'excluido') {
-                botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--danger); color:white;">Excluído</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="Equipamentos.restaurarItem(${item.id}, '${item.equipamento}')">🔄</button>`;
+                botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--danger); color:white;">Excluído</span> <button class="btn-action-small btn-desfazer" title="Restaurar" onclick="Equipamentos.restaurarItem(${item.id}, '${safeEquip}')">🔄</button>`;
             }
 
             const tr = `<tr>
@@ -122,23 +124,34 @@ const UI = {
                 <td class="col-acoes"><div class="action-buttons">${botoesAcao}</div></td>
             </tr>`;
             
-            if (item.status === 'excluido') { bExc.innerHTML += tr; cExc++; }
-            else if (item.status === 'inativo') { bHist.innerHTML += tr; cHist++; } 
-            else if (item.unidade === 'Proprio') { bComp.innerHTML += tr; cComp++; } 
-            else { bLoc.innerHTML += tr; cLoc++; }
+            if (item.status === 'excluido') { arrExc.push(tr); }
+            else if (item.status === 'inativo') { arrHist.push(tr); } 
+            else if (item.unidade === 'Proprio') { arrComp.push(tr); } 
+            else { arrLoc.push(tr); }
         });
 
-        document.getElementById('tabela-locacoes').style.display = cLoc > 0 ? 'table' : 'none';
-        document.getElementById('tabela-compras').style.display = cComp > 0 ? 'table' : 'none';
-        document.getElementById('tabela-historico').style.display = cHist > 0 ? 'table' : 'none';
-        document.getElementById('tabela-excluidos').style.display = cExc > 0 ? 'table' : 'none';
+        // Despeja tudo na tela de uma vez só (super leve e rápido)
+        if(bLoc) bLoc.innerHTML = arrLoc.join('');
+        if(bComp) bComp.innerHTML = arrComp.join('');
+        if(bHist) bHist.innerHTML = arrHist.join('');
+        if(bExc) bExc.innerHTML = arrExc.join('');
 
-        const contBadge = document.getElementById('registro-contador'); contBadge.innerText = `${State.dadosFiltrados.length} registros`;
-        if(State.dadosFiltrados.length !== State.dadosGlobais.length) contBadge.classList.add('active'); else contBadge.classList.remove('active');
+        document.querySelectorAll('.loader').forEach(e => e.style.display = 'none');
+        const tbLoc = document.getElementById('tabela-locacoes'); if(tbLoc) tbLoc.style.display = arrLoc.length > 0 ? 'table' : 'none';
+        const tbComp = document.getElementById('tabela-compras'); if(tbComp) tbComp.style.display = arrComp.length > 0 ? 'table' : 'none';
+        const tbHist = document.getElementById('tabela-historico'); if(tbHist) tbHist.style.display = arrHist.length > 0 ? 'table' : 'none';
+        const tbExc = document.getElementById('tabela-excluidos'); if(tbExc) tbExc.style.display = arrExc.length > 0 ? 'table' : 'none';
+
+        const contBadge = document.getElementById('registro-contador'); 
+        if(contBadge) {
+            contBadge.innerText = `${State.dadosFiltrados.length} registros`;
+            if(State.dadosFiltrados.length !== State.dadosGlobais.length) contBadge.classList.add('active'); else contBadge.classList.remove('active');
+        }
     },
 
     renderizarModuloFornecedores: () => {
-        const bodyForn = document.getElementById('body-fornecedores'); bodyForn.innerHTML = '';
+        const bodyForn = document.getElementById('body-fornecedores'); if(!bodyForn) return;
+        bodyForn.innerHTML = '';
         let contagemForns = {}; 
         State.dadosFiltrados.forEach(item => { 
             if(item.status === 'ativo') { let f = item.fornecedor || 'Não identificado'; contagemForns[f] = (contagemForns[f] || 0) + 1; }
@@ -146,6 +159,7 @@ const UI = {
         Object.keys(contagemForns).sort((a, b) => a.localeCompare(b)).forEach(forn => {
             bodyForn.innerHTML += `<tr><td class="col-obra"><span class="main-txt">${forn}</span></td><td class="col-equip"><span class="status-badge highlight">${contagemForns[forn]} equipamentos</span></td><td class="col-acoes"><div class="action-buttons"><button class="btn-action-small btn-editar" title="Renomear" onclick="Equipamentos.abrirRenomearForn('${forn}')">✏️</button><button class="btn-action-small btn-renovar" title="Mesclar" onclick="Equipamentos.abrirMesclarForn('${forn}')">🔗</button></div></td></tr>`;
         });
-        document.getElementById('tabela-fornecedores').style.display = Object.keys(contagemForns).length > 0 ? 'table' : 'none';
+        const tbForn = document.getElementById('tabela-fornecedores');
+        if(tbForn) tbForn.style.display = Object.keys(contagemForns).length > 0 ? 'table' : 'none';
     }
 };
