@@ -65,11 +65,15 @@ const UI = {
 
     atualizarKPIsEDashboards: () => {
         let t = 0, at = 0, arq = 0, forn = new Set(), cont = new Set();
-        State.dadosGlobais.forEach(i => {
-            let q = parseInt(i.quantidade) || 1; t += q;
-            if (i.status === 'ativo') { at += q; if (i.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(i.contrato)) cont.add(i.contrato); } 
+        State.dadosFiltrados.forEach(i => {
+            let q = parseInt(i.quantidade) || 1; 
+            t += q;
+            if (i.status === 'ativo') { 
+                at += q; 
+                if (i.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(i.contrato)) cont.add(i.contrato); 
+            } 
             else if (i.status === 'inativo') { arq += q; }
-            if (i.status !== 'excluido' && i.fornecedor) forn.add(i.fornecedor);
+            if (i.status !== 'excluido' && i.fornecedor && i.fornecedor !== 'Não identificado') forn.add(i.fornecedor);
         });
         document.getElementById('kpi-total').innerText = t; document.getElementById('kpi-ativos').innerText = at;
         document.getElementById('kpi-arquivados').innerText = arq; document.getElementById('kpi-contratos').innerText = cont.size; 
@@ -80,7 +84,6 @@ const UI = {
         const bLoc = document.getElementById('body-locacoes'); const bComp = document.getElementById('body-compras'); 
         const bHist = document.getElementById('body-historico'); const bExc = document.getElementById('body-excluidos');
         
-        // Renderização ultra-rápida na memória
         let arrLoc = [], arrComp = [], arrHist = [], arrExc = [];
         const hojeISO = new Date().toISOString().split('T')[0];
 
@@ -99,8 +102,7 @@ const UI = {
             const ctrStr = item.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(item.contrato) ? `<span class="highlight-txt">${item.contrato}</span>` : '--';
             const indeniz = item.valor_indenizacao && item.valor_indenizacao > 0 ? `<br><div class="indeniz-tag">Indenização: ${Utils.formatarMoeda(item.valor_indenizacao)}</div>` : '';
 
-            // Limpa o nome para não bugar botões
-            const safeEquip = (item.equipamento || '').replace(/'/g, "\\'");
+            const safeEquip = Utils.escapeStr(item.equipamento);
 
             let botoesAcao = '';
             if (item.status === 'ativo') {
@@ -130,7 +132,6 @@ const UI = {
             else { arrLoc.push(tr); }
         });
 
-        // Despeja tudo na tela de uma vez só (super leve e rápido)
         if(bLoc) bLoc.innerHTML = arrLoc.join('');
         if(bComp) bComp.innerHTML = arrComp.join('');
         if(bHist) bHist.innerHTML = arrHist.join('');
@@ -144,7 +145,7 @@ const UI = {
 
         const contBadge = document.getElementById('registro-contador'); 
         if(contBadge) {
-            contBadge.innerText = `${State.dadosFiltrados.length} registros`;
+            contBadge.innerText = `${State.dadosFiltrados.length} encontrados`;
             if(State.dadosFiltrados.length !== State.dadosGlobais.length) contBadge.classList.add('active'); else contBadge.classList.remove('active');
         }
     },
@@ -157,7 +158,8 @@ const UI = {
             if(item.status === 'ativo') { let f = item.fornecedor || 'Não identificado'; contagemForns[f] = (contagemForns[f] || 0) + 1; }
         });
         Object.keys(contagemForns).sort((a, b) => a.localeCompare(b)).forEach(forn => {
-            bodyForn.innerHTML += `<tr><td class="col-obra"><span class="main-txt">${forn}</span></td><td class="col-equip"><span class="status-badge highlight">${contagemForns[forn]} equipamentos</span></td><td class="col-acoes"><div class="action-buttons"><button class="btn-action-small btn-editar" title="Renomear" onclick="Equipamentos.abrirRenomearForn('${forn}')">✏️</button><button class="btn-action-small btn-renovar" title="Mesclar" onclick="Equipamentos.abrirMesclarForn('${forn}')">🔗</button></div></td></tr>`;
+            const safeForn = Utils.escapeStr(forn);
+            bodyForn.innerHTML += `<tr><td class="col-obra"><span class="main-txt">${forn}</span></td><td class="col-equip"><span class="status-badge highlight">${contagemForns[forn]} equipamentos</span></td><td class="col-acoes"><div class="action-buttons"><button class="btn-action-small btn-editar" title="Renomear" onclick="Equipamentos.abrirRenomearForn('${safeForn}')">✏️</button><button class="btn-action-small btn-renovar" title="Mesclar" onclick="Equipamentos.abrirMesclarForn('${safeForn}')">🔗</button></div></td></tr>`;
         });
         const tbForn = document.getElementById('tabela-fornecedores');
         if(tbForn) tbForn.style.display = Object.keys(contagemForns).length > 0 ? 'table' : 'none';
