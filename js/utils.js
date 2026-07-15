@@ -2,7 +2,6 @@ const Utils = {
     formatarData: (d) => d ? d.split('-').reverse().join('/') : '--',
     formatarMoeda: (v) => parseFloat(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
     
-    // Protege o código contra aspas inseridas pelo usuário
     escapeStr: (str) => {
         if (str === null || str === undefined) return '';
         return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
@@ -16,8 +15,16 @@ const Utils = {
         setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
     },
 
-    showLoader: (msg = 'Processando...') => { document.getElementById('global-loader-msg').innerText = msg; document.getElementById('global-loader').style.display = 'flex'; },
-    hideLoader: () => { document.getElementById('global-loader').style.display = 'none'; },
+    showLoader: (msg = 'Processando...') => { 
+        const el = document.getElementById('global-loader-msg');
+        if(el) el.innerText = msg; 
+        const loader = document.getElementById('global-loader');
+        if(loader) loader.style.display = 'flex'; 
+    },
+    hideLoader: () => { 
+        const loader = document.getElementById('global-loader');
+        if(loader) loader.style.display = 'none'; 
+    },
 
     confirmCallbackAction: null,
     showConfirm: (title, message, onConfirm, isDanger = false) => {
