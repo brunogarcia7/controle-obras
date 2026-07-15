@@ -1,6 +1,4 @@
 let _savedCols = JSON.parse(localStorage.getItem('controle_colunas')) || {};
-// Trava de segurança: Força a exibição da coluna de ações caso o bug tenha ocultado
-if (_savedCols.acoes === false || _savedCols.acoes === undefined) _savedCols.acoes = true;
 
 const UI = {
     colunasAtivas: { ...CONFIG.COLUNAS_PADRAO, ..._savedCols },
@@ -26,11 +24,10 @@ const UI = {
     toggleSidebar: () => document.getElementById('sidebar').classList.toggle('collapsed'),
     
     abrirModal: (id) => {
-        // Carrega as caixinhas marcadas corretamente antes de abrir o modal
         if (id === 'modal-colunas') {
-            ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo', 'acoes'].forEach(key => {
+            ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo'].forEach(key => {
                 const chk = document.getElementById(`chk-col-${key}`);
-                if (chk) chk.checked = UI.colunasAtivas[key];
+                if (chk) chk.checked = UI.colunasAtivas[key] !== false;
             });
         }
         document.getElementById(id).style.display = 'flex';
@@ -55,17 +52,19 @@ const UI = {
         if(!UI.colunasAtivas.contrato) css += '.col-contrato { display: none !important; } ';
         if(!UI.colunasAtivas.valor) css += '.col-valor { display: none !important; } ';
         if(!UI.colunasAtivas.anexo) css += '.col-anexo { display: none !important; } ';
-        if(!UI.colunasAtivas.acoes) css += '.col-acoes { display: none !important; } ';
+        // Removida a linha que ocultava a classe .col-acoes. Agora ela é blindada!
         document.getElementById('dynamic-columns-style').innerHTML = css;
     },
 
     salvarColunas: () => {
-        ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo', 'acoes'].forEach(key => {
+        ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo'].forEach(key => {
             const chk = document.getElementById(`chk-col-${key}`);
             if (chk) UI.colunasAtivas[key] = chk.checked;
         });
         localStorage.setItem('controle_colunas', JSON.stringify(UI.colunasAtivas));
-        UI.aplicarEstiloColunas(); UI.fecharModal('modal-colunas'); Utils.showToast("Visualização atualizada!", "success");
+        UI.aplicarEstiloColunas(); 
+        UI.fecharModal('modal-colunas'); 
+        Utils.showToast("Visualização atualizada!", "success");
     },
 
     renderizarLogs: () => {
