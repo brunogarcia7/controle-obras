@@ -6,54 +6,75 @@ const App = {
             const forns = [...new Set(data.map(i => i.fornecedor))].filter(Boolean).sort();
             const selObra = document.getElementById('filtroObra'); const selForn = document.getElementById('filtroForn');
             const listObras = document.getElementById('lista-obras'); const listForns = document.getElementById('lista-forns');
-            selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>'; selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
-            listObras.innerHTML = ''; listForns.innerHTML = ''; 
-            obras.forEach(o => { selObra.add(new Option(o, o)); listObras.appendChild(new Option(o)); });
-            forns.forEach(f => { selForn.add(new Option(f, f)); listForns.appendChild(new Option(f)); });
+            
+            if(selObra && selForn) {
+                selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>'; 
+                selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
+                obras.forEach(o => { selObra.add(new Option(o, o)); if(listObras) listObras.appendChild(new Option(o)); });
+                forns.forEach(f => { selForn.add(new Option(f, f)); if(listForns) listForns.appendChild(new Option(f)); });
+            }
 
             const savedFiltros = JSON.parse(localStorage.getItem('controle_filtros'));
             if (savedFiltros) {
-                if ([...selObra.options].some(o => o.value === savedFiltros.obra)) selObra.value = savedFiltros.obra;
-                if ([...selForn.options].some(o => o.value === savedFiltros.forn)) selForn.value = savedFiltros.forn;
-                document.getElementById('filtroContrato').value = savedFiltros.texto || '';
+                if (selObra && [...selObra.options].some(o => o.value === savedFiltros.obra)) selObra.value = savedFiltros.obra;
+                if (selForn && [...selForn.options].some(o => o.value === savedFiltros.forn)) selForn.value = savedFiltros.forn;
+                const fieldContrato = document.getElementById('filtroContrato');
+                if(fieldContrato) fieldContrato.value = savedFiltros.texto || '';
             }
         }
     },
 
     carregarDados: async () => {
-        document.querySelectorAll('.loader').forEach(e => e.style.display = 'block');
-        await App.carregarFiltrosSelect();
-        await DB.carregarDados();
-        const abaSalva = localStorage.getItem('controle_aba') || 'locacoes';
-        UI.mudarAba(abaSalva);
-        App.aplicarFiltrosELocalSort(); 
+        try {
+            await App.carregarFiltrosSelect();
+            await DB.carregarDados();
+            const abaSalva = localStorage.getItem('controle_aba') || 'locacoes';
+            UI.mudarAba(abaSalva);
+            App.aplicarFiltrosELocalSort(); 
+        } catch (errorLoad) {
+            alert("Erro Fatal de Inicialização: " + errorLoad.message);
+        }
     },
 
     aplicarFiltrosELocalSort: () => {
-        const fObra = document.getElementById('filtroObra').value; const fForn = document.getElementById('filtroForn').value; const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
-        localStorage.setItem('controle_filtros', JSON.stringify({ obra: fObra, forn: fForn, texto: fTexto }));
+        try {
+            const fObra = document.getElementById('filtroObra').value; 
+            const fForn = document.getElementById('filtroForn').value; 
+            const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
+            
+            localStorage.setItem('controle_filtros', JSON.stringify({ obra: fObra, forn: fForn, texto: fTexto }));
 
-        State.dadosFiltrados = State.dadosGlobais.filter(item => {
-            const matchObra = fObra === 'todas' || item.obra === fObra; const matchForn = fForn === 'todos' || item.fornecedor === fForn;
-            const textoAlvo = `${item.equipamento} ${item.contrato} ${item.fornecedor} ${item.obra}`.toLowerCase();
-            const matchTexto = fTexto === '' || textoAlvo.includes(fTexto);
-            return matchObra && matchForn && matchTexto;
-        });
+            State.dadosFiltrados = State.dadosGlobais.filter(item => {
+                const matchObra = fObra === 'todas' || item.obra === fObra; 
+                const matchForn = fForn === 'todos' || item.fornecedor === fForn;
+                
+                const equip = item.equipamento ? String(item.equipamento) : '';
+                const contr = item.contrato ? String(item.contrato) : '';
+                const forn = item.fornecedor ? String(item.fornecedor) : '';
+                const obr = item.obra ? String(item.obra) : '';
 
-        const btnLimpar = document.getElementById('btn-limpar-filtros');
-        if(btnLimpar) btnLimpar.style.display = (fObra !== 'todas' || fForn !== 'todos' || fTexto !== '') ? 'flex' : 'none';
+                const textoAlvo = `${equip} ${contr} ${forn} ${obr}`.toLowerCase();
+                const matchTexto = fTexto === '' || textoAlvo.includes(fTexto);
+                return matchObra && matchForn && matchTexto;
+            });
 
-        State.dadosFiltrados.sort((a, b) => {
-            let valA = a[State.sortColunaAtual]; let valB = b[State.sortColunaAtual];
-            if (typeof valA === 'number' || typeof valB === 'number') { return State.sortDirecaoAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0); }
-            valA = String(valA || '').toLowerCase(); valB = String(valB || '').toLowerCase();
-            return State.sortDirecaoAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        });
+            const btnLimpar = document.getElementById('btn-limpar-filtros');
+            if(btnLimpar) btnLimpar.style.display = (fObra !== 'todas' || fForn !== 'todos' || fTexto !== '') ? 'flex' : 'none';
 
-        App.atualizarSetasOrdenacao(); 
-        UI.renderizarTabelas(); 
-        UI.atualizarKPIsEDashboards(); 
-        UI.renderizarModuloFornecedores();
+            State.dadosFiltrados.sort((a, b) => {
+                let valA = a[State.sortColunaAtual]; let valB = b[State.sortColunaAtual];
+                if (typeof valA === 'number' || typeof valB === 'number') { return State.sortDirecaoAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0); }
+                valA = String(valA || '').toLowerCase(); valB = String(valB || '').toLowerCase();
+                return State.sortDirecaoAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            });
+
+            App.atualizarSetasOrdenacao(); 
+            UI.renderizarTabelas(); 
+            UI.atualizarKPIsEDashboards(); 
+            UI.renderizarModuloFornecedores();
+        } catch (errorFilter) {
+            alert("Erro ao aplicar filtros: " + errorFilter.message);
+        }
     },
 
     ordenarColuna: (coluna) => {
