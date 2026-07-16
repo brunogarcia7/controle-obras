@@ -11,7 +11,6 @@
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
         
-        /* MANTÉM O VISUAL DE CELULAR MESMO QUANDO ABERTO NO PC */
         .app-container { max-width: 600px; margin: 0 auto; }
         
         .header { text-align: center; margin-bottom: 25px; }
@@ -44,7 +43,7 @@
 
     <div class="header">
         <h1>📸 Leitor NF / Cadastro</h1>
-        <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">Envio direto do celular para a nuvem</p>
+        <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">Envio direto para a nuvem</p>
     </div>
 
     <div class="card">
@@ -99,14 +98,7 @@
 </div>
 
     <script>
-        // ---------------------------------------------------------
-        // 1. CHAVE DA INTELIGÊNCIA ARTIFICIAL
-        // ---------------------------------------------------------
         const GEMINI_API_KEY = 'AIzaSyD_yorwczN1p3WcasUrfVYChF8w6E4QvP0';
-
-        // ---------------------------------------------------------
-        // 2. CREDENCIAIS DO BANCO DE DADOS SUPABASE
-        // ---------------------------------------------------------
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -114,7 +106,6 @@
         let fotoBase64 = null;
         let mimeType = '';
 
-        // FUNÇÃO: Carrega o arquivo e aciona a IA
         function previewFotoEProcessarIA(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -135,17 +126,12 @@
             reader.readAsDataURL(file);
         }
 
-        // FUNÇÃO: Inteligência Artificial lendo a Nota Fiscal
         async function extrairDadosComIA(base64String, mime) {
-            if (!GEMINI_API_KEY || GEMINI_API_KEY === 'SUA_CHAVE_GEMINI_AQUI') {
-                console.warn("Chave da IA não configurada. Preencha manualmente.");
-                return;
-            }
+            if (!GEMINI_API_KEY) return;
 
             document.getElementById('loader-ia').style.display = 'block';
             
             try {
-                // Remove o prefixo do base64 para a API ler corretamente
                 const base64Data = base64String.split(',')[1];
                 
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
@@ -154,7 +140,7 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [
-                                { text: "Analise este documento fiscal (nota, cupom ou recibo). Retorne APENAS um JSON válido e estrito com as seguintes chaves e formatos: 'fornecedor' (texto com nome da loja/locadora), 'equipamento' (texto com a descrição resumida do produto ou serviço principal), 'quantidade' (número inteiro, se não achar coloque 1), 'valor' (número float no formato 1234.56, contendo o valor total da nota). Não inclua crases de formatação (```json) nem qualquer outro texto além das chaves solicitadas." },
+                                { text: "Analise este documento fiscal (nota, cupom ou recibo). Extraia as informações e retorne APENAS um JSON válido com as seguintes chaves: 'fornecedor' (nome da loja/locadora), 'equipamento' (descrição do produto/serviço), 'quantidade' (número inteiro, padrão 1), 'valor' (número total float formato 1234.56). Não use markdown, não use aspas ou crases de bloco ```json." },
                                 {
                                     inline_data: {
                                         mime_type: mime,
@@ -167,13 +153,12 @@
                 });
 
                 const data = await response.json();
-                const respostaTexto = data.candidates[0].content.parts[0].text;
+                let respostaTexto = data.candidates[0].content.parts[0].text;
                 
-                // Limpa crases e formatações indesejadas
-                const jsonLimpo = respostaTexto.replace(/```json/g, '').replace(/```/g, '').trim();
-                const info = JSON.parse(jsonLimpo);
+                // Limpeza profunda de formatação markdown para evitar quebras
+                respostaTexto = respostaTexto.replace(/```json/g, '').replace(/```/g, '').trim();
+                const info = JSON.parse(respostaTexto);
 
-                // Preenche os campos sozinhos
                 if(info.fornecedor) document.getElementById('fornecedor').value = info.fornecedor;
                 if(info.equipamento) document.getElementById('equipamento').value = info.equipamento;
                 if(info.quantidade) document.getElementById('quantidade').value = info.quantidade;
@@ -181,13 +166,12 @@
 
             } catch (error) {
                 console.error("Erro na leitura da IA:", error);
-                alert("A IA não conseguiu extrair os dados. Por favor, preencha manualmente.");
+                alert("A IA não conseguiu ler este formato de PDF automaticamente. Por favor, digite os dados da nota manualmente.");
             } finally {
                 document.getElementById('loader-ia').style.display = 'none';
             }
         }
 
-        // FUNÇÃO: Salvar no Supabase
         async function salvarDados() {
             const obra = document.getElementById('obra').value.trim();
             const equip = document.getElementById('equipamento').value.trim();
@@ -212,7 +196,7 @@
                     if (!error) {
                         urlAnexo = supabase.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
                     }
-                } catch(e) { console.error("Erro no upload do anexo", e); }
+                } catch(e) { console.error(e); }
             }
 
             const dataAtual = new Date().toISOString().split('T')[0];
@@ -237,7 +221,7 @@
             if (error) {
                 alert("❌ Erro ao salvar: " + error.message);
             } else {
-                alert("✅ Salvo com sucesso! Já está aparecendo no seu Painel Web.");
+                alert("✅ Salvo com sucesso!");
                 document.getElementById('equipamento').value = '';
                 document.getElementById('valor').value = '';
                 document.getElementById('foto-camera').value = '';
