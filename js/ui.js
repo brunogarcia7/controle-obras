@@ -52,6 +52,7 @@ const UI = {
         if(!UI.colunasAtivas.contrato) css += '.col-contrato { display: none !important; } ';
         if(!UI.colunasAtivas.valor) css += '.col-valor { display: none !important; } ';
         if(!UI.colunasAtivas.anexo) css += '.col-anexo { display: none !important; } ';
+        // A Coluna AÇÕES nunca será ocultada
         document.getElementById('dynamic-columns-style').innerHTML = css;
     },
 
@@ -126,6 +127,7 @@ const UI = {
 
                 const safeEquip = Utils.escapeStr(item.equipamento);
 
+                // BOTÕES CORRIGIDOS PARA TODAS AS ABAS
                 let botoesAcao = '';
                 if (statusNorm === 'ativo') {
                     botoesAcao += `<button class="btn-action-small" data-action="editar" data-id="${item.id}" title="Editar">✏️</button>`;
@@ -136,6 +138,9 @@ const UI = {
                     botoesAcao = `<span class="status-badge" style="margin-right:8px;">Devolvido</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Restaurar para Ativos">🔄</button>`;
                 } else if (statusNorm === 'excluido') {
                     botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--danger); color:white;">Excluído</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Restaurar para Ativos">🔄</button>`;
+                } else {
+                    // Prevenção extra caso haja algum status quebrado
+                    botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--warning); color:white;">Indefinido</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Forçar Restauração">🔄</button>`;
                 }
 
                 const tr = `<tr>
@@ -148,9 +153,10 @@ const UI = {
                     <td class="col-acoes"><div class="action-buttons">${botoesAcao}</div></td>
                 </tr>`;
                 
+                // Direcionamento robusto das linhas para a aba certa
                 if (statusNorm === 'excluido') arrExc.push(tr);
                 else if (statusNorm === 'inativo') arrHist.push(tr);
-                else if (isProprio) arrComp.push(tr);
+                else if (isProprio && statusNorm === 'ativo') arrComp.push(tr);
                 else arrLoc.push(tr);
             });
 
