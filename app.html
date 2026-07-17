@@ -31,6 +31,7 @@
 
         .btn-salvar { background: var(--primary); color: var(--white); border: none; height: 50px; border-radius: 8px; width: 100%; font-size: 1.1rem; font-weight: 800; margin-top: 20px; cursor: pointer; transition: 0.2s;}
         .btn-salvar:active { background: #1d4ed8; transform: scale(0.98); }
+        .btn-salvar:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
         
         #loader-salvar { display: none; text-align: center; font-weight: bold; margin-top: 15px; color: var(--primary); }
         #loader-ia { display: none; text-align: center; font-size: 0.85rem; font-weight: bold; margin-top: 10px; color: #6366f1; }
@@ -91,48 +92,45 @@
             </div>
         </div>
 
-        <button class="btn-salvar" onclick="salvarDados()">🚀 Enviar para o Sistema</button>
+        <button class="btn-salvar" id="btn-enviar-sistema" onclick="salvarDados()">🚀 Enviar para o Sistema</button>
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
 
 </div>
 
     <script>
-        // ALERTA GLOBAL DE BUGS PARA IDENTIFICAR ERROS OCULTOS
-        window.onerror = function(msg, url, line) {
-            alert("⚠️ Erro no Sistema:\n" + msg + "\nLinha: " + line);
-            return true;
-        };
-
         const GEMINI_API_KEY = 'AIzaSyD_yorwczN1p3WcasUrfVYChF8w6E4QvP0';
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let fotoBase64 = null;
-        let mimeType = '';
+        // VARIÁVEL NOVA: Guarda o arquivo puro, sem pesar o celular
+        let arquivoAnexoGlobal = null; 
 
         function previewFotoEProcessarIA(event) {
             const file = event.target.files[0];
             if (!file) return;
             
-            const isPDF = file.type === 'application/pdf';
-            mimeType = isPDF ? 'application/pdf' : file.type;
+            arquivoAnexoGlobal = file; // Salva o arquivo original direto
+            
+            // Corrige o formato se o celular tentar esconder que é PDF ou JPG
+            const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+            const isPDF = mimeType === 'application/pdf';
             
             const statusBox = document.getElementById('foto-status');
             statusBox.style.display = 'block';
             statusBox.innerText = isPDF ? `📄 PDF Selecionado: ${file.name}` : `✅ Foto Anexada: ${file.name}`;
             statusBox.style.color = isPDF ? 'var(--danger)' : 'var(--success)';
             
+            // Transforma em Base64 APENAS para enviar para a IA
             const reader = new FileReader();
             reader.onload = (e) => { 
-                fotoBase64 = e.target.result; 
-                extrairDadosComIA(fotoBase64, mimeType);
+                extrairDadosComIA(e.target.result, mimeType);
             };
             reader.readAsDataURL(file);
         }
 
-        // FUNÇÃO BLINDADA PARA LIMPAR O VALOR MONETÁRIO
+        // LIMPADOR DE VALORES (Tira R$, etc)
         function formatarValorParaInput(texto) {
             if (!texto) return 0;
             let limpo = String(texto).replace(/[^\d.,]/g, '');
@@ -157,26 +155,29 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [
-                                { text: "Analise o documento fiscal. Retorne APENAS um JSON estrito. Chaves: 'fornecedor', 'equipamento', 'quantidade' e 'valor'. Sem blocos de código (```json)." },
+                                { text: "Analise o documento fiscal. Retorne APENAS um JSON estrito. Chaves: 'fornecedor', 'equipamento', 'quantidade' e 'valor'. Sem markdown ou crases (```json)." },
                                 { inline_data: { mime_type: mime, data: base64Data } }
                             ]
                         }]
                     })
                 });
 
-                if (!response.ok) throw new Error(`Google IA falhou (Erro ${response.status})`);
+                if (!response.ok) throw new Error("A Inteligência Artificial recusou o formato/tamanho da nota.");
 
                 const data = await response.json();
                 let respostaTexto = data.candidates[0].content.parts[0].text;
                 
                 let inicio = respostaTexto.indexOf('{');
                 let fim = respostaTexto.lastIndexOf('}');
-                if (inicio === -1 || fim === -1) throw new Error("A IA não retornou um formato reconhecível.");
+                if (inicio === -1 || fim === -1) throw new Error("O Google retornou um texto inválido.");
                 
                 let jsonLimpo = respostaTexto.substring(inicio, fim + 1);
                 const info = JSON.parse(jsonLimpo);
 
-                if(info.fornecedor) document.getElementById('fornecedor').value = info.fornecedor;
+                // Preenchimento Suave (Não substitui se não achar)
+                if(info.fornecedor && info.fornecedor.toLowerCase() !== "não identificado") {
+                    document.getElementById('fornecedor').value = info.fornecedor;
+                }
                 if(info.equipamento) document.getElementById('equipamento').value = info.equipamento;
                 
                 if(info.quantidade) {
@@ -189,22 +190,10 @@
 
             } catch (error) {
                 console.error(error);
-                alert("⚠️ A IA teve dificuldade em ler esta nota. Por favor, preencha os dados manualmente.");
+                alert("⚠️ A Leitura Automática não rolou para este arquivo. Por favor, preencha os dados manualmente.");
             } finally {
                 document.getElementById('loader-ia').style.display = 'none';
             }
-        }
-
-        // NOVO MOTOR DE CONVERSÃO (NUNCA TRAVA A MEMÓRIA DO CELULAR/PC)
-        function dataURItoBlob(dataURI) {
-            const byteString = atob(dataURI.split(',')[1]);
-            const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
-            }
-            return new Blob([ab], {type: mimeString});
         }
 
         async function salvarDados() {
@@ -218,22 +207,22 @@
             if (!obra || !equip) return alert("⚠️ Preencha a Obra e o Equipamento!");
 
             document.getElementById('loader-salvar').style.display = 'block';
+            document.getElementById('btn-enviar-sistema').disabled = true;
 
             let urlAnexo = null;
 
-            if (fotoBase64) {
+            // ENVIO DIRETO E LEVE PARA O SUPABASE (Pega o arquivo puro)
+            if (arquivoAnexoGlobal) {
                 try {
-                    const blob = dataURItoBlob(fotoBase64);
-                    const extensao = mimeType.includes('pdf') ? 'pdf' : 'jpg';
+                    const extensao = arquivoAnexoGlobal.type.includes('pdf') ? 'pdf' : 'jpg';
                     const fileName = `mobile_nf_${Date.now()}.${extensao}`;
                     
-                    const { data, error } = await supabase.storage.from('comprovantes').upload(fileName, blob);
-                    if (!error) {
+                    const { data, error } = await supabase.storage.from('comprovantes').upload(fileName, arquivoAnexoGlobal);
+                    if (!error && data) {
                         urlAnexo = supabase.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
                     }
                 } catch(e) { 
-                    console.error(e); 
-                    alert("⚠️ Erro ao subir o anexo, mas vamos tentar salvar os textos.");
+                    console.error("Falha no upload", e); 
                 }
             }
 
@@ -258,18 +247,20 @@
                 if (error) {
                     alert("❌ Erro no Banco de Dados: " + error.message);
                 } else {
-                    alert("✅ Salvo com sucesso no Painel!");
+                    alert("✅ Equipamento salvo com sucesso no Painel!");
                     document.getElementById('equipamento').value = '';
                     document.getElementById('valor').value = '';
+                    document.getElementById('fornecedor').value = '';
                     document.getElementById('foto-camera').value = '';
                     document.getElementById('foto-arquivo').value = '';
                     document.getElementById('foto-status').style.display = 'none';
-                    fotoBase64 = null;
+                    arquivoAnexoGlobal = null;
                 }
             } catch(err) {
-                alert("❌ Erro crítico ao conectar com o banco de dados.");
+                alert("❌ Erro crítico de internet ou banco de dados.");
             } finally {
                 document.getElementById('loader-salvar').style.display = 'none';
+                document.getElementById('btn-enviar-sistema').disabled = false;
             }
         }
     </script>
