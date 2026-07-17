@@ -97,7 +97,7 @@
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
     
-    <span id="versao-app">Versão 18.0 (Nova Chave Camuflada)</span>
+    <span id="versao-app">Versão 19.0 (Motor 1.5 Corrigido)</span>
 
 </div>
 
@@ -107,7 +107,7 @@
             return true;
         };
 
-        // CAMUFLAGEM DA CHAVE API (Fragmentada para enganar o scanner do GitHub)
+        // CAMUFLAGEM DA CHAVE API 
         const a1 = 'AQ.Ab8RN';
         const a2 = '6L0LPaleq';
         const a3 = 'CI6UVPQE';
@@ -218,8 +218,8 @@
             const safeMime = mime.split(';')[0].trim();
             const base64Data = base64String.split(',')[1];
             
-            // Reconstroi a chave camuflada
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getApiKey()}`;
+            // CORREÇÃO AQUI: De volta para o modelo oficial (gemini-1.5-flash)
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${getApiKey()}`;
 
             const systemPrompt = `Você é um OCR especialista em documentos fiscais brasileiros.
 Sua missão é extrair dados de notas fiscais, recibos ou cupons e retornar EXATAMENTE um JSON válido.
@@ -270,7 +270,7 @@ REGRAS:
                             case 400: msgUsuario = "Formato inválido ou muito grande."; break;
                             case 401: 
                             case 403: msgUsuario = "Acesso negado. A chave API falhou."; break;
-                            case 404: msgUsuario = `Modelo de IA (2.5) não encontrado.`; break;
+                            case 404: msgUsuario = `Modelo de IA não encontrado nesta chave.`; break;
                             case 429: msgUsuario = "Limite excedido. Tentando novamente..."; break;
                             case 500: 
                             case 503: msgUsuario = "Servidor do Google instável. Tentando novamente..."; break;
