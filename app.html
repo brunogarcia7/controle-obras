@@ -97,7 +97,7 @@
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
     
-    <span id="versao-app">Versão 19.0 (Motor 1.5 Corrigido)</span>
+    <span id="versao-app">Versão 20.0 (Motor Flex IA Automático)</span>
 
 </div>
 
@@ -107,7 +107,7 @@
             return true;
         };
 
-        // CAMUFLAGEM DA CHAVE API 
+        // CAMUFLAGEM DA CHAVE API
         const a1 = 'AQ.Ab8RN';
         const a2 = '6L0LPaleq';
         const a3 = 'CI6UVPQE';
@@ -211,15 +211,22 @@
         async function extrairDadosComIA(base64String, mime) {
             const loaderIA = document.getElementById('loader-ia');
             loaderIA.style.display = 'block';
-            loaderIA.innerText = "🤖 Lendo documento fiscal... (Aguarde)";
+            loaderIA.innerText = "🤖 Engatando motor de IA... (Aguarde)";
             loaderIA.style.color = "#6366f1";
             loaderIA.style.background = "rgba(99, 102, 241, 0.1)";
 
             const safeMime = mime.split(';')[0].trim();
             const base64Data = base64String.split(',')[1];
             
-            // CORREÇÃO AQUI: De volta para o modelo oficial (gemini-1.5-flash)
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${getApiKey()}`;
+            // SISTEMA DE MOTOR FLEX: Tenta os modelos até um deles aceitar a sua chave!
+            const modelosParaTestar = [
+                'gemini-1.5-flash',
+                'gemini-1.5-flash-latest',
+                'gemini-1.5-pro',
+                'gemini-1.5-pro-latest'
+            ];
+            
+            let indiceModeloAtual = 0;
 
             const systemPrompt = `Você é um OCR especialista em documentos fiscais brasileiros.
 Sua missão é extrair dados de notas fiscais, recibos ou cupons e retornar EXATAMENTE um JSON válido.
@@ -244,7 +251,7 @@ REGRAS:
                 }]
             });
 
-            const maxRetries = 3;
+            const maxRetries = 6; // Dando espaço para testar os motores
             const timeoutMs = 30000; 
 
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -252,6 +259,11 @@ REGRAS:
                 const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
                 try {
+                    const modeloVez = modelosParaTestar[indiceModeloAtual];
+                    loaderIA.innerText = `🤖 Testando motor: ${modeloVez}...`;
+
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modeloVez}:generateContent?key=${getApiKey()}`;
+
                     const response = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -264,19 +276,27 @@ REGRAS:
                     if (!response.ok) {
                         const err = await response.json().catch(() => ({}));
                         const status = response.status;
-                        let msgUsuario = "Erro desconhecido na API.";
+                        console.error(`[Erro HTTP ${status} no modelo ${modeloVez}]`, err);
 
+                        // SE O MODELO DER 404, PULA PRO PRÓXIMO INVISIVELMENTE!
+                        if (status === 404) {
+                            if (indiceModeloAtual < modelosParaTestar.length - 1) {
+                                indiceModeloAtual++; // Troca a marcha pro próximo modelo
+                                continue; 
+                            } else {
+                                throw new Error("Nenhum motor de IA compatível com a sua chave.");
+                            }
+                        }
+
+                        let msgUsuario = "Erro desconhecido na API.";
                         switch (status) {
                             case 400: msgUsuario = "Formato inválido ou muito grande."; break;
                             case 401: 
-                            case 403: msgUsuario = "Acesso negado. A chave API falhou."; break;
-                            case 404: msgUsuario = `Modelo de IA não encontrado nesta chave.`; break;
+                            case 403: msgUsuario = "Acesso negado. Chave API banida pelo GitHub."; break;
                             case 429: msgUsuario = "Limite excedido. Tentando novamente..."; break;
                             case 500: 
                             case 503: msgUsuario = "Servidor do Google instável. Tentando novamente..."; break;
                         }
-
-                        console.error(`[Erro HTTP ${status}]`, err);
 
                         if ((status === 429 || status >= 500) && attempt < maxRetries) {
                             await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
@@ -287,7 +307,7 @@ REGRAS:
 
                     const data = await response.json();
                     if (!data.candidates || !data.candidates[0].content.parts[0].text) {
-                        throw new Error("A IA não retornou nenhum texto legível.");
+                        throw new Error("A IA leu, mas não retornou texto.");
                     }
 
                     let respostaTexto = data.candidates[0].content.parts[0].text;
@@ -297,7 +317,7 @@ REGRAS:
                     const fim = respostaTexto.lastIndexOf('}');
                     
                     if (inicio === -1 || fim === -1) {
-                        throw new Error("A IA não gerou uma estrutura JSON válida.");
+                        throw new Error("Formato JSON quebrado.");
                     }
                     
                     const jsonLimpo = respostaTexto.substring(inicio, fim + 1);
@@ -317,14 +337,13 @@ REGRAS:
                         document.getElementById('valor').value = formatarValorParaInput(info.valor);
                     }
 
-                    loaderIA.innerText = "✅ Nota fiscal lida com sucesso!";
+                    loaderIA.innerText = `✅ Lida pelo motor ${modeloVez}!`;
                     loaderIA.style.color = "var(--success)";
                     loaderIA.style.background = "rgba(16, 185, 129, 0.1)";
                     return; 
 
                 } catch (error) {
                     clearTimeout(timeoutId);
-                    console.warn(`Tentativa ${attempt} falhou:`, error.message);
                     
                     if (error.name === 'AbortError') {
                         if (attempt < maxRetries) {
@@ -335,7 +354,7 @@ REGRAS:
                     }
 
                     if (attempt === maxRetries || (!error.message.includes('novamente') && error.name !== 'AbortError')) {
-                        loaderIA.innerText = `⚠️ Falha na IA: ${error.message} Preencha manualmente.`;
+                        loaderIA.innerText = `⚠️ Falha: ${error.message} Preencha manualmente.`;
                         loaderIA.style.color = "var(--warning)";
                         loaderIA.style.background = "rgba(245, 158, 11, 0.1)";
                         break;
