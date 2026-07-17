@@ -43,7 +43,7 @@
 
     <div class="header">
         <h1>📸 Leitor NF / Cadastro</h1>
-        <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">Envio direto para a nuvem</p>
+        <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">Envio direto do celular para a nuvem</p>
     </div>
 
     <div class="card">
@@ -126,9 +126,22 @@
             reader.readAsDataURL(file);
         }
 
+        // LIMPADOR INTELIGENTE DE NÚMEROS (Remove R$, pontos separadores de milhar e arruma vírgulas)
+        function formatarValorParaInput(texto) {
+            if (!texto) return 0;
+            let limpo = String(texto).replace(/[^\d.,]/g, ''); // Tira tudo que não for número, ponto ou vírgula
+            if (limpo.includes(',') && limpo.includes('.')) {
+                // Formato Brasileiro: 1.500,00 -> vira 1500.00
+                limpo = limpo.replace(/\./g, '').replace(',', '.');
+            } else if (limpo.includes(',')) {
+                // Tem só vírgula: 150,00 -> vira 150.00
+                limpo = limpo.replace(',', '.');
+            }
+            return parseFloat(limpo) || 0;
+        }
+
         async function extrairDadosComIA(base64String, mime) {
             if (!GEMINI_API_KEY) return;
-
             document.getElementById('loader-ia').style.display = 'block';
             
             try {
@@ -140,7 +153,7 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [
-                                { text: "Analise este documento fiscal (nota, cupom ou recibo). Extraia as informações e retorne APENAS um JSON válido com as seguintes chaves: 'fornecedor' (nome da loja/locadora), 'equipamento' (descrição do produto/serviço), 'quantidade' (número inteiro, padrão 1), 'valor' (número total float formato 1234.56). Não use markdown, não use aspas ou crases de bloco ```json." },
+                                { text: "Você é um assistente de extração de dados. Leia o documento anexado. Retorne APENAS um bloco JSON contendo as chaves: 'fornecedor', 'equipamento', 'quantidade' e 'valor'." },
                                 {
                                     inline_data: {
                                         mime_type: mime,
@@ -152,21 +165,39 @@
                     })
                 });
 
+                // VERIFICA SE O GOOGLE RECUSOU O ARQUIVO (Erro 400 ou 403)
+                if (!response.ok) {
+                    const erroMgs = await response.text();
+                    throw new Error(`Google recusou o arquivo. Código: ${response.status}`);
+                }
+
                 const data = await response.json();
                 let respostaTexto = data.candidates[0].content.parts[0].text;
                 
-                // Limpeza profunda de formatação markdown para evitar quebras
-                respostaTexto = respostaTexto.replace(/```json/g, '').replace(/```/g, '').trim();
-                const info = JSON.parse(respostaTexto);
+                // ISOLADOR DE JSON (Garante que vai pegar só o JSON mesmo se a IA mandar texto antes)
+                let inicio = respostaTexto.indexOf('{');
+                let fim = respostaTexto.lastIndexOf('}');
+                if (inicio === -1 || fim === -1) throw new Error("A IA não conseguiu montar o formato de dados corretamente.");
+                
+                let jsonLimpo = respostaTexto.substring(inicio, fim + 1);
+                const info = JSON.parse(jsonLimpo);
 
+                // PREENCHIMENTO DOS CAMPOS (Anti-falha)
                 if(info.fornecedor) document.getElementById('fornecedor').value = info.fornecedor;
                 if(info.equipamento) document.getElementById('equipamento').value = info.equipamento;
-                if(info.quantidade) document.getElementById('quantidade').value = info.quantidade;
-                if(info.valor) document.getElementById('valor').value = info.valor;
+                
+                if(info.quantidade) {
+                    let qtdTratada = parseInt(String(info.quantidade).replace(/\D/g, '')) || 1;
+                    document.getElementById('quantidade').value = qtdTratada;
+                }
+                
+                if(info.valor) {
+                    document.getElementById('valor').value = formatarValorParaInput(info.valor);
+                }
 
             } catch (error) {
-                console.error("Erro na leitura da IA:", error);
-                alert("A IA não conseguiu ler este formato de PDF automaticamente. Por favor, digite os dados da nota manualmente.");
+                console.error("ALERTA DE ERRO:", error);
+                alert("⚠️ Erro na leitura automática: " + error.message + "\n\nSe o problema persistir, preencha manualmente.");
             } finally {
                 document.getElementById('loader-ia').style.display = 'none';
             }
@@ -219,7 +250,7 @@
             document.getElementById('loader-salvar').style.display = 'none';
 
             if (error) {
-                alert("❌ Erro ao salvar: " + error.message);
+                alert("❌ Erro ao salvar no Banco de Dados: " + error.message);
             } else {
                 alert("✅ Salvo com sucesso!");
                 document.getElementById('equipamento').value = '';
