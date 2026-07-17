@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>📱 App Controle de Obras</title>
+    <!-- SUPABASE SCRIPT -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -36,6 +37,7 @@
         #loader-salvar { display: none; text-align: center; font-weight: bold; margin-top: 15px; color: var(--primary); }
         #loader-ia { display: none; text-align: center; font-size: 0.85rem; font-weight: bold; margin-top: 10px; color: #6366f1; }
         #foto-status { font-size: 0.8rem; text-align: center; display: none; margin-top: 10px; font-weight: bold; word-break: break-all; }
+        #versao-app { text-align: center; font-size: 0.7rem; color: #94a3b8; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -95,42 +97,59 @@
         <button class="btn-salvar" id="btn-enviar-sistema" onclick="salvarDados()">🚀 Enviar para o Sistema</button>
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
+    
+    <div id="versao-app">Versão 6.0 Blindada</div>
 
 </div>
 
     <script>
+        // ALERTA DE ERROS CRÍTICOS (Se algo der errado, a tela vai avisar!)
+        window.onerror = function(msg, url, line) {
+            alert("⚠️ Erro Interno:\n" + msg + "\nLinha: " + line);
+            return true;
+        };
+
         const GEMINI_API_KEY = 'AIzaSyD_yorwczN1p3WcasUrfVYChF8w6E4QvP0';
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Inicialização Segura do Supabase
+        let supabase;
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch(e) {
+            alert("⚠️ Falha ao conectar ao servidor. Recarregue a página.");
+        }
 
-        // VARIÁVEL NOVA: Guarda o arquivo puro, sem pesar o celular
         let arquivoAnexoGlobal = null; 
 
         function previewFotoEProcessarIA(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            arquivoAnexoGlobal = file; // Salva o arquivo original direto
-            
-            // Corrige o formato se o celular tentar esconder que é PDF ou JPG
-            const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-            const isPDF = mimeType === 'application/pdf';
-            
-            const statusBox = document.getElementById('foto-status');
-            statusBox.style.display = 'block';
-            statusBox.innerText = isPDF ? `📄 PDF Selecionado: ${file.name}` : `✅ Foto Anexada: ${file.name}`;
-            statusBox.style.color = isPDF ? 'var(--danger)' : 'var(--success)';
-            
-            // Transforma em Base64 APENAS para enviar para a IA
-            const reader = new FileReader();
-            reader.onload = (e) => { 
-                extrairDadosComIA(e.target.result, mimeType);
-            };
-            reader.readAsDataURL(file);
+            try {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                arquivoAnexoGlobal = file; 
+                
+                const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+                const isPDF = mimeType === 'application/pdf';
+                
+                const statusBox = document.getElementById('foto-status');
+                statusBox.style.display = 'block';
+                statusBox.innerText = isPDF ? `📄 PDF Selecionado: ${file.name}` : `✅ Foto Anexada: ${file.name}`;
+                statusBox.style.color = isPDF ? 'var(--danger)' : 'var(--success)';
+                
+                const reader = new FileReader();
+                reader.onload = (e) => { 
+                    const base64Str = e.target.result;
+                    extrairDadosComIA(base64Str, mimeType);
+                };
+                reader.readAsDataURL(file);
+            } catch(erroInterno) {
+                alert("Erro ao selecionar a foto: " + erroInterno.message);
+            }
         }
 
-        // LIMPADOR DE VALORES (Tira R$, etc)
+        // LIMPADOR DE NÚMEROS (Tira R$, etc)
         function formatarValorParaInput(texto) {
             if (!texto) return 0;
             let limpo = String(texto).replace(/[^\d.,]/g, '');
@@ -162,14 +181,14 @@
                     })
                 });
 
-                if (!response.ok) throw new Error("A Inteligência Artificial recusou o formato/tamanho da nota.");
+                if (!response.ok) throw new Error("Recusado pelo Google. Pode ser uma falha de conexão.");
 
                 const data = await response.json();
                 let respostaTexto = data.candidates[0].content.parts[0].text;
                 
                 let inicio = respostaTexto.indexOf('{');
                 let fim = respostaTexto.lastIndexOf('}');
-                if (inicio === -1 || fim === -1) throw new Error("O Google retornou um texto inválido.");
+                if (inicio === -1 || fim === -1) throw new Error("A IA não retornou um formato reconhecível.");
                 
                 let jsonLimpo = respostaTexto.substring(inicio, fim + 1);
                 const info = JSON.parse(jsonLimpo);
@@ -190,58 +209,58 @@
 
             } catch (error) {
                 console.error(error);
-                alert("⚠️ A Leitura Automática não rolou para este arquivo. Por favor, preencha os dados manualmente.");
+                alert("⚠️ A Leitura Automática não conseguiu processar. Preencha os dados manualmente.");
             } finally {
                 document.getElementById('loader-ia').style.display = 'none';
             }
         }
 
         async function salvarDados() {
-            const obra = document.getElementById('obra').value.trim();
-            const equip = document.getElementById('equipamento').value.trim();
-            const forn = document.getElementById('fornecedor').value.trim() || 'Não identificado';
-            const qtd = parseInt(document.getElementById('quantidade').value) || 1;
-            const valor = parseFloat(document.getElementById('valor').value) || 0;
-            const tipo = document.getElementById('tipo').value;
-
-            if (!obra || !equip) return alert("⚠️ Preencha a Obra e o Equipamento!");
-
-            document.getElementById('loader-salvar').style.display = 'block';
-            document.getElementById('btn-enviar-sistema').disabled = true;
-
-            let urlAnexo = null;
-
-            // ENVIO DIRETO E LEVE PARA O SUPABASE (Pega o arquivo puro)
-            if (arquivoAnexoGlobal) {
-                try {
-                    const extensao = arquivoAnexoGlobal.type.includes('pdf') ? 'pdf' : 'jpg';
-                    const fileName = `mobile_nf_${Date.now()}.${extensao}`;
-                    
-                    const { data, error } = await supabase.storage.from('comprovantes').upload(fileName, arquivoAnexoGlobal);
-                    if (!error && data) {
-                        urlAnexo = supabase.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
-                    }
-                } catch(e) { 
-                    console.error("Falha no upload", e); 
-                }
-            }
-
-            const dataAtual = new Date().toISOString().split('T')[0];
-            
-            const payload = {
-                obra: obra,
-                equipamento: equip,
-                fornecedor: forn,
-                quantidade: qtd,
-                valor: valor,
-                data_inicio: dataAtual,
-                status: 'ativo',
-                anexo: urlAnexo,
-                unidade: tipo === 'Compra' ? 'Proprio' : 'Mês',
-                contrato: tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App'
-            };
-
             try {
+                const obra = document.getElementById('obra').value.trim();
+                const equip = document.getElementById('equipamento').value.trim();
+                const forn = document.getElementById('fornecedor').value.trim() || 'Não identificado';
+                const qtd = parseInt(document.getElementById('quantidade').value) || 1;
+                const valor = parseFloat(document.getElementById('valor').value) || 0;
+                const tipo = document.getElementById('tipo').value;
+
+                if (!obra || !equip) return alert("⚠️ Preencha a Obra e o Equipamento!");
+
+                document.getElementById('loader-salvar').style.display = 'block';
+                document.getElementById('btn-enviar-sistema').disabled = true;
+
+                let urlAnexo = null;
+
+                // ENVIO DIRETO PARA O SUPABASE
+                if (arquivoAnexoGlobal) {
+                    try {
+                        const extensao = arquivoAnexoGlobal.type.includes('pdf') ? 'pdf' : 'jpg';
+                        const fileName = `mobile_nf_${Date.now()}.${extensao}`;
+                        
+                        const { data, error } = await supabase.storage.from('comprovantes').upload(fileName, arquivoAnexoGlobal);
+                        if (!error && data) {
+                            urlAnexo = supabase.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
+                        }
+                    } catch(e) { 
+                        console.error("Falha no upload do anexo", e); 
+                    }
+                }
+
+                const dataAtual = new Date().toISOString().split('T')[0];
+                
+                const payload = {
+                    obra: obra,
+                    equipamento: equip,
+                    fornecedor: forn,
+                    quantidade: qtd,
+                    valor: valor,
+                    data_inicio: dataAtual,
+                    status: 'ativo',
+                    anexo: urlAnexo,
+                    unidade: tipo === 'Compra' ? 'Proprio' : 'Mês',
+                    contrato: tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App'
+                };
+
                 const { error } = await supabase.from('locacoes').insert([payload]);
 
                 if (error) {
@@ -257,7 +276,7 @@
                     arquivoAnexoGlobal = null;
                 }
             } catch(err) {
-                alert("❌ Erro crítico de internet ou banco de dados.");
+                alert("❌ Erro grave no botão de salvar: " + err.message);
             } finally {
                 document.getElementById('loader-salvar').style.display = 'none';
                 document.getElementById('btn-enviar-sistema').disabled = false;
