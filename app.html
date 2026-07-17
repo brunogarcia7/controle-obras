@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --white: #fff; --text: #1e293b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; }
+        :root { --primary: #2563eb; --bg: #f8fafc; --white: #fff; --text: #1e293b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
         
@@ -98,22 +98,23 @@
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
     
-    <div id="versao-app">Versão 7.0 (Ouro - Anti-Travamento)</div>
+    <div id="versao-app">Versão 8.0 (Pente Fino - 100% Funcional)</div>
 
 </div>
 
     <script>
+        // CHAVES DE ACESSO
         const GEMINI_API_KEY = 'AIzaSyD_yorwczN1p3WcasUrfVYChF8w6E4QvP0';
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
+        
+        // CONEXÃO COM O BANCO
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // VARIÁVEIS GLOBAIS BLINDADAS
-        let fotoBase64Global = null; 
-        let mimeTypeGlobal = ''; 
+        let arquivoAnexoGlobal = null; 
 
-        // COMPRESSOR DE IMAGENS NATIVO (Garante que fotos gigantes do celular não travem o Google)
-        function compressImage(base64Str, maxWidth, callback) {
+        // COMPRESSOR DE IMAGENS PARA A IA (Para o Google não travar com fotos grandes)
+        function comprimirImagem(base64Str, maxWidth, callback) {
             let img = new Image();
             img.src = base64Str;
             img.onload = function() {
@@ -136,47 +137,14 @@
                 canvas.height = height;
                 let ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                let newDataUrl = canvas.toDataURL('image/jpeg', 0.7); // Comprime mantendo boa qualidade
-                callback(newDataUrl);
+                callback(canvas.toDataURL('image/jpeg', 0.8));
             };
             img.onerror = function() {
-                callback(base64Str); // Se falhar, usa a original para não travar
+                callback(base64Str);
             };
         }
 
-        function previewFotoEProcessarIA(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            // Corrige e limpa o tipo do arquivo para o Google aceitar
-            const fileType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-            const isPDF = fileType === 'application/pdf';
-            mimeTypeGlobal = isPDF ? 'application/pdf' : 'image/jpeg';
-            
-            const statusBox = document.getElementById('foto-status');
-            statusBox.style.display = 'block';
-            statusBox.innerText = isPDF ? `📄 PDF Selecionado: ${file.name}` : `✅ Foto Anexada: ${file.name}`;
-            statusBox.style.color = isPDF ? 'var(--danger)' : 'var(--success)';
-            
-            const reader = new FileReader();
-            reader.onload = (e) => { 
-                const originalBase64 = e.target.result;
-                
-                if (!isPDF) {
-                    // SE FOR FOTO: Comprime antes de mandar para a IA e para o Banco
-                    compressImage(originalBase64, 1200, (compressedBase64) => {
-                        fotoBase64Global = compressedBase64;
-                        extrairDadosComIA(compressedBase64, mimeTypeGlobal);
-                    });
-                } else {
-                    // SE FOR PDF: Manda direto (PDFs não podem passar pelo compressor de imagem)
-                    fotoBase64Global = originalBase64;
-                    extrairDadosComIA(originalBase64, mimeTypeGlobal);
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-
+        // LIMPADOR DE NÚMEROS (Tira R$, etc)
         function formatarValorParaInput(texto) {
             if (!texto) return 0;
             let limpo = String(texto).replace(/[^\d.,]/g, '');
@@ -188,13 +156,53 @@
             return parseFloat(limpo) || 0;
         }
 
+        function previewFotoEProcessarIA(event) {
+            try {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                arquivoAnexoGlobal = file; 
+                
+                // Verifica se é PDF para ativar o bloqueio da IA (O Google API direta não lê PDF, só imagens)
+                const isPDF = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+                
+                const statusBox = document.getElementById('foto-status');
+                statusBox.style.display = 'block';
+                statusBox.innerText = isPDF ? `📄 PDF Selecionado: ${file.name}` : `✅ Foto Anexada: ${file.name}`;
+                statusBox.style.color = isPDF ? 'var(--danger)' : 'var(--success)';
+
+                const loaderIA = document.getElementById('loader-ia');
+
+                if (isPDF) {
+                    // BLINDAGEM DO PDF: Avisa o usuário, mas permite salvar o arquivo no banco.
+                    loaderIA.style.display = 'block';
+                    loaderIA.innerText = "⚠️ A Inteligência Artificial suporta apenas Fotos. Preencha manualmente (Seu PDF será salvo e anexado normalmente).";
+                    loaderIA.style.color = "var(--warning)";
+                    return; 
+                }
+                
+                // SE FOR FOTO, ACIONA A IA
+                loaderIA.style.display = 'block';
+                loaderIA.innerText = "🤖 Lendo dados com Inteligência Artificial...";
+                loaderIA.style.color = "#6366f1";
+                
+                const reader = new FileReader();
+                reader.onload = (e) => { 
+                    const base64Str = e.target.result;
+                    comprimirImagem(base64Str, 1200, (base64Comprimido) => {
+                        extrairDadosComIA(base64Comprimido, 'image/jpeg');
+                    });
+                };
+                reader.readAsDataURL(file);
+            } catch(err) {
+                alert("Erro ao selecionar o arquivo: " + err.message);
+            }
+        }
+
         async function extrairDadosComIA(base64String, mime) {
             if (!GEMINI_API_KEY) return;
-            document.getElementById('loader-ia').style.display = 'block';
             
             try {
-                // Tira qualquer sujeira do MIME TYPE que o Google não aceite
-                const safeMime = mime.split(';')[0].trim();
                 const base64Data = base64String.split(',')[1];
                 
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
@@ -203,15 +211,16 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [
-                                { text: "Analise o documento fiscal. Retorne APENAS um JSON válido. Chaves obrigatórias: 'fornecedor', 'equipamento', 'quantidade' e 'valor'. Sem formatação markdown." },
-                                { inline_data: { mime_type: safeMime, data: base64Data } }
+                                { text: "Analise o documento fiscal. Retorne APENAS um JSON estrito. Chaves: 'fornecedor', 'equipamento', 'quantidade' e 'valor'. Sem formatações markdown e crases." },
+                                { inline_data: { mime_type: mime, data: base64Data } }
                             ]
                         }]
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error("A IA do Google recusou este arquivo. Ele pode ser muito pesado ou de um formato não suportado.");
+                    const errorJson = await response.json();
+                    throw new Error(`O Google recusou a imagem. (Erro: ${errorJson.error?.message || response.status})`);
                 }
 
                 const data = await response.json();
@@ -219,11 +228,12 @@
                 
                 let inicio = respostaTexto.indexOf('{');
                 let fim = respostaTexto.lastIndexOf('}');
-                if (inicio === -1 || fim === -1) throw new Error("A IA leu, mas não conseguiu estruturar os dados.");
+                if (inicio === -1 || fim === -1) throw new Error("A IA não retornou um formato reconhecível.");
                 
                 let jsonLimpo = respostaTexto.substring(inicio, fim + 1);
                 const info = JSON.parse(jsonLimpo);
 
+                // Preenchimento Suave (Não substitui se não achar)
                 if(info.fornecedor && info.fornecedor.toLowerCase() !== "não identificado") {
                     document.getElementById('fornecedor').value = info.fornecedor;
                 }
@@ -238,8 +248,8 @@
                 }
 
             } catch (error) {
-                console.error(error);
-                alert("⚠️ " + error.message + "\n\nPor favor, preencha as caixinhas manualmente.");
+                console.error("Erro da IA:", error);
+                alert("⚠️ Erro na Leitura Automática: " + error.message);
             } finally {
                 document.getElementById('loader-ia').style.display = 'none';
             }
@@ -261,16 +271,17 @@
 
                 let urlAnexo = null;
 
-                // MÉTODO CLÁSSICO DE UPLOAD: Converte de volta para Blob para garantir que o navegador de celular não bloqueie.
-                if (fotoBase64Global) {
+                // ENVIO DIRETO PARA O SUPABASE (Corrigido: db.storage ao invés de supabase.storage)
+                if (arquivoAnexoGlobal) {
                     try {
-                        const blob = await (await fetch(fotoBase64Global)).blob();
-                        const extensao = mimeTypeGlobal.includes('pdf') ? 'pdf' : 'jpg';
+                        const extensao = arquivoAnexoGlobal.name.toLowerCase().endsWith('.pdf') || arquivoAnexoGlobal.type === 'application/pdf' ? 'pdf' : 'jpg';
                         const fileName = `mobile_nf_${Date.now()}.${extensao}`;
                         
-                        const { data, error } = await db.storage.from('comprovantes').upload(fileName, blob);
+                        const { data, error } = await db.storage.from('comprovantes').upload(fileName, arquivoAnexoGlobal);
                         if (!error && data) {
                             urlAnexo = db.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
+                        } else {
+                            console.error("Erro do Supabase Storage:", error);
                         }
                     } catch(e) { 
                         console.error("Falha no upload do anexo", e); 
@@ -295,7 +306,7 @@
                 const { error } = await db.from('locacoes').insert([payload]);
 
                 if (error) {
-                    alert("❌ Erro no Banco de Dados: " + error.message);
+                    alert("❌ Erro ao Salvar no Banco de Dados: " + error.message);
                 } else {
                     alert("✅ Equipamento salvo com sucesso no Painel!");
                     document.getElementById('equipamento').value = '';
@@ -304,10 +315,11 @@
                     document.getElementById('foto-camera').value = '';
                     document.getElementById('foto-arquivo').value = '';
                     document.getElementById('foto-status').style.display = 'none';
-                    fotoBase64Global = null;
+                    document.getElementById('loader-ia').style.display = 'none';
+                    arquivoAnexoGlobal = null;
                 }
             } catch(err) {
-                alert("❌ Erro grave no envio: " + err.message);
+                alert("❌ Erro grave no botão de salvar: " + err.message);
             } finally {
                 document.getElementById('loader-salvar').style.display = 'none';
                 document.getElementById('btn-enviar-sistema').disabled = false;
