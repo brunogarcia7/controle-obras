@@ -98,7 +98,7 @@
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
     
-    <span id="versao-app">Versão 23.0 (OCR Refatorado - JSON Simplificado)</span>
+    <span id="versao-app">Versão 26.0 (Modelo Automático com Fallback)</span>
 
 </div>
 
@@ -106,7 +106,7 @@
         const keyParts = ['AQ.Ab8RN', '6L0LPaleq', 'CI6UVPQE', 'iTdYSwH1Y', 'pD8AtWUeVyTE', '_jw1dww'];
         const GEMINI_CONFIG = {
             apiKey: keyParts.join(''),
-            model: "gemini-1.5-flash", // Modelo válido e estável
+            model: null, // Será definido dinamicamente
             apiVersion: "v1beta",
             endpoint: "https://generativelanguage.googleapis.com",
             timeout: 30000 
@@ -194,7 +194,94 @@
         }
 
         // ==========================================
-        // FLUXO DE LEITURA (refatorado para novo JSON)
+        // DETECÇÃO AUTOMÁTICA DO MODELO GEMINI
+        // ==========================================
+        async function detectarModeloGemini(forcar = false) {
+            console.group("🔍 Detecção de Modelo Gemini");
+
+            // Verifica cache (se não for forçado)
+            if (!forcar) {
+                const cachedModel = sessionStorage.getItem('gemini_model');
+                if (cachedModel) {
+                    console.log("📦 Usando modelo do cache:", cachedModel);
+                    GEMINI_CONFIG.model = cachedModel;
+                    console.groupEnd();
+                    return cachedModel;
+                }
+            } else {
+                sessionStorage.removeItem('gemini_model');
+                console.log("🔄 Cache limpo. Forçando nova detecção.");
+            }
+
+            const url = `${GEMINI_CONFIG.endpoint}/${GEMINI_CONFIG.apiVersion}/models?key=${GEMINI_CONFIG.apiKey}`;
+            console.log("GET", url);
+
+            let modelos = [];
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    console.error("Erro ao listar modelos:", errData);
+                    throw new Error(`Listagem de modelos falhou: HTTP ${response.status}. ${JSON.stringify(errData)}`);
+                }
+                const data = await response.json();
+                modelos = data.models || [];
+                console.log(`📊 Total de modelos retornados: ${modelos.length}`);
+            } catch (error) {
+                console.error("💥 Falha na requisição de listagem:", error);
+                console.groupEnd();
+                throw error;
+            }
+
+            // Filtra modelos que suportam generateContent
+            const compativeis = modelos.filter(m => {
+                const metodos = m.supportedGenerationMethods || m.supportedMethods || [];
+                return metodos.includes('generateContent');
+            });
+
+            if (compativeis.length === 0) {
+                console.error("Nenhum modelo compatível com generateContent encontrado.");
+                console.groupEnd();
+                throw new Error("Sua chave API não possui modelos compatíveis com geração de conteúdo. Verifique permissões.");
+            }
+
+            // Prioriza modelos: Flash > Lite > Pro
+            const prioridade = (nome) => {
+                const n = nome.toLowerCase();
+                if (n.includes('flash')) return 1;
+                if (n.includes('lite')) return 2;
+                if (n.includes('pro')) return 3;
+                return 4; // outros
+            };
+
+            compativeis.sort((a, b) => {
+                const pa = prioridade(a.name);
+                const pb = prioridade(b.name);
+                if (pa !== pb) return pa - pb;
+                // Se mesma prioridade, tenta ordenar por versão (maior número primeiro)
+                const verA = parseFloat(a.name.replace(/[^\d.]/g, '')) || 0;
+                const verB = parseFloat(b.name.replace(/[^\d.]/g, '')) || 0;
+                return verB - verA;
+            });
+
+            const escolhido = compativeis[0];
+            const nomeModelo = escolhido.name.replace('models/', '');
+
+            console.log("✅ Modelo escolhido:", nomeModelo, `(${escolhido.displayName})`);
+            console.log("   Métodos:", escolhido.supportedGenerationMethods || escolhido.supportedMethods);
+            console.groupEnd();
+
+            // Armazena em cache
+            sessionStorage.setItem('gemini_model', nomeModelo);
+            GEMINI_CONFIG.model = nomeModelo;
+            return nomeModelo;
+        }
+
+        // Inicializa assíncronamente o modelo (primeira detecção)
+        let modeloProntoPromise = detectarModeloGemini();
+
+        // ==========================================
+        // FLUXO DE LEITURA
         // ==========================================
         function previewFotoEProcessarIA(event) {
             try {
@@ -222,7 +309,7 @@
                 }
 
                 loaderIA.style.display = 'block';
-                loaderIA.innerText = "🤖 Lendo dados com Inteligência Artificial...";
+                loaderIA.innerText = "🤖 Verificando disponibilidade do modelo...";
                 loaderIA.style.color = "#6366f1";
                 loaderIA.style.background = "rgba(99, 102, 241, 0.1)";
 
@@ -231,16 +318,22 @@
                     const originalBase64 = e.target.result;
                     
                     try {
+                        // Garante que o modelo esteja definido antes de prosseguir
+                        if (!GEMINI_CONFIG.model) {
+                            await modeloProntoPromise;
+                            if (!GEMINI_CONFIG.model) {
+                                throw new Error("Modelo de IA não disponível. Tente novamente.");
+                            }
+                        }
+
+                        loaderIA.innerText = "🤖 Lendo dados com Inteligência Artificial...";
                         let finalBase64 = originalBase64;
                         if (!isPDF) {
                             finalBase64 = await new Promise(resolve => comprimirImagem(originalBase64, 1200, resolve));
                         }
                         
-                        const tempoInicial = Date.now();
                         const dados = await analisarNotaFiscalGemini(finalBase64, mimeTypeVerdadeiro);
-                        const tempoDecorrido = ((Date.now() - tempoInicial) / 1000).toFixed(2);
                         
-                        // Novo formato: JSON plano com fornecedor, equipamento, quantidade, valor
                         const fornecedor = dados.fornecedor || '';
                         const equipamento = dados.equipamento || '';
                         const quantidade = dados.quantidade || 1;
@@ -251,7 +344,6 @@
                         console.log(`Equipamento: ${equipamento || 'Nenhum'}`);
                         console.log(`Quantidade: ${quantidade}`);
                         console.log(`Valor: R$ ${valor || '0.00'}`);
-                        console.log(`Tempo: ${tempoDecorrido}s`);
                         console.log("=================\n");
 
                         if (fornecedor && fornecedor.toLowerCase() !== "não identificado") {
@@ -282,9 +374,9 @@
         }
 
         // ==========================================
-        // MÓDULO GEMINI API (REFATORADO)
+        // MÓDULO GEMINI API (COM FALLBACK AUTOMÁTICO)
         // ==========================================
-        async function analisarNotaFiscalGemini(imagemBase64, mimeType) {
+        async function analisarNotaFiscalGemini(imagemBase64, mimeType, tentativaFallback = true) {
             console.group("===== GEMINI =====");
 
             if (!imagemBase64) {
@@ -297,23 +389,26 @@
                 console.groupEnd();
                 throw new Error("Chave da API ausente.");
             }
-            if (!GEMINI_CONFIG.model || !GEMINI_CONFIG.endpoint || !GEMINI_CONFIG.apiVersion) {
-                console.error("Erro: configuração da API incompleta.", GEMINI_CONFIG);
-                console.groupEnd();
-                throw new Error("Configurações da API incompletas.");
+            if (!GEMINI_CONFIG.model) {
+                console.error("Erro: modelo não definido. Tentando detecção emergencial...");
+                try {
+                    await detectarModeloGemini(true);
+                } catch (e) {
+                    console.groupEnd();
+                    throw new Error("Modelo de IA não configurado e detecção falhou: " + e.message);
+                }
             }
 
             const safeMime = mimeType?.split(';')[0]?.trim() ?? '';
             const base64Data = imagemBase64?.split(',')[1] ?? '';
             if (!safeMime || !base64Data) {
-                console.error("Erro: mime type ou base64 inválidos.", { safeMime, temBase64: !!base64Data });
+                console.error("Erro: mime type ou base64 inválidos.");
                 console.groupEnd();
                 throw new Error("Payload inválido: imagem/PDF corrompido ou em formato inesperado.");
             }
 
             const url = `${GEMINI_CONFIG.endpoint}/${GEMINI_CONFIG.apiVersion}/models/${GEMINI_CONFIG.model}:generateContent`;
 
-            // Prompt otimizado para extrair exatamente o que precisamos, ignorando dados fiscais
             const systemPrompt = `Você é um especialista em leitura de notas fiscais brasileiras (NF-e, NFS-e, recibos, faturas de locação e compra).
 Sua tarefa é extrair APENAS as seguintes informações, retornando um JSON simples e limpo, sem formatação markdown ou textos adicionais:
 
@@ -352,7 +447,6 @@ Regras rígidas:
             console.log("Endpoint:", url);
             console.log("Mime:", safeMime);
             console.log("Tamanho Base64 (chars):", base64Data.length);
-            console.log("Payload (sem base64):", { ...payload, contents: [{ parts: [{ text: systemPrompt }, { inline_data: { mime_type: safeMime, data: '***' } }] }] });
 
             try {
                 const response = await fetch(url, {
@@ -371,52 +465,59 @@ Regras rígidas:
                 console.log("Tempo de resposta:", `${tempoMs}ms`);
 
                 if (!response.ok) {
+                    // Fallback automático para erros de modelo (400, 404, 410)
+                    if (tentativaFallback && (response.status === 400 || response.status === 404 || response.status === 410)) {
+                        console.warn(`⚠️ Modelo ${GEMINI_CONFIG.model} falhou com status ${response.status}. Iniciando fallback...`);
+                        // Limpa cache e força nova detecção
+                        sessionStorage.removeItem('gemini_model');
+                        GEMINI_CONFIG.model = null;
+                        try {
+                            await detectarModeloGemini(true);
+                            console.log("🔄 Modelo atualizado para:", GEMINI_CONFIG.model);
+                            // Tenta novamente com o novo modelo, mas sem fallback infinito
+                            console.groupEnd();
+                            return await analisarNotaFiscalGemini(imagemBase64, mimeType, false);
+                        } catch (fallbackErr) {
+                            console.error("Fallback falhou:", fallbackErr);
+                            console.groupEnd();
+                            throw new Error("Nenhum modelo Gemini disponível após falha. Recarregue a página ou verifique a chave API.");
+                        }
+                    }
+
+                    // Se não for erro de modelo ou fallback desativado, exibe erro detalhado
                     let errorMsg = `Erro na API (HTTP ${response.status})`;
                     try {
                         const errData = await response.json();
                         console.error("Resposta de erro completa:", JSON.stringify(errData, null, 2));
-                        // Tenta extrair a mensagem de erro real da API
                         if (errData?.error?.message) {
                             errorMsg = errData.error.message;
-                        } else if (errData?.error?.status) {
-                            errorMsg = `${errData.error.status}: ${errData.error.message || 'sem detalhes'}`;
                         }
                     } catch (parseErr) {
-                        // resposta não é JSON, tenta obter texto
-                        try {
-                            const textErr = await response.text();
-                            console.error("Resposta de erro (texto):", textErr);
-                            errorMsg = `Erro ${response.status}: ${textErr.substring(0, 200)}`;
-                        } catch (e) {
-                            errorMsg = `Erro ${response.status}: sem corpo de resposta legível`;
-                        }
+                        const textErr = await response.text().catch(() => '');
+                        console.error("Resposta de erro (texto):", textErr);
+                        errorMsg = `Erro ${response.status}: ${textErr.substring(0, 200)}`;
                     }
                     console.groupEnd();
                     throw new Error(errorMsg);
                 }
 
                 const data = await response.json();
-                console.log("Resposta bruta completa:", JSON.stringify(data, null, 2));
+                console.log("Resposta bruta:", JSON.stringify(data).substring(0, 200) + "...");
 
                 const parteTexto = data?.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (!parteTexto) {
-                    console.error("Resposta sem texto processável:", data);
-                    // Verifica se houve bloqueio de segurança
-                    const finishReason = data?.candidates?.[0]?.finishReason;
-                    const safetyRatings = data?.candidates?.[0]?.safetyRatings;
-                    console.error("Finish reason:", finishReason, "Safety ratings:", safetyRatings);
+                    console.error("Resposta sem texto:", data);
                     console.groupEnd();
-                    throw new Error("A API retornou uma resposta sem texto (possível bloqueio de segurança ou conteúdo vazio).");
+                    throw new Error("A API retornou uma resposta sem texto processável.");
                 }
 
-                console.log("Texto retornado pela IA:", parteTexto);
+                console.log("Texto retornado:", parteTexto);
 
-                // Limpeza do JSON
                 const textoLimpo = parteTexto.replace(/```json\s*|```/gi, '').trim();
                 const inicio = textoLimpo.indexOf('{');
                 const fim = textoLimpo.lastIndexOf('}');
                 if (inicio === -1 || fim === -1) {
-                    console.error("Texto fora do formato JSON:", textoLimpo);
+                    console.error("Formato JSON não encontrado:", textoLimpo);
                     console.groupEnd();
                     throw new Error("A IA respondeu fora do formato JSON esperado.");
                 }
@@ -425,20 +526,18 @@ Regras rígidas:
                 try {
                     jsonResult = JSON.parse(textoLimpo.substring(inicio, fim + 1));
                 } catch (parseErr) {
-                    console.error("Falha ao fazer parse do JSON:", parseErr, "Texto:", textoLimpo);
+                    console.error("Parse JSON falhou:", parseErr, textoLimpo);
                     console.groupEnd();
                     throw new Error("JSON inválido retornado pela IA.");
                 }
 
-                // Garante que o JSON tem a estrutura esperada (pode vir com itens ou direto)
+                // Fallback para formato antigo com itens
                 if (!jsonResult.fornecedor && !jsonResult.equipamento && jsonResult.itens && jsonResult.itens.length > 0) {
-                    // Fallback para formato antigo com array de itens
-                    console.warn("Modelo retornou formato antigo com 'itens', convertendo para o novo formato.");
+                    console.warn("Formato antigo detectado, convertendo...");
                     jsonResult.equipamento = jsonResult.itens[0].descricao || '';
                     jsonResult.quantidade = jsonResult.itens[0].quantidade || 1;
                 }
 
-                // Garante que todos os campos existam
                 const resultadoFinal = {
                     fornecedor: jsonResult.fornecedor || '',
                     equipamento: jsonResult.equipamento || '',
@@ -446,20 +545,20 @@ Regras rígidas:
                     valor: jsonResult.valor || ''
                 };
 
-                console.log("JSON final processado:", resultadoFinal);
+                console.log("JSON final:", resultadoFinal);
                 console.groupEnd();
                 return resultadoFinal;
 
             } catch (error) {
                 clearTimeout(timeoutId);
                 if (error.name === 'AbortError') {
-                    console.error("Timeout: nenhuma resposta em", `${GEMINI_CONFIG.timeout / 1000}s`);
+                    console.error("Timeout:", GEMINI_CONFIG.timeout / 1000, "s");
                     console.groupEnd();
-                    throw new Error(`Timeout (${GEMINI_CONFIG.timeout / 1000}s): servidor não respondeu.`);
+                    throw new Error(`Timeout de ${GEMINI_CONFIG.timeout / 1000}s atingido.`);
                 }
                 console.error("Falha capturada:", error);
                 console.groupEnd();
-                throw error; 
+                throw error;
             }
         }
 
