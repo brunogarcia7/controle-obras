@@ -43,7 +43,7 @@
 
     <div class="header">
         <h1>📸 Leitor NF / Cadastro</h1>
-        <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">Envio direto do celular para a nuvem</p>
+        <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">Envio direto para a nuvem</p>
     </div>
 
     <div class="card">
@@ -98,6 +98,12 @@
 </div>
 
     <script>
+        // ALERTA GLOBAL DE BUGS PARA IDENTIFICAR ERROS OCULTOS
+        window.onerror = function(msg, url, line) {
+            alert("⚠️ Erro no Sistema:\n" + msg + "\nLinha: " + line);
+            return true;
+        };
+
         const GEMINI_API_KEY = 'AIzaSyD_yorwczN1p3WcasUrfVYChF8w6E4QvP0';
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
@@ -126,15 +132,13 @@
             reader.readAsDataURL(file);
         }
 
-        // LIMPADOR INTELIGENTE DE NÚMEROS (Remove R$, pontos separadores de milhar e arruma vírgulas)
+        // FUNÇÃO BLINDADA PARA LIMPAR O VALOR MONETÁRIO
         function formatarValorParaInput(texto) {
             if (!texto) return 0;
-            let limpo = String(texto).replace(/[^\d.,]/g, ''); // Tira tudo que não for número, ponto ou vírgula
+            let limpo = String(texto).replace(/[^\d.,]/g, '');
             if (limpo.includes(',') && limpo.includes('.')) {
-                // Formato Brasileiro: 1.500,00 -> vira 1500.00
                 limpo = limpo.replace(/\./g, '').replace(',', '.');
             } else if (limpo.includes(',')) {
-                // Tem só vírgula: 150,00 -> vira 150.00
                 limpo = limpo.replace(',', '.');
             }
             return parseFloat(limpo) || 0;
@@ -153,36 +157,25 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [
-                                { text: "Você é um assistente de extração de dados. Leia o documento anexado. Retorne APENAS um bloco JSON contendo as chaves: 'fornecedor', 'equipamento', 'quantidade' e 'valor'." },
-                                {
-                                    inline_data: {
-                                        mime_type: mime,
-                                        data: base64Data
-                                    }
-                                }
+                                { text: "Analise o documento fiscal. Retorne APENAS um JSON estrito. Chaves: 'fornecedor', 'equipamento', 'quantidade' e 'valor'. Sem blocos de código (```json)." },
+                                { inline_data: { mime_type: mime, data: base64Data } }
                             ]
                         }]
                     })
                 });
 
-                // VERIFICA SE O GOOGLE RECUSOU O ARQUIVO (Erro 400 ou 403)
-                if (!response.ok) {
-                    const erroMgs = await response.text();
-                    throw new Error(`Google recusou o arquivo. Código: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`Google IA falhou (Erro ${response.status})`);
 
                 const data = await response.json();
                 let respostaTexto = data.candidates[0].content.parts[0].text;
                 
-                // ISOLADOR DE JSON (Garante que vai pegar só o JSON mesmo se a IA mandar texto antes)
                 let inicio = respostaTexto.indexOf('{');
                 let fim = respostaTexto.lastIndexOf('}');
-                if (inicio === -1 || fim === -1) throw new Error("A IA não conseguiu montar o formato de dados corretamente.");
+                if (inicio === -1 || fim === -1) throw new Error("A IA não retornou um formato reconhecível.");
                 
                 let jsonLimpo = respostaTexto.substring(inicio, fim + 1);
                 const info = JSON.parse(jsonLimpo);
 
-                // PREENCHIMENTO DOS CAMPOS (Anti-falha)
                 if(info.fornecedor) document.getElementById('fornecedor').value = info.fornecedor;
                 if(info.equipamento) document.getElementById('equipamento').value = info.equipamento;
                 
@@ -190,17 +183,28 @@
                     let qtdTratada = parseInt(String(info.quantidade).replace(/\D/g, '')) || 1;
                     document.getElementById('quantidade').value = qtdTratada;
                 }
-                
                 if(info.valor) {
                     document.getElementById('valor').value = formatarValorParaInput(info.valor);
                 }
 
             } catch (error) {
-                console.error("ALERTA DE ERRO:", error);
-                alert("⚠️ Erro na leitura automática: " + error.message + "\n\nSe o problema persistir, preencha manualmente.");
+                console.error(error);
+                alert("⚠️ A IA teve dificuldade em ler esta nota. Por favor, preencha os dados manualmente.");
             } finally {
                 document.getElementById('loader-ia').style.display = 'none';
             }
+        }
+
+        // NOVO MOTOR DE CONVERSÃO (NUNCA TRAVA A MEMÓRIA DO CELULAR/PC)
+        function dataURItoBlob(dataURI) {
+            const byteString = atob(dataURI.split(',')[1]);
+            const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            return new Blob([ab], {type: mimeString});
         }
 
         async function salvarDados() {
@@ -219,7 +223,7 @@
 
             if (fotoBase64) {
                 try {
-                    const blob = await (await fetch(fotoBase64)).blob();
+                    const blob = dataURItoBlob(fotoBase64);
                     const extensao = mimeType.includes('pdf') ? 'pdf' : 'jpg';
                     const fileName = `mobile_nf_${Date.now()}.${extensao}`;
                     
@@ -227,7 +231,10 @@
                     if (!error) {
                         urlAnexo = supabase.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
                     }
-                } catch(e) { console.error(e); }
+                } catch(e) { 
+                    console.error(e); 
+                    alert("⚠️ Erro ao subir o anexo, mas vamos tentar salvar os textos.");
+                }
             }
 
             const dataAtual = new Date().toISOString().split('T')[0];
@@ -245,20 +252,24 @@
                 contrato: tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App'
             };
 
-            const { error } = await supabase.from('locacoes').insert([payload]);
+            try {
+                const { error } = await supabase.from('locacoes').insert([payload]);
 
-            document.getElementById('loader-salvar').style.display = 'none';
-
-            if (error) {
-                alert("❌ Erro ao salvar no Banco de Dados: " + error.message);
-            } else {
-                alert("✅ Salvo com sucesso!");
-                document.getElementById('equipamento').value = '';
-                document.getElementById('valor').value = '';
-                document.getElementById('foto-camera').value = '';
-                document.getElementById('foto-arquivo').value = '';
-                document.getElementById('foto-status').style.display = 'none';
-                fotoBase64 = null;
+                if (error) {
+                    alert("❌ Erro no Banco de Dados: " + error.message);
+                } else {
+                    alert("✅ Salvo com sucesso no Painel!");
+                    document.getElementById('equipamento').value = '';
+                    document.getElementById('valor').value = '';
+                    document.getElementById('foto-camera').value = '';
+                    document.getElementById('foto-arquivo').value = '';
+                    document.getElementById('foto-status').style.display = 'none';
+                    fotoBase64 = null;
+                }
+            } catch(err) {
+                alert("❌ Erro crítico ao conectar com o banco de dados.");
+            } finally {
+                document.getElementById('loader-salvar').style.display = 'none';
             }
         }
     </script>
