@@ -98,12 +98,12 @@
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
     
-    <div id="versao-app">Versão 6.0 Blindada</div>
+    <div id="versao-app">Versão 6.1 (Bug Corrigido)</div>
 
 </div>
 
     <script>
-        // ALERTA DE ERROS CRÍTICOS (Se algo der errado, a tela vai avisar!)
+        // ALERTA DE ERROS CRÍTICOS
         window.onerror = function(msg, url, line) {
             alert("⚠️ Erro Interno:\n" + msg + "\nLinha: " + line);
             return true;
@@ -113,15 +113,11 @@
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
         
-        // Inicialização Segura do Supabase
-        let supabase;
-        try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } catch(e) {
-            alert("⚠️ Falha ao conectar ao servidor. Recarregue a página.");
-        }
+        // CORREÇÃO DO BUG AQUI: Mudamos de 'supabase' para 'db' para não dar conflito!
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let arquivoAnexoGlobal = null; 
+        let mimeTypeGlobal = ''; 
 
         function previewFotoEProcessarIA(event) {
             try {
@@ -130,8 +126,8 @@
                 
                 arquivoAnexoGlobal = file; 
                 
-                const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-                const isPDF = mimeType === 'application/pdf';
+                mimeTypeGlobal = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+                const isPDF = mimeTypeGlobal === 'application/pdf';
                 
                 const statusBox = document.getElementById('foto-status');
                 statusBox.style.display = 'block';
@@ -141,7 +137,7 @@
                 const reader = new FileReader();
                 reader.onload = (e) => { 
                     const base64Str = e.target.result;
-                    extrairDadosComIA(base64Str, mimeType);
+                    extrairDadosComIA(base64Str, mimeTypeGlobal);
                 };
                 reader.readAsDataURL(file);
             } catch(erroInterno) {
@@ -149,7 +145,6 @@
             }
         }
 
-        // LIMPADOR DE NÚMEROS (Tira R$, etc)
         function formatarValorParaInput(texto) {
             if (!texto) return 0;
             let limpo = String(texto).replace(/[^\d.,]/g, '');
@@ -193,7 +188,6 @@
                 let jsonLimpo = respostaTexto.substring(inicio, fim + 1);
                 const info = JSON.parse(jsonLimpo);
 
-                // Preenchimento Suave (Não substitui se não achar)
                 if(info.fornecedor && info.fornecedor.toLowerCase() !== "não identificado") {
                     document.getElementById('fornecedor').value = info.fornecedor;
                 }
@@ -231,15 +225,14 @@
 
                 let urlAnexo = null;
 
-                // ENVIO DIRETO PARA O SUPABASE
                 if (arquivoAnexoGlobal) {
                     try {
-                        const extensao = arquivoAnexoGlobal.type.includes('pdf') ? 'pdf' : 'jpg';
+                        const extensao = mimeTypeGlobal.includes('pdf') ? 'pdf' : 'jpg';
                         const fileName = `mobile_nf_${Date.now()}.${extensao}`;
                         
-                        const { data, error } = await supabase.storage.from('comprovantes').upload(fileName, arquivoAnexoGlobal);
+                        const { data, error } = await db.storage.from('comprovantes').upload(fileName, arquivoAnexoGlobal);
                         if (!error && data) {
-                            urlAnexo = supabase.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
+                            urlAnexo = db.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
                         }
                     } catch(e) { 
                         console.error("Falha no upload do anexo", e); 
@@ -261,7 +254,7 @@
                     contrato: tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App'
                 };
 
-                const { error } = await supabase.from('locacoes').insert([payload]);
+                const { error } = await db.from('locacoes').insert([payload]);
 
                 if (error) {
                     alert("❌ Erro no Banco de Dados: " + error.message);
