@@ -97,7 +97,7 @@
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
     
-    <span id="versao-app">Versão 21.0 (Arquitetura Gemini Refatorada)</span>
+    <span id="versao-app">Versão 22.0 (Módulo Gemini corrigido — v1beta/gemini-3.5-flash)</span>
 
 </div>
 
@@ -105,11 +105,19 @@
         // ==========================================
         // 1. CONFIGURAÇÕES CENTRALIZADAS (ETAPA 6)
         // ==========================================
+        // ATENÇÃO DE SEGURANÇA: esta chave fica exposta no navegador porque o
+        // app roda 100% no cliente (GitHub Pages, sem backend). Ver explicação
+        // completa sobre os riscos e a alternativa recomendada (Supabase Edge
+        // Function) no final da resposta do chat.
         const keyParts = ['AQ.Ab8RN', '6L0LPaleq', 'CI6UVPQE', 'iTdYSwH1Y', 'pD8AtWUeVyTE', '_jw1dww'];
         const GEMINI_CONFIG = {
             apiKey: keyParts.join(''),
-            model: "gemini-1.5-flash", // Modelo válido e atual para OCR (ETAPA 2, 5 e 7)
-            endpoint: "https://generativelanguage.googleapis.com/v1beta/models/",
+            // gemini-1.5-* foi DESLIGADO pelo Google (todo o request retorna 404,
+            // independente da região). O modelo estável e atual para
+            // generateContent multimodal (imagem/PDF + JSON) é o gemini-3.5-flash.
+            model: "gemini-3.5-flash",
+            apiVersion: "v1beta",
+            endpoint: "https://generativelanguage.googleapis.com",
             timeout: 30000 // 30 segundos
         };
 
@@ -241,27 +249,69 @@
         }
 
         // ==========================================
-        // 4. MÓDULO GEMINI API (ETAPAS 1, 3, 4, 8, 10)
+        // 4. MÓDULO GEMINI API — REFATORADO (v22.0)
         // ==========================================
+        // Mudanças em relação à versão anterior:
+        //  - modelo gemini-1.5-flash (desligado pelo Google) trocado por
+        //    gemini-3.5-flash (modelo estável/GA atual para generateContent).
+        //  - autenticação migrada de "?key=" na URL para o header
+        //    "x-goog-api-key" (forma recomendada atualmente pela documentação
+        //    oficial; evita vazar a chave em logs de acesso/URL).
+        //  - responseSchema adicionado ao generationConfig: força o modelo a
+        //    devolver exatamente as 4 chaves esperadas, sem markdown, sem
+        //    texto explicativo — elimina a necessidade de "torcer" pelo
+        //    formato certo.
+        //  - tratamento de erro HTTP expandido (400/401/403/404/408/413/429/
+        //    500/502/503/504 + AbortError + JSON inválido).
+        //  - logs detalhados em cada etapa da chamada.
         async function analisarNotaFiscalGemini(imagemBase64, mimeType) {
-            // ETAPA 9: Validações antes do POST
-            if (!imagemBase64) throw new Error("Imagem ausente ou inválida.");
-            if (!GEMINI_CONFIG.apiKey) throw new Error("Chave da API ausente.");
-            if (!GEMINI_CONFIG.model || !GEMINI_CONFIG.endpoint) throw new Error("Configurações da API incompletas.");
+            console.group("===== GEMINI =====");
 
-            const safeMime = mimeType.split(';')[0].trim();
-            const base64Data = imagemBase64.split(',')[1];
-            const url = `${GEMINI_CONFIG.endpoint}${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
+            // ---- Validações antes do POST ----
+            if (!imagemBase64) {
+                console.error("Erro: imagem/PDF ausente ou inválido.");
+                console.groupEnd();
+                throw new Error("Imagem ausente ou inválida.");
+            }
+            if (!GEMINI_CONFIG.apiKey) {
+                console.error("Erro: chave da API ausente.");
+                console.groupEnd();
+                throw new Error("Chave da API ausente.");
+            }
+            if (!GEMINI_CONFIG.model || !GEMINI_CONFIG.endpoint || !GEMINI_CONFIG.apiVersion) {
+                console.error("Erro: configuração da API incompleta.", GEMINI_CONFIG);
+                console.groupEnd();
+                throw new Error("Configurações da API incompletas.");
+            }
+
+            const safeMime = mimeType?.split(';')[0]?.trim() ?? '';
+            const base64Data = imagemBase64?.split(',')[1] ?? '';
+            if (!safeMime || !base64Data) {
+                console.error("Erro: mime type ou base64 inválidos.", { safeMime, temBase64: !!base64Data });
+                console.groupEnd();
+                throw new Error("Payload inválido: imagem/PDF corrompido ou em formato inesperado.");
+            }
+
+            const url = `${GEMINI_CONFIG.endpoint}/${GEMINI_CONFIG.apiVersion}/models/${GEMINI_CONFIG.model}:generateContent`;
 
             const systemPrompt = `Aja como um OCR especialista em documentos fiscais brasileiros.
-Analise a imagem e retorne EXATAMENTE um objeto JSON com as chaves abaixo.
-{
-  "fornecedor": "Razão social ou nome fantasia",
-  "equipamento": "Descrição do item ou serviço locado/comprado",
-  "quantidade": "Apenas o número",
-  "valor": "Valor total final (apenas números e ponto)"
-}
-REGRAS: Ignore CNPJ, NCM, chaves, QR Code. Não use crases ou markdown. Retorne apenas o JSON.`;
+Analise o documento e extraia os dados no formato definido pelo schema.
+REGRAS: Ignore CNPJ, NCM, chaves de acesso e QR Code. Se um campo não for
+identificado, retorne string vazia. "quantidade" e "valor" devem conter
+apenas números (valor pode usar ponto como separador decimal).`;
+
+            // Schema fixo: garante que a IA NUNCA devolva markdown, texto livre
+            // ou chaves além das quatro esperadas pelo restante do sistema.
+            const responseSchema = {
+                type: "OBJECT",
+                properties: {
+                    fornecedor: { type: "STRING" },
+                    equipamento: { type: "STRING" },
+                    quantidade: { type: "STRING" },
+                    valor: { type: "STRING" }
+                },
+                required: ["fornecedor", "equipamento", "quantidade", "valor"]
+            };
 
             const payload = {
                 contents: [{
@@ -271,7 +321,9 @@ REGRAS: Ignore CNPJ, NCM, chaves, QR Code. Não use crases ou markdown. Retorne 
                     ]
                 }],
                 generationConfig: {
-                    response_mime_type: "application/json"
+                    responseMimeType: "application/json",
+                    responseSchema: responseSchema,
+                    temperature: 0
                 }
             };
 
@@ -279,80 +331,94 @@ REGRAS: Ignore CNPJ, NCM, chaves, QR Code. Não use crases ou markdown. Retorne 
             const timeoutId = setTimeout(() => controller.abort(), GEMINI_CONFIG.timeout);
             const startTime = Date.now();
 
-            // ETAPA 10: Logs Claros - Requisição
-            console.group("[Gemini API Request]");
-            console.log("Modelo utilizado:", GEMINI_CONFIG.model);
-            console.log("Endpoint:", GEMINI_CONFIG.endpoint);
-            console.log("Payload enviado (Resumo):", { model: GEMINI_CONFIG.model, mime_type: safeMime });
-            console.groupEnd();
+            console.log("Modelo:", GEMINI_CONFIG.model);
+            console.log("Endpoint:", url);
+            console.log("Mime:", safeMime);
+            console.log("Tamanho Base64 (chars):", base64Data.length);
+            console.log("Payload (resumo):", { generationConfig: payload.generationConfig });
 
             try {
-                // ETAPA 8: Fetch construído rigorosamente
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': GEMINI_CONFIG.apiKey
+                    },
                     body: JSON.stringify(payload),
                     signal: controller.signal
                 });
 
                 clearTimeout(timeoutId);
-                const endTime = Date.now();
-
-                // ETAPA 4 e 10: Tratamento HTTP detalhado e Logs
-                console.group("[Gemini API Response]");
+                const tempoMs = Date.now() - startTime;
                 console.log("Status HTTP:", response.status);
-                console.log(`Tempo: ${endTime - startTime}ms`);
+                console.log("Tempo:", `${tempoMs}ms`);
 
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({}));
-                    console.log("Erro bruto recebido:", errData);
-                    console.groupEnd();
+                    console.error("Erro bruto recebido:", errData);
 
-                    let msg = "Erro de conexão com Google API.";
-                    switch (response.status) {
-                        case 400: msg = "Payload inválido. Arquivo possivelmente corrompido."; break;
-                        case 401:
-                        case 403: msg = "Acesso Negado (403/401). Chave API inválida ou sem permissão para a Generative Language API."; break;
-                        case 404: msg = `Modelo '${GEMINI_CONFIG.model}' não encontrado ou projeto Vertex AI em endpoint incorreto.`; break;
-                        case 429: msg = "Limite de requisições excedido (Rate Limit)."; break;
-                    }
-                    if (response.status >= 500) msg = "Servidor do Google apresentou falha (5xx).";
-                    
+                    const mensagens = {
+                        400: "Payload inválido. Arquivo possivelmente corrompido ou schema rejeitado.",
+                        401: "Chave de API inválida ou não autenticada (401).",
+                        403: "Acesso negado (403). Chave sem permissão para a Generative Language API ou restrição de domínio/IP ativa.",
+                        404: `Modelo '${GEMINI_CONFIG.model}' não encontrado nesta versão da API (${GEMINI_CONFIG.apiVersion}). Verifique se o modelo ainda está disponível.`,
+                        408: "Tempo de resposta do servidor excedido (408).",
+                        413: "Arquivo grande demais para a API (413).",
+                        429: "Limite de requisições excedido (Rate Limit / cota). Aguarde e tente novamente.",
+                        500: "Erro interno do servidor do Google (500).",
+                        502: "Bad Gateway do servidor do Google (502).",
+                        503: "Serviço do Google temporariamente indisponível (503).",
+                        504: "Timeout no gateway do servidor do Google (504)."
+                    };
+                    const msg = mensagens[response.status] ?? `Erro de conexão com a API do Google (HTTP ${response.status}).`;
+
+                    console.groupEnd();
                     throw new Error(msg);
                 }
 
                 const data = await response.json();
-                console.log("Resposta Bruta:", JSON.stringify(data).substring(0, 150) + "...");
-                console.groupEnd();
+                console.log("Resposta bruta (resumo):", JSON.stringify(data).substring(0, 200) + "...");
 
-                if (!data.candidates || !data.candidates[0].content.parts[0].text) {
-                    throw new Error("A API retornou uma resposta sem texto processável.");
+                const parteTexto = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!parteTexto) {
+                    console.error("Resposta sem texto processável:", data);
+                    console.groupEnd();
+                    throw new Error("A API retornou uma resposta sem texto processável (possível bloqueio por safety settings).");
                 }
 
-                let texto = data.candidates[0].content.parts[0].text;
-                
-                // Validação e Limpeza do JSON
-                texto = texto.replace(/```json/gi, '').replace(/```/g, '').trim();
-                const inicio = texto.indexOf('{');
-                const fim = texto.lastIndexOf('}');
-                
+                // Defesa extra: mesmo com responseSchema, removemos eventuais
+                // cercas de markdown antes do parse.
+                const textoLimpo = parteTexto.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const inicio = textoLimpo.indexOf('{');
+                const fim = textoLimpo.lastIndexOf('}');
                 if (inicio === -1 || fim === -1) {
+                    console.error("Texto fora do formato JSON esperado:", textoLimpo);
+                    console.groupEnd();
                     throw new Error("A IA respondeu fora do formato JSON esperado.");
                 }
-                
-                const jsonLimpo = texto.substring(inicio, fim + 1);
-                const jsonResult = JSON.parse(jsonLimpo);
 
-                // ETAPA 3: Retorna o objeto JSON validado
+                let jsonResult;
+                try {
+                    jsonResult = JSON.parse(textoLimpo.substring(inicio, fim + 1));
+                } catch (parseErr) {
+                    console.error("Falha ao fazer parse do JSON:", parseErr, textoLimpo);
+                    console.groupEnd();
+                    throw new Error("JSON inválido retornado pela IA.");
+                }
+
+                console.log("Resultado final:", jsonResult);
+                console.groupEnd();
                 return jsonResult;
 
             } catch (error) {
                 clearTimeout(timeoutId);
-                console.error("[Gemini API] Falha capturada:", error);
-                
                 if (error.name === 'AbortError') {
-                    throw new Error(`Timeout alcançado (${GEMINI_CONFIG.timeout/1000}s). Servidor não respondeu.`);
+                    console.error("Timeout: nenhuma resposta em", `${GEMINI_CONFIG.timeout / 1000}s`);
+                    console.groupEnd();
+                    throw new Error(`Timeout alcançado (${GEMINI_CONFIG.timeout / 1000}s). Servidor não respondeu.`);
                 }
+                console.error("Falha capturada:", error);
+                console.groupEnd();
                 throw error; // Repassa para o try-catch da UI lidar graciosamente
             }
         }
