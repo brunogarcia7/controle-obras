@@ -98,25 +98,20 @@
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
     
-    <span id="versao-app">Versão 26.0 (Modelo Automático com Fallback)</span>
+    <span id="versao-app">Versão 29.0 (Gemini Simplificado)</span>
 
 </div>
 
     <script>
         const keyParts = ['AQ.Ab8RN', '6L0LPaleq', 'CI6UVPQE', 'iTdYSwH1Y', 'pD8AtWUeVyTE', '_jw1dww'];
-        const GEMINI_CONFIG = {
-            apiKey: keyParts.join(''),
-            model: null, // Será definido dinamicamente
-            apiVersion: "v1beta",
-            endpoint: "https://generativelanguage.googleapis.com",
-            timeout: 30000 
-        };
+        const GEMINI_API_KEY = keyParts.join('');
+        const GEMINI_TIMEOUT = 30000; // 30 segundos
 
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let arquivoAnexoGlobal = null; 
+        let arquivoAnexoGlobal = null;
 
         // ==========================================
         // CARREGAMENTO AUTOMÁTICO DE OBRAS
@@ -194,91 +189,156 @@
         }
 
         // ==========================================
-        // DETECÇÃO AUTOMÁTICA DO MODELO GEMINI
+        // MÓDULO GEMINI SIMPLIFICADO
         // ==========================================
-        async function detectarModeloGemini(forcar = false) {
-            console.group("🔍 Detecção de Modelo Gemini");
+        const MODELOS_GEMINI = [
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-1.5-flash'
+        ];
 
-            // Verifica cache (se não for forçado)
-            if (!forcar) {
-                const cachedModel = sessionStorage.getItem('gemini_model');
-                if (cachedModel) {
-                    console.log("📦 Usando modelo do cache:", cachedModel);
-                    GEMINI_CONFIG.model = cachedModel;
-                    console.groupEnd();
-                    return cachedModel;
-                }
-            } else {
-                sessionStorage.removeItem('gemini_model');
-                console.log("🔄 Cache limpo. Forçando nova detecção.");
-            }
-
-            const url = `${GEMINI_CONFIG.endpoint}/${GEMINI_CONFIG.apiVersion}/models?key=${GEMINI_CONFIG.apiKey}`;
-            console.log("GET", url);
-
-            let modelos = [];
+        function extrairJSONdaResposta(textoBruto) {
+            if (!textoBruto) return null;
+            let textoLimpo = textoBruto
+                .replace(/```json\s*/gi, '')
+                .replace(/```/g, '')
+                .trim();
+            const inicio = textoLimpo.indexOf('{');
+            const fim = textoLimpo.lastIndexOf('}');
+            if (inicio === -1 || fim === -1) return null;
             try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({}));
-                    console.error("Erro ao listar modelos:", errData);
-                    throw new Error(`Listagem de modelos falhou: HTTP ${response.status}. ${JSON.stringify(errData)}`);
-                }
-                const data = await response.json();
-                modelos = data.models || [];
-                console.log(`📊 Total de modelos retornados: ${modelos.length}`);
-            } catch (error) {
-                console.error("💥 Falha na requisição de listagem:", error);
-                console.groupEnd();
-                throw error;
+                return JSON.parse(textoLimpo.substring(inicio, fim + 1));
+            } catch (e) {
+                return null;
             }
-
-            // Filtra modelos que suportam generateContent
-            const compativeis = modelos.filter(m => {
-                const metodos = m.supportedGenerationMethods || m.supportedMethods || [];
-                return metodos.includes('generateContent');
-            });
-
-            if (compativeis.length === 0) {
-                console.error("Nenhum modelo compatível com generateContent encontrado.");
-                console.groupEnd();
-                throw new Error("Sua chave API não possui modelos compatíveis com geração de conteúdo. Verifique permissões.");
-            }
-
-            // Prioriza modelos: Flash > Lite > Pro
-            const prioridade = (nome) => {
-                const n = nome.toLowerCase();
-                if (n.includes('flash')) return 1;
-                if (n.includes('lite')) return 2;
-                if (n.includes('pro')) return 3;
-                return 4; // outros
-            };
-
-            compativeis.sort((a, b) => {
-                const pa = prioridade(a.name);
-                const pb = prioridade(b.name);
-                if (pa !== pb) return pa - pb;
-                // Se mesma prioridade, tenta ordenar por versão (maior número primeiro)
-                const verA = parseFloat(a.name.replace(/[^\d.]/g, '')) || 0;
-                const verB = parseFloat(b.name.replace(/[^\d.]/g, '')) || 0;
-                return verB - verA;
-            });
-
-            const escolhido = compativeis[0];
-            const nomeModelo = escolhido.name.replace('models/', '');
-
-            console.log("✅ Modelo escolhido:", nomeModelo, `(${escolhido.displayName})`);
-            console.log("   Métodos:", escolhido.supportedGenerationMethods || escolhido.supportedMethods);
-            console.groupEnd();
-
-            // Armazena em cache
-            sessionStorage.setItem('gemini_model', nomeModelo);
-            GEMINI_CONFIG.model = nomeModelo;
-            return nomeModelo;
         }
 
-        // Inicializa assíncronamente o modelo (primeira detecção)
-        let modeloProntoPromise = detectarModeloGemini();
+        async function enviarParaGemini(imagemBase64, mimeType, prompt) {
+            const base64Data = imagemBase64.includes(',') ? imagemBase64.split(',')[1] : imagemBase64;
+            const safeMime = mimeType.split(';')[0].trim();
+
+            for (let i = 0; i < MODELOS_GEMINI.length; i++) {
+                const modelo = MODELOS_GEMINI[i];
+                console.log(`🤖 Tentando modelo: ${modelo}...`);
+
+                try {
+                    const resultado = await tentarModelo(modelo, base64Data, safeMime, prompt);
+                    if (resultado) return resultado;
+                } catch (erro) {
+                    console.warn(`⚠️ ${modelo} falhou: ${erro.message}`);
+                    // continua para o próximo modelo
+                }
+            }
+            throw new Error("Todos os modelos Gemini falharam. Tente novamente mais tarde.");
+        }
+
+        async function tentarModelo(modelo, base64Data, safeMime, prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inline_data: { mime_type: safeMime, data: base64Data } }
+                    ]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    temperature: 0
+                }
+            };
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), GEMINI_TIMEOUT);
+
+            let response;
+            try {
+                response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': GEMINI_API_KEY
+                    },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+            } catch (err) {
+                clearTimeout(timeoutId);
+                if (err.name === 'AbortError') {
+                    throw new Error(`Timeout de ${GEMINI_TIMEOUT/1000}s`);
+                }
+                throw err;
+            }
+
+            const status = response.status;
+            console.log(`   Status: ${status}`);
+
+            // Sucesso
+            if (response.ok) {
+                const data = await response.json();
+                const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (texto) {
+                    const json = extrairJSONdaResposta(texto);
+                    if (json) {
+                        console.log(`✅ ${modelo} respondeu com sucesso.`);
+                        return json;
+                    } else {
+                        throw new Error("JSON inválido na resposta");
+                    }
+                } else {
+                    throw new Error("Resposta sem texto");
+                }
+            }
+
+            // Tratamento de erros específicos
+            let mensagem = '';
+            try {
+                const errData = await response.json();
+                mensagem = errData?.error?.message || '';
+            } catch (e) { /* ignora */ }
+
+            if (status === 403) {
+                throw new Error("Chave de API inválida ou sem permissão. Verifique no Google AI Studio.");
+            }
+            if (status === 429) {
+                throw new Error("Cota diária excedida. Aguarde 24 horas ou verifique seu plano.");
+            }
+            if (status === 500 || status === 502 || status === 503) {
+                // Para erros internos do Google, tenta novamente após 2 segundos (uma única vez)
+                console.warn(`   ⚠️ Erro ${status} no Google. Aguardando 2s para retry...`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Tenta novamente com o mesmo modelo
+                try {
+                    const retryResponse = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-goog-api-key': GEMINI_API_KEY
+                        },
+                        body: JSON.stringify(payload),
+                        signal: AbortSignal.timeout(GEMINI_TIMEOUT)
+                    });
+                    if (retryResponse.ok) {
+                        const retryData = await retryResponse.json();
+                        const texto = retryData?.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (texto) {
+                            const json = extrairJSONdaResposta(texto);
+                            if (json) {
+                                console.log(`✅ ${modelo} respondeu após retry.`);
+                                return json;
+                            }
+                        }
+                    }
+                } catch (retryErr) {
+                    console.warn(`   Retry falhou: ${retryErr.message}`);
+                }
+                throw new Error(`Servidor Google instável (${status}). Passando para próximo modelo.`);
+            }
+            if (status === 400 || status === 404 || status === 410) {
+                throw new Error(`Modelo ${modelo} não disponível (${status}).`);
+            }
+            throw new Error(`Erro inesperado (${status}): ${mensagem}`);
+        }
 
         // ==========================================
         // FLUXO DE LEITURA
@@ -309,7 +369,7 @@
                 }
 
                 loaderIA.style.display = 'block';
-                loaderIA.innerText = "🤖 Verificando disponibilidade do modelo...";
+                loaderIA.innerText = "🤖 Lendo dados com Inteligência Artificial...";
                 loaderIA.style.color = "#6366f1";
                 loaderIA.style.background = "rgba(99, 102, 241, 0.1)";
 
@@ -318,21 +378,29 @@
                     const originalBase64 = e.target.result;
                     
                     try {
-                        // Garante que o modelo esteja definido antes de prosseguir
-                        if (!GEMINI_CONFIG.model) {
-                            await modeloProntoPromise;
-                            if (!GEMINI_CONFIG.model) {
-                                throw new Error("Modelo de IA não disponível. Tente novamente.");
-                            }
-                        }
-
-                        loaderIA.innerText = "🤖 Lendo dados com Inteligência Artificial...";
                         let finalBase64 = originalBase64;
                         if (!isPDF) {
                             finalBase64 = await new Promise(resolve => comprimirImagem(originalBase64, 1200, resolve));
                         }
                         
-                        const dados = await analisarNotaFiscalGemini(finalBase64, mimeTypeVerdadeiro);
+                        const promptOCR = `Você é um especialista em leitura de notas fiscais brasileiras (NF-e, NFS-e, recibos, faturas de locação e compra).
+Sua tarefa é extrair APENAS as seguintes informações, retornando um JSON simples e limpo, sem formatação markdown ou textos adicionais:
+
+{
+  "fornecedor": "Nome da empresa emissora (razão social ou nome fantasia). NUNCA o destinatário.",
+  "equipamento": "Descrição limpa do principal equipamento ou material. Remova prefixos como LOCAÇÃO DE, LOCAÇÃO, ALUGUEL DE, etc. Exemplo: 'LOCAÇÃO BETONEIRA 400L' vira 'Betoneira 400L'. Se houver vários itens, escolha o mais relevante para construção civil (priorize: betoneira, andaime, escora, compactador, gerador, furadeira, martelete, container, plataforma, torre, bomba, serra, cortadora). Não inclua códigos, NCM, CFOP ou dados fiscais.",
+  "quantidade": número inteiro (quantidade do equipamento escolhido),
+  "valor": "Valor total da nota como string (ex: 1.500,00)"
+}
+
+Regras rígidas:
+- IGNORE COMPLETAMENTE: CNPJ, Inscrição Estadual, CFOP, NCM, CEST, ICMS, IPI, PIS, COFINS, código de barras, QR Code, chave NF-e, protocolos, dados do destinatário.
+- O campo "fornecedor" deve conter o nome do emissor da nota (quem vendeu/alugou), nunca o cliente.
+- O campo "valor" deve ser o total final da nota, sem símbolos monetários, apenas números e vírgula/ponto.
+- Não invente informações. Se não encontrar algum dado, deixe string vazia (fornecedor e equipamento) ou zero (quantidade e valor).
+- Retorne APENAS o JSON, sem crases, sem markdown, sem comentários.`;
+
+                        const dados = await enviarParaGemini(finalBase64, mimeTypeVerdadeiro, promptOCR);
                         
                         const fornecedor = dados.fornecedor || '';
                         const equipamento = dados.equipamento || '';
@@ -370,195 +438,6 @@
                 reader.readAsDataURL(file);
             } catch(err) {
                 alert("Erro interno na seleção do arquivo: " + err.message);
-            }
-        }
-
-        // ==========================================
-        // MÓDULO GEMINI API (COM FALLBACK AUTOMÁTICO)
-        // ==========================================
-        async function analisarNotaFiscalGemini(imagemBase64, mimeType, tentativaFallback = true) {
-            console.group("===== GEMINI =====");
-
-            if (!imagemBase64) {
-                console.error("Erro: imagem/PDF ausente ou inválido.");
-                console.groupEnd();
-                throw new Error("Imagem ausente ou inválida.");
-            }
-            if (!GEMINI_CONFIG.apiKey) {
-                console.error("Erro: chave da API ausente.");
-                console.groupEnd();
-                throw new Error("Chave da API ausente.");
-            }
-            if (!GEMINI_CONFIG.model) {
-                console.error("Erro: modelo não definido. Tentando detecção emergencial...");
-                try {
-                    await detectarModeloGemini(true);
-                } catch (e) {
-                    console.groupEnd();
-                    throw new Error("Modelo de IA não configurado e detecção falhou: " + e.message);
-                }
-            }
-
-            const safeMime = mimeType?.split(';')[0]?.trim() ?? '';
-            const base64Data = imagemBase64?.split(',')[1] ?? '';
-            if (!safeMime || !base64Data) {
-                console.error("Erro: mime type ou base64 inválidos.");
-                console.groupEnd();
-                throw new Error("Payload inválido: imagem/PDF corrompido ou em formato inesperado.");
-            }
-
-            const url = `${GEMINI_CONFIG.endpoint}/${GEMINI_CONFIG.apiVersion}/models/${GEMINI_CONFIG.model}:generateContent`;
-
-            const systemPrompt = `Você é um especialista em leitura de notas fiscais brasileiras (NF-e, NFS-e, recibos, faturas de locação e compra).
-Sua tarefa é extrair APENAS as seguintes informações, retornando um JSON simples e limpo, sem formatação markdown ou textos adicionais:
-
-{
-  "fornecedor": "Nome da empresa emissora (razão social ou nome fantasia). NUNCA o destinatário.",
-  "equipamento": "Descrição limpa do principal equipamento ou material. Remova prefixos como LOCAÇÃO DE, LOCAÇÃO, ALUGUEL DE, etc. Exemplo: 'LOCAÇÃO BETONEIRA 400L' vira 'Betoneira 400L'. Se houver vários itens, escolha o mais relevante para construção civil (priorize: betoneira, andaime, escora, compactador, gerador, furadeira, martelete, container, plataforma, torre, bomba, serra, cortadora). Não inclua códigos, NCM, CFOP ou dados fiscais.",
-  "quantidade": número inteiro (quantidade do equipamento escolhido),
-  "valor": "Valor total da nota como string (ex: 1.500,00)"
-}
-
-Regras rígidas:
-- IGNORE COMPLETAMENTE: CNPJ, Inscrição Estadual, CFOP, NCM, CEST, ICMS, IPI, PIS, COFINS, código de barras, QR Code, chave NF-e, protocolos, dados do destinatário.
-- O campo "fornecedor" deve conter o nome do emissor da nota (quem vendeu/alugou), nunca o cliente.
-- O campo "valor" deve ser o total final da nota, sem símbolos monetários, apenas números e vírgula/ponto.
-- Não invente informações. Se não encontrar algum dado, deixe string vazia (fornecedor e equipamento) ou zero (quantidade e valor).
-- Retorne APENAS o JSON, sem crases, sem markdown, sem comentários.`;
-
-            const payload = {
-                contents: [{
-                    parts: [
-                        { text: systemPrompt },
-                        { inline_data: { mime_type: safeMime, data: base64Data } }
-                    ]
-                }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    temperature: 0
-                }
-            };
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), GEMINI_CONFIG.timeout);
-            const startTime = Date.now();
-
-            console.log("Modelo utilizado:", GEMINI_CONFIG.model);
-            console.log("Endpoint:", url);
-            console.log("Mime:", safeMime);
-            console.log("Tamanho Base64 (chars):", base64Data.length);
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-goog-api-key': GEMINI_CONFIG.apiKey
-                    },
-                    body: JSON.stringify(payload),
-                    signal: controller.signal
-                });
-
-                clearTimeout(timeoutId);
-                const tempoMs = Date.now() - startTime;
-                console.log("Status HTTP:", response.status);
-                console.log("Tempo de resposta:", `${tempoMs}ms`);
-
-                if (!response.ok) {
-                    // Fallback automático para erros de modelo (400, 404, 410)
-                    if (tentativaFallback && (response.status === 400 || response.status === 404 || response.status === 410)) {
-                        console.warn(`⚠️ Modelo ${GEMINI_CONFIG.model} falhou com status ${response.status}. Iniciando fallback...`);
-                        // Limpa cache e força nova detecção
-                        sessionStorage.removeItem('gemini_model');
-                        GEMINI_CONFIG.model = null;
-                        try {
-                            await detectarModeloGemini(true);
-                            console.log("🔄 Modelo atualizado para:", GEMINI_CONFIG.model);
-                            // Tenta novamente com o novo modelo, mas sem fallback infinito
-                            console.groupEnd();
-                            return await analisarNotaFiscalGemini(imagemBase64, mimeType, false);
-                        } catch (fallbackErr) {
-                            console.error("Fallback falhou:", fallbackErr);
-                            console.groupEnd();
-                            throw new Error("Nenhum modelo Gemini disponível após falha. Recarregue a página ou verifique a chave API.");
-                        }
-                    }
-
-                    // Se não for erro de modelo ou fallback desativado, exibe erro detalhado
-                    let errorMsg = `Erro na API (HTTP ${response.status})`;
-                    try {
-                        const errData = await response.json();
-                        console.error("Resposta de erro completa:", JSON.stringify(errData, null, 2));
-                        if (errData?.error?.message) {
-                            errorMsg = errData.error.message;
-                        }
-                    } catch (parseErr) {
-                        const textErr = await response.text().catch(() => '');
-                        console.error("Resposta de erro (texto):", textErr);
-                        errorMsg = `Erro ${response.status}: ${textErr.substring(0, 200)}`;
-                    }
-                    console.groupEnd();
-                    throw new Error(errorMsg);
-                }
-
-                const data = await response.json();
-                console.log("Resposta bruta:", JSON.stringify(data).substring(0, 200) + "...");
-
-                const parteTexto = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!parteTexto) {
-                    console.error("Resposta sem texto:", data);
-                    console.groupEnd();
-                    throw new Error("A API retornou uma resposta sem texto processável.");
-                }
-
-                console.log("Texto retornado:", parteTexto);
-
-                const textoLimpo = parteTexto.replace(/```json\s*|```/gi, '').trim();
-                const inicio = textoLimpo.indexOf('{');
-                const fim = textoLimpo.lastIndexOf('}');
-                if (inicio === -1 || fim === -1) {
-                    console.error("Formato JSON não encontrado:", textoLimpo);
-                    console.groupEnd();
-                    throw new Error("A IA respondeu fora do formato JSON esperado.");
-                }
-
-                let jsonResult;
-                try {
-                    jsonResult = JSON.parse(textoLimpo.substring(inicio, fim + 1));
-                } catch (parseErr) {
-                    console.error("Parse JSON falhou:", parseErr, textoLimpo);
-                    console.groupEnd();
-                    throw new Error("JSON inválido retornado pela IA.");
-                }
-
-                // Fallback para formato antigo com itens
-                if (!jsonResult.fornecedor && !jsonResult.equipamento && jsonResult.itens && jsonResult.itens.length > 0) {
-                    console.warn("Formato antigo detectado, convertendo...");
-                    jsonResult.equipamento = jsonResult.itens[0].descricao || '';
-                    jsonResult.quantidade = jsonResult.itens[0].quantidade || 1;
-                }
-
-                const resultadoFinal = {
-                    fornecedor: jsonResult.fornecedor || '',
-                    equipamento: jsonResult.equipamento || '',
-                    quantidade: parseInt(jsonResult.quantidade) || 1,
-                    valor: jsonResult.valor || ''
-                };
-
-                console.log("JSON final:", resultadoFinal);
-                console.groupEnd();
-                return resultadoFinal;
-
-            } catch (error) {
-                clearTimeout(timeoutId);
-                if (error.name === 'AbortError') {
-                    console.error("Timeout:", GEMINI_CONFIG.timeout / 1000, "s");
-                    console.groupEnd();
-                    throw new Error(`Timeout de ${GEMINI_CONFIG.timeout / 1000}s atingido.`);
-                }
-                console.error("Falha capturada:", error);
-                console.groupEnd();
-                throw error;
             }
         }
 
