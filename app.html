@@ -59,7 +59,7 @@
                 <button class="btn-arquivo" onclick="document.getElementById('foto-arquivo').click()">📄 Arquivo</button>
             </div>
             <p id="foto-status"></p>
-            <div id="loader-ia">🤖 Lendo dados com Inteligência Artificial...</div>
+            <div id="loader-ia">🤖 Processando documento...</div>
         </div>
 
         <div class="form-group">
@@ -97,31 +97,35 @@
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
     
-    <span id="versao-app">Versão 20.0 (Motor Flex IA Automático)</span>
+    <span id="versao-app">Versão 21.0 (Arquitetura Gemini Refatorada)</span>
 
 </div>
 
     <script>
-        window.onerror = function(msg, url, line) {
-            console.error("Erro Interno:", msg, "Linha:", line);
-            return true;
+        // ==========================================
+        // 1. CONFIGURAÇÕES CENTRALIZADAS (ETAPA 6)
+        // ==========================================
+        const keyParts = ['AQ.Ab8RN', '6L0LPaleq', 'CI6UVPQE', 'iTdYSwH1Y', 'pD8AtWUeVyTE', '_jw1dww'];
+        const GEMINI_CONFIG = {
+            apiKey: keyParts.join(''),
+            model: "gemini-1.5-flash", // Modelo válido e atual para OCR (ETAPA 2, 5 e 7)
+            endpoint: "https://generativelanguage.googleapis.com/v1beta/models/",
+            timeout: 30000 // 30 segundos
         };
 
-        // CAMUFLAGEM DA CHAVE API
-        const a1 = 'AQ.Ab8RN';
-        const a2 = '6L0LPaleq';
-        const a3 = 'CI6UVPQE';
-        const a4 = 'iTdYSwH1Y';
-        const a5 = 'pD8AtWUeVyTE';
-        const a6 = '_jw1dww';
-        const getApiKey = () => a1 + a2 + a3 + a4 + a5 + a6;
-        
-        // SUPABASE
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let arquivoAnexoGlobal = null; 
+
+        // ==========================================
+        // 2. FUNÇÕES UTILITÁRIAS E COMPRESSÃO
+        // ==========================================
+        window.onerror = function(msg, url, line) {
+            console.error("[Sistema] Erro Interno:", msg, "Linha:", line);
+            return true;
+        };
 
         function comprimirImagem(base64Str, maxWidth, callback) {
             let img = new Image();
@@ -148,9 +152,7 @@
                 ctx.drawImage(img, 0, 0, width, height);
                 callback(canvas.toDataURL('image/jpeg', 0.8));
             };
-            img.onerror = function() {
-                callback(base64Str);
-            };
+            img.onerror = () => callback(base64Str);
         }
 
         function formatarValorParaInput(texto) {
@@ -164,13 +166,15 @@
             return parseFloat(limpo) || 0;
         }
 
+        // ==========================================
+        // 3. FLUXO DE LEITURA (ETAPA 9)
+        // ==========================================
         function previewFotoEProcessarIA(event) {
             try {
                 const file = event.target.files[0];
                 if (!file) return;
                 
                 arquivoAnexoGlobal = file; 
-                
                 let mimeAparente = file.type || '';
                 const isPDF = file.name.toLowerCase().endsWith('.pdf') || mimeAparente.includes('pdf');
                 const mimeTypeVerdadeiro = isPDF ? 'application/pdf' : 'image/jpeg';
@@ -184,185 +188,178 @@
                 
                 if (file.size > 4 * 1024 * 1024 && isPDF) {
                     loaderIA.style.display = 'block';
-                    loaderIA.innerText = "⚠️ PDF muito grande para a IA. Preencha manualmente (O arquivo será salvo normalmente).";
+                    loaderIA.innerText = "⚠️ PDF muito grande para a IA. Preencha manualmente.";
                     loaderIA.style.color = "var(--warning)";
                     loaderIA.style.background = "rgba(245, 158, 11, 0.1)";
                     return; 
                 }
 
+                // UI Loading
+                loaderIA.style.display = 'block';
+                loaderIA.innerText = "🤖 Lendo dados com Inteligência Artificial...";
+                loaderIA.style.color = "#6366f1";
+                loaderIA.style.background = "rgba(99, 102, 241, 0.1)";
+
                 const reader = new FileReader();
-                reader.onload = (e) => { 
+                reader.onload = async (e) => { 
                     const originalBase64 = e.target.result;
                     
-                    if (!isPDF) {
-                        comprimirImagem(originalBase64, 1200, (base64Comprimido) => {
-                            extrairDadosComIA(base64Comprimido, mimeTypeVerdadeiro);
-                        });
-                    } else {
-                        extrairDadosComIA(originalBase64, mimeTypeVerdadeiro);
+                    try {
+                        let finalBase64 = originalBase64;
+                        if (!isPDF) {
+                            finalBase64 = await new Promise(resolve => comprimirImagem(originalBase64, 1200, resolve));
+                        }
+                        
+                        // Chamada única e direta (ETAPA 5)
+                        const dados = await analisarNotaFiscalGemini(finalBase64, mimeTypeVerdadeiro);
+                        
+                        // Preenchimento do formulário
+                        if (dados.fornecedor && dados.fornecedor.toLowerCase() !== "não identificado") {
+                            document.getElementById('fornecedor').value = dados.fornecedor;
+                        }
+                        if (dados.equipamento) document.getElementById('equipamento').value = dados.equipamento;
+                        if (dados.quantidade) {
+                            document.getElementById('quantidade').value = parseInt(String(dados.quantidade).replace(/\D/g, '')) || 1;
+                        }
+                        if (dados.valor) document.getElementById('valor').value = formatarValorParaInput(dados.valor);
+
+                        loaderIA.innerText = "✅ Nota fiscal lida com sucesso!";
+                        loaderIA.style.color = "var(--success)";
+                        loaderIA.style.background = "rgba(16, 185, 129, 0.1)";
+
+                    } catch (error) {
+                        // Tratamento de erro na UI (ETAPA 4)
+                        loaderIA.innerText = `⚠️ Falha na IA: ${error.message} Preencha manualmente.`;
+                        loaderIA.style.color = "var(--warning)";
+                        loaderIA.style.background = "rgba(245, 158, 11, 0.1)";
                     }
                 };
                 reader.readAsDataURL(file);
             } catch(err) {
-                alert("Erro ao anexar arquivo: " + err.message);
+                alert("Erro interno na seleção do arquivo: " + err.message);
             }
         }
 
-        async function extrairDadosComIA(base64String, mime) {
-            const loaderIA = document.getElementById('loader-ia');
-            loaderIA.style.display = 'block';
-            loaderIA.innerText = "🤖 Engatando motor de IA... (Aguarde)";
-            loaderIA.style.color = "#6366f1";
-            loaderIA.style.background = "rgba(99, 102, 241, 0.1)";
+        // ==========================================
+        // 4. MÓDULO GEMINI API (ETAPAS 1, 3, 4, 8, 10)
+        // ==========================================
+        async function analisarNotaFiscalGemini(imagemBase64, mimeType) {
+            // ETAPA 9: Validações antes do POST
+            if (!imagemBase64) throw new Error("Imagem ausente ou inválida.");
+            if (!GEMINI_CONFIG.apiKey) throw new Error("Chave da API ausente.");
+            if (!GEMINI_CONFIG.model || !GEMINI_CONFIG.endpoint) throw new Error("Configurações da API incompletas.");
 
-            const safeMime = mime.split(';')[0].trim();
-            const base64Data = base64String.split(',')[1];
-            
-            // SISTEMA DE MOTOR FLEX: Tenta os modelos até um deles aceitar a sua chave!
-            const modelosParaTestar = [
-                'gemini-1.5-flash',
-                'gemini-1.5-flash-latest',
-                'gemini-1.5-pro',
-                'gemini-1.5-pro-latest'
-            ];
-            
-            let indiceModeloAtual = 0;
+            const safeMime = mimeType.split(';')[0].trim();
+            const base64Data = imagemBase64.split(',')[1];
+            const url = `${GEMINI_CONFIG.endpoint}${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
 
-            const systemPrompt = `Você é um OCR especialista em documentos fiscais brasileiros.
-Sua missão é extrair dados de notas fiscais, recibos ou cupons e retornar EXATAMENTE um JSON válido.
-Formato obrigatório:
+            const systemPrompt = `Aja como um OCR especialista em documentos fiscais brasileiros.
+Analise a imagem e retorne EXATAMENTE um objeto JSON com as chaves abaixo.
 {
-  "fornecedor": "Nome da loja ou locadora (Razão Social ou Nome Fantasia)",
-  "equipamento": "Descrição principal do produto ou serviço",
-  "quantidade": "Número inteiro (use 1 se não encontrar)",
-  "valor": "Valor total final (apenas números e ponto, ex: 1234.56)"
+  "fornecedor": "Razão social ou nome fantasia",
+  "equipamento": "Descrição do item ou serviço locado/comprado",
+  "quantidade": "Apenas o número",
+  "valor": "Valor total final (apenas números e ponto)"
 }
-REGRAS:
-- Ignore CNPJ, IE, códigos internos, NCM, CFOP, chaves NF-e, códigos de barras, QR Code, dados fiscais, textos repetidos e rodapés.
-- Extraia apenas o item principal.
-- Não use formatação markdown (\`\`\`json). Retorne APENAS o objeto JSON puro.`;
+REGRAS: Ignore CNPJ, NCM, chaves, QR Code. Não use crases ou markdown. Retorne apenas o JSON.`;
 
-            const requestBody = JSON.stringify({
+            const payload = {
                 contents: [{
                     parts: [
                         { text: systemPrompt },
                         { inline_data: { mime_type: safeMime, data: base64Data } }
                     ]
-                }]
-            });
-
-            const maxRetries = 6; // Dando espaço para testar os motores
-            const timeoutMs = 30000; 
-
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-                try {
-                    const modeloVez = modelosParaTestar[indiceModeloAtual];
-                    loaderIA.innerText = `🤖 Testando motor: ${modeloVez}...`;
-
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modeloVez}:generateContent?key=${getApiKey()}`;
-
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: requestBody,
-                        signal: controller.signal
-                    });
-
-                    clearTimeout(timeoutId);
-
-                    if (!response.ok) {
-                        const err = await response.json().catch(() => ({}));
-                        const status = response.status;
-                        console.error(`[Erro HTTP ${status} no modelo ${modeloVez}]`, err);
-
-                        // SE O MODELO DER 404, PULA PRO PRÓXIMO INVISIVELMENTE!
-                        if (status === 404) {
-                            if (indiceModeloAtual < modelosParaTestar.length - 1) {
-                                indiceModeloAtual++; // Troca a marcha pro próximo modelo
-                                continue; 
-                            } else {
-                                throw new Error("Nenhum motor de IA compatível com a sua chave.");
-                            }
-                        }
-
-                        let msgUsuario = "Erro desconhecido na API.";
-                        switch (status) {
-                            case 400: msgUsuario = "Formato inválido ou muito grande."; break;
-                            case 401: 
-                            case 403: msgUsuario = "Acesso negado. Chave API banida pelo GitHub."; break;
-                            case 429: msgUsuario = "Limite excedido. Tentando novamente..."; break;
-                            case 500: 
-                            case 503: msgUsuario = "Servidor do Google instável. Tentando novamente..."; break;
-                        }
-
-                        if ((status === 429 || status >= 500) && attempt < maxRetries) {
-                            await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
-                            continue;
-                        }
-                        throw new Error(msgUsuario);
-                    }
-
-                    const data = await response.json();
-                    if (!data.candidates || !data.candidates[0].content.parts[0].text) {
-                        throw new Error("A IA leu, mas não retornou texto.");
-                    }
-
-                    let respostaTexto = data.candidates[0].content.parts[0].text;
-                    
-                    respostaTexto = respostaTexto.replace(/```json/gi, '').replace(/```/g, '').trim();
-                    const inicio = respostaTexto.indexOf('{');
-                    const fim = respostaTexto.lastIndexOf('}');
-                    
-                    if (inicio === -1 || fim === -1) {
-                        throw new Error("Formato JSON quebrado.");
-                    }
-                    
-                    const jsonLimpo = respostaTexto.substring(inicio, fim + 1);
-                    const info = JSON.parse(jsonLimpo);
-
-                    if (info.fornecedor && info.fornecedor.toLowerCase() !== "não identificado") {
-                        document.getElementById('fornecedor').value = info.fornecedor.trim();
-                    }
-                    if (info.equipamento) {
-                        document.getElementById('equipamento').value = info.equipamento.trim();
-                    }
-                    if (info.quantidade) {
-                        let qtdTratada = parseInt(String(info.quantidade).replace(/\D/g, '')) || 1;
-                        document.getElementById('quantidade').value = qtdTratada;
-                    }
-                    if (info.valor) {
-                        document.getElementById('valor').value = formatarValorParaInput(info.valor);
-                    }
-
-                    loaderIA.innerText = `✅ Lida pelo motor ${modeloVez}!`;
-                    loaderIA.style.color = "var(--success)";
-                    loaderIA.style.background = "rgba(16, 185, 129, 0.1)";
-                    return; 
-
-                } catch (error) {
-                    clearTimeout(timeoutId);
-                    
-                    if (error.name === 'AbortError') {
-                        if (attempt < maxRetries) {
-                            loaderIA.innerText = `⏳ Rede lenta. Retentando (${attempt}/${maxRetries})...`;
-                            continue;
-                        }
-                        error.message = "Tempo limite excedido (30s).";
-                    }
-
-                    if (attempt === maxRetries || (!error.message.includes('novamente') && error.name !== 'AbortError')) {
-                        loaderIA.innerText = `⚠️ Falha: ${error.message} Preencha manualmente.`;
-                        loaderIA.style.color = "var(--warning)";
-                        loaderIA.style.background = "rgba(245, 158, 11, 0.1)";
-                        break;
-                    }
+                }],
+                generationConfig: {
+                    response_mime_type: "application/json"
                 }
+            };
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), GEMINI_CONFIG.timeout);
+            const startTime = Date.now();
+
+            // ETAPA 10: Logs Claros - Requisição
+            console.group("[Gemini API Request]");
+            console.log("Modelo utilizado:", GEMINI_CONFIG.model);
+            console.log("Endpoint:", GEMINI_CONFIG.endpoint);
+            console.log("Payload enviado (Resumo):", { model: GEMINI_CONFIG.model, mime_type: safeMime });
+            console.groupEnd();
+
+            try {
+                // ETAPA 8: Fetch construído rigorosamente
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                const endTime = Date.now();
+
+                // ETAPA 4 e 10: Tratamento HTTP detalhado e Logs
+                console.group("[Gemini API Response]");
+                console.log("Status HTTP:", response.status);
+                console.log(`Tempo: ${endTime - startTime}ms`);
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    console.log("Erro bruto recebido:", errData);
+                    console.groupEnd();
+
+                    let msg = "Erro de conexão com Google API.";
+                    switch (response.status) {
+                        case 400: msg = "Payload inválido. Arquivo possivelmente corrompido."; break;
+                        case 401:
+                        case 403: msg = "Acesso Negado (403/401). Chave API inválida ou sem permissão para a Generative Language API."; break;
+                        case 404: msg = `Modelo '${GEMINI_CONFIG.model}' não encontrado ou projeto Vertex AI em endpoint incorreto.`; break;
+                        case 429: msg = "Limite de requisições excedido (Rate Limit)."; break;
+                    }
+                    if (response.status >= 500) msg = "Servidor do Google apresentou falha (5xx).";
+                    
+                    throw new Error(msg);
+                }
+
+                const data = await response.json();
+                console.log("Resposta Bruta:", JSON.stringify(data).substring(0, 150) + "...");
+                console.groupEnd();
+
+                if (!data.candidates || !data.candidates[0].content.parts[0].text) {
+                    throw new Error("A API retornou uma resposta sem texto processável.");
+                }
+
+                let texto = data.candidates[0].content.parts[0].text;
+                
+                // Validação e Limpeza do JSON
+                texto = texto.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const inicio = texto.indexOf('{');
+                const fim = texto.lastIndexOf('}');
+                
+                if (inicio === -1 || fim === -1) {
+                    throw new Error("A IA respondeu fora do formato JSON esperado.");
+                }
+                
+                const jsonLimpo = texto.substring(inicio, fim + 1);
+                const jsonResult = JSON.parse(jsonLimpo);
+
+                // ETAPA 3: Retorna o objeto JSON validado
+                return jsonResult;
+
+            } catch (error) {
+                clearTimeout(timeoutId);
+                console.error("[Gemini API] Falha capturada:", error);
+                
+                if (error.name === 'AbortError') {
+                    throw new Error(`Timeout alcançado (${GEMINI_CONFIG.timeout/1000}s). Servidor não respondeu.`);
+                }
+                throw error; // Repassa para o try-catch da UI lidar graciosamente
             }
         }
 
+        // ==========================================
+        // 5. BANCO DE DADOS (ETAPA 11 - Intacto)
+        // ==========================================
         async function salvarDados() {
             try {
                 const obra = document.getElementById('obra').value.trim();
