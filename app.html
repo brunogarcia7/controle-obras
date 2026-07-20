@@ -98,7 +98,7 @@
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
     
-    <span id="versao-app">Versão 29.0 (Gemini Simplificado)</span>
+    <span id="versao-app">Versão 29.1 (Gemini modelos atualizados)</span>
 
 </div>
 
@@ -189,12 +189,16 @@
         }
 
         // ==========================================
-        // MÓDULO GEMINI SIMPLIFICADO
+        // MÓDULO GEMINI (ATUALIZADO)
         // ==========================================
+        // ANTES: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+        // - gemini-1.5-flash: desligado pelo Google (404 permanente)
+        // - gemini-2.0-flash: desligado em 01/06/2026 (429/instável)
+        // AGORA: modelos vigentes conforme ai.google.dev/gemini-api/docs/deprecations
         const MODELOS_GEMINI = [
             'gemini-2.5-flash',
-            'gemini-2.0-flash',
-            'gemini-1.5-flash'
+            'gemini-2.5-flash-lite',
+            'gemini-3.5-flash'
         ];
 
         function extrairJSONdaResposta(textoBruto) {
@@ -232,6 +236,18 @@
             throw new Error("Todos os modelos Gemini falharam. Tente novamente mais tarde.");
         }
 
+        function fetchComTimeout(url, options, timeoutMs) {
+            // Promise.race evita usar AbortController/AbortSignal, que não pode
+            // ser clonado via postMessage em ambientes de preview/sandbox e
+            // provoca o erro "AbortSignal object could not be cloned".
+            return Promise.race([
+                fetch(url, options),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error(`Timeout de ${timeoutMs/1000}s`)), timeoutMs)
+                )
+            ]);
+        }
+
         async function tentarModelo(modelo, base64Data, safeMime, prompt) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
             const payload = {
@@ -247,26 +263,17 @@
                 }
             };
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), GEMINI_TIMEOUT);
-
             let response;
             try {
-                response = await fetch(url, {
+                response = await fetchComTimeout(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'x-goog-api-key': GEMINI_API_KEY
                     },
-                    body: JSON.stringify(payload),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
+                    body: JSON.stringify(payload)
+                }, GEMINI_TIMEOUT);
             } catch (err) {
-                clearTimeout(timeoutId);
-                if (err.name === 'AbortError') {
-                    throw new Error(`Timeout de ${GEMINI_TIMEOUT/1000}s`);
-                }
                 throw err;
             }
 
@@ -309,15 +316,14 @@
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 // Tenta novamente com o mesmo modelo
                 try {
-                    const retryResponse = await fetch(url, {
+                    const retryResponse = await fetchComTimeout(url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'x-goog-api-key': GEMINI_API_KEY
                         },
-                        body: JSON.stringify(payload),
-                        signal: AbortSignal.timeout(GEMINI_TIMEOUT)
-                    });
+                        body: JSON.stringify(payload)
+                    }, GEMINI_TIMEOUT);
                     if (retryResponse.ok) {
                         const retryData = await retryResponse.json();
                         const texto = retryData?.candidates?.[0]?.content?.parts?.[0]?.text;
