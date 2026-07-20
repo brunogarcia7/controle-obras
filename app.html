@@ -83,6 +83,12 @@
             <input type="text" id="fornecedor" placeholder="Nome da loja ou locadora">
         </div>
 
+        <!-- NOVO CAMPO: Contrato -->
+        <div class="form-group">
+            <label>Nº do Contrato / NF</label>
+            <input type="text" id="contrato" placeholder="Ex: 12345 (Preenchido pela IA ou Manual)">
+        </div>
+
         <div class="grid-2">
             <div class="form-group">
                 <label>Quantidade</label>
@@ -98,7 +104,7 @@
         <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
     
-    <span id="versao-app">Versão 30.1 (Debug API)</span>
+    <span id="versao-app">Versão 31.0 (Com Número de Contrato)</span>
 
 </div>
 
@@ -109,9 +115,6 @@
 
         let arquivoAnexoGlobal = null;
 
-        // ==========================================
-        // CARREGAMENTO AUTOMÁTICO DE OBRAS
-        // ==========================================
         async function carregarObras() {
             try {
                 const cache = sessionStorage.getItem('obras_cache');
@@ -137,9 +140,6 @@
         }
         document.addEventListener('DOMContentLoaded', carregarObras);
 
-        // ==========================================
-        // FUNÇÕES UTILITÁRIAS
-        // ==========================================
         window.onerror = function(msg, url, line) {
             console.error("[Sistema] Erro Interno:", msg, "Linha:", line);
             return true;
@@ -184,9 +184,6 @@
             return parseFloat(limpo) || 0;
         }
 
-        // ==========================================
-        // FLUXO DE LEITURA COM EDGE FUNCTION
-        // ==========================================
         function previewFotoEProcessarIA(event) {
             try {
                 const file = event.target.files[0];
@@ -232,17 +229,18 @@ Sua tarefa é extrair APENAS as seguintes informações, retornando um JSON simp
 
 {
   "fornecedor": "Nome da empresa emissora (razão social ou nome fantasia). NUNCA o destinatário.",
-  "equipamento": "Descrição limpa do principal equipamento ou material. Remova prefixos como LOCAÇÃO DE, LOCAÇÃO, ALUGUEL DE, etc. Exemplo: 'LOCAÇÃO BETONEIRA 400L' vira 'Betoneira 400L'. Se houver vários itens, escolha o mais relevante para construção civil (priorize: betoneira, andaime, escora, compactador, gerador, furadeira, martelete, container, plataforma, torre, bomba, serra, cortadora). Não inclua códigos, NCM, CFOP ou dados fiscais.",
+  "equipamento": "Descrição limpa do principal equipamento ou material. Remova prefixos como LOCAÇÃO DE, LOCAÇÃO, ALUGUEL DE, etc. Exemplo: 'LOCAÇÃO BETONEIRA 400L' vira 'Betoneira 400L'. Se houver vários itens, escolha o mais relevante para construção civil.",
   "quantidade": número inteiro (quantidade do equipamento escolhido),
-  "valor": "Valor total da nota como string (ex: 1.500,00)"
+  "valor": "Valor total da nota como string (ex: 1.500,00)",
+  "contrato": "Número do contrato, pedido, fatura ou da nota fiscal (apenas letras e números). Se não encontrar, deixe como string vazia."
 }
 
 Regras rígidas:
-- IGNORE COMPLETAMENTE: CNPJ, Inscrição Estadual, CFOP, NCM, CEST, ICMS, IPI, PIS, COFINS, código de barras, QR Code, chave NF-e, protocolos, dados do destinatário.
 - O campo "fornecedor" deve conter o nome do emissor da nota (quem vendeu/alugou), nunca o cliente.
-- O campo "valor" deve ser o total final da nota, sem símbolos monetários, apenas números e vírgula/ponto.
-- Não invente informações. Se não encontrar algum dado, deixe string vazia (fornecedor e equipamento) ou zero (quantidade e valor).
-- Retorne APENAS o JSON, sem crases, sem markdown, sem comentários.`;
+- O campo "valor" deve ser o total final da nota.
+- O campo "contrato" deve ser direto, ex: 12345.
+- Não invente informações. Se não achar, deixe vazio (string vazia) ou zero.
+- Retorne APENAS o JSON, sem crases ou markdown.`;
 
                         const base64Data = finalBase64.includes(',') ? finalBase64.split(',')[1] : finalBase64;
                         const safeMime = mimeTypeVerdadeiro.split(';')[0].trim();
@@ -260,7 +258,6 @@ Regras rígidas:
                             }
                         };
 
-                        // Faz a chamada direta para capturar o erro exato do servidor
                         const resposta = await fetch(`${SUPABASE_URL}/functions/v1/gemini-ocr`, {
                             method: 'POST',
                             headers: {
@@ -283,12 +280,14 @@ Regras rígidas:
                         const equipamento = data.equipamento || '';
                         const quantidade = data.quantidade || 1;
                         const valor = data.valor || '';
+                        const contrato = data.contrato || '';
 
                         console.log("\n===== OCR =====");
-                        console.log(`Fornecedor: ${fornecedor || 'Não identificado'}`);
-                        console.log(`Equipamento: ${equipamento || 'Nenhum'}`);
+                        console.log(`Fornecedor: ${fornecedor}`);
+                        console.log(`Equipamento: ${equipamento}`);
                         console.log(`Quantidade: ${quantidade}`);
-                        console.log(`Valor: R$ ${valor || '0.00'}`);
+                        console.log(`Valor: R$ ${valor}`);
+                        console.log(`Contrato: ${contrato}`);
                         console.log("=================\n");
 
                         if (fornecedor && fornecedor.toLowerCase() !== "não identificado") {
@@ -301,8 +300,11 @@ Regras rígidas:
                         if (valor) {
                             document.getElementById('valor').value = formatarValorParaInput(valor);
                         }
+                        if (contrato) {
+                            document.getElementById('contrato').value = contrato;
+                        }
 
-                        loaderIA.innerText = "✅ Nota fiscal lida com sucesso!";
+                        loaderIA.innerText = "✅ Dados lidos com sucesso!";
                         loaderIA.style.color = "var(--success)";
                         loaderIA.style.background = "rgba(16, 185, 129, 0.1)";
 
@@ -318,9 +320,6 @@ Regras rígidas:
             }
         }
 
-        // ==========================================
-        // BANCO DE DADOS
-        // ==========================================
         async function salvarDados() {
             try {
                 const obra = document.getElementById('obra').value.trim();
@@ -329,6 +328,10 @@ Regras rígidas:
                 const qtd = parseInt(document.getElementById('quantidade').value) || 1;
                 const valor = parseFloat(document.getElementById('valor').value) || 0;
                 const tipo = document.getElementById('tipo').value;
+                
+                // Captura o contrato ou coloca o padrão se estiver vazio
+                const contratoInput = document.getElementById('contrato').value.trim();
+                const contratoFinal = contratoInput || (tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App');
 
                 if (!obra || !equip) return alert("⚠️ ATENÇÃO: Preencha a Obra e o Equipamento antes de salvar!");
 
@@ -366,7 +369,7 @@ Regras rígidas:
                     status: 'ativo',
                     anexo: urlAnexo,
                     unidade: tipo === 'Compra' ? 'Proprio' : 'Mês',
-                    contrato: tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App'
+                    contrato: contratoFinal
                 };
 
                 const { error } = await db.from('locacoes').insert([payload]);
@@ -378,6 +381,7 @@ Regras rígidas:
                     document.getElementById('equipamento').value = '';
                     document.getElementById('valor').value = '';
                     document.getElementById('fornecedor').value = '';
+                    document.getElementById('contrato').value = '';
                     document.getElementById('foto-camera').value = '';
                     document.getElementById('foto-arquivo').value = '';
                     document.getElementById('foto-status').style.display = 'none';
