@@ -1,51 +1,40 @@
-// js/notificationService.js
 class NotificationService {
-    static async enviarNotificacao(locacao, responsavel, canais = ['EMAIL', 'WHATSAPP']) {
+    static async enviarNotificacao(locacao, responsavel, tipo = 'EMAIL') {
+        console.log(`[NotificationService] Iniciando envio de ${tipo} para ${responsavel.nome}...`);
+        
         try {
-            // Chama a Edge Function para proteger chaves e processar envios
+            // Chamada para a Supabase Edge Function (que vai comunicar com Resend/SendGrid/Z-API)
             const { data, error } = await db.functions.invoke('enviar-notificacoes', {
-                body: { locacao, responsavel, canais }
+                body: { locacao, responsavel, canais: [tipo] }
             });
 
-            if (error) throw new Error(error.message);
+            if (error) throw error;
 
-            // Gravar Histórico no Banco
-            if (data && data.resultados) {
-                for (let res of data.resultados) {
-                    await this.registrarHistorico(locacao, res.canal, res.destinatario, res.msg, res.sucesso ? 'SUCESSO' : 'ERRO', res.erro);
-                }
-                // Atualizar Flags no Equipamento (Evitar duplicidade)
-                await this.atualizarStatusEnvio(locacao.id, data.resultados);
-            }
+            console.log(`[NotificationService] ${tipo} enviado com sucesso.`);
+            await this.registrarHistorico(locacao, responsavel, tipo, 'SUCESSO');
+            return true;
 
-            return data;
         } catch (error) {
-            console.error('[NotificationService] Falha no envio:', error);
-            throw error;
+            console.error(`[NotificationService] Erro ao enviar ${tipo}:`, error);
+            await this.registrarHistorico(locacao, responsavel, tipo, 'FALHA', error.message);
+            return false;
         }
     }
 
-    static async registrarHistorico(locacao, canal, destinatarios, mensagem, status, erroMsg = null) {
+    static async registrarHistorico(locacao, responsavel, tipo, status, erro = null) {
         await db.from('historico_notificacoes').insert([{
             locacao_id: locacao.id,
-            canal: canal,
-            destinatarios: destinatarios,
-            mensagem: mensagem,
+            canal: tipo,
+            destinatarios: responsavel.email,
+            responsavel_nome: responsavel.nome,
+            mensagem: `Aviso de vencimento: Contrato ${locacao.contrato || '-'}`,
             status: status,
-            erro: erroMsg,
+            erro: erro,
             equipamento: locacao.equipamento,
             contrato: locacao.contrato,
             obra: locacao.obra,
             fornecedor: locacao.fornecedor
         }]);
-    }
-
-    static async atualizarStatusEnvio(locacaoId, resultados) {
-        const payload = { ultima_notificacao: new Date().toISOString() };
-        if (resultados.some(r => r.canal === 'EMAIL' && r.sucesso)) payload.notificacao_email_enviada = true;
-        if (resultados.some(r => r.canal === 'WHATSAPP' && r.sucesso)) payload.notificacao_whatsapp_enviada = true;
-        
-        await db.from('locacoes').update(payload).eq('id', locacaoId);
     }
 }
 window.NotificationService = NotificationService;
