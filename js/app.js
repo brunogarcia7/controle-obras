@@ -118,3 +118,5 @@ window.onload = () => {
     App.bindEventos();
     App.carregarDados();
 };
+// Sempre que abrir a página ou salvar um contrato novo/editado, chame:
+AlertService.updateAll();
