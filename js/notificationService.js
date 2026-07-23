@@ -1,10 +1,9 @@
 class NotificationService {
     static async enviarNotificacao(locacao, responsavel, tipo = 'EMAIL') {
         console.log(`[NotificationService] Iniciando envio de ${tipo} para ${responsavel.nome}...`);
-        
         try {
-            // Chamada para a Supabase Edge Function (que vai comunicar com Resend/SendGrid/Z-API)
-            const { data, error } = await db.functions.invoke('enviar-notificacoes', {
+            // CORREÇÃO: Usando DB.client
+            const { data, error } = await DB.client.functions.invoke('enviar-notificacoes', {
                 body: { locacao, responsavel, canais: [tipo] }
             });
 
@@ -22,7 +21,7 @@ class NotificationService {
     }
 
     static async registrarHistorico(locacao, responsavel, tipo, status, erro = null) {
-        await db.from('historico_notificacoes').insert([{
+        await DB.client.from('historico_notificacoes').insert([{
             locacao_id: locacao.id,
             canal: tipo,
             destinatarios: responsavel.email,
