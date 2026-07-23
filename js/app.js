@@ -117,6 +117,9 @@ window.onload = () => {
     UI.inicializarTema();
     App.bindEventos();
     App.carregarDados();
+    
+    // Gatilho do Smart Alerts (Agora protegido e no lugar certo)
+    if (typeof AlertService !== 'undefined') {
+        AlertService.updateAll();
+    }
 };
-// Sempre que abrir a página ou salvar um contrato novo/editado, chame:
-AlertService.updateAll();
