@@ -1,3 +1,11 @@
+// Memória global do sistema (O que estava faltando!)
+const State = {
+    dadosGlobais: [],
+    dadosFiltrados: [],
+    sortColunaAtual: 'data_fim',
+    sortDirecaoAsc: true
+};
+
 const App = {
     carregarFiltrosSelect: async () => {
         const { data } = await DB.client.from('locacoes').select('obra, fornecedor');
