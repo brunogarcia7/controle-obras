@@ -2,43 +2,49 @@ class AlertService {
     static async updateAll() {
         console.log("[AlertService] Carregando contratos ativos...");
         
-        const { data: contratos, error } = await db.from('locacoes')
-            .select('*')
-            .eq('status', 'ativo')
-            .not('data_vencimento', 'is', null);
+        try {
+            // CORREÇÃO: Usando DB.client e a coluna data_fim
+            const { data: contratos, error } = await DB.client.from('locacoes')
+                .select('*')
+                .eq('status', 'ativo')
+                .not('data_fim', 'is', null);
 
-        if (error) {
-            console.error("[AlertService] Erro na busca:", error);
-            return;
-        }
+            if (error) throw error;
 
-        let totalAtivos = 0;
-        let aVencer = [];
-        let vencidos = [];
+            let totalAtivos = 0;
+            let aVencer = [];
+            let vencidos = [];
 
-        console.log(`[AlertService] Contratos processados: ${contratos.length}`);
+            if (contratos) {
+                console.log(`[AlertService] Contratos processados: ${contratos.length}`);
+                
+                contratos.forEach(contrato => {
+                    totalAtivos++;
+                    // CORREÇÃO: Usando data_fim
+                    const diasRestantes = DateUtils.calcularDiasRestantes(contrato.data_fim);
+                    contrato.diasRestantes = diasRestantes;
 
-        contratos.forEach(contrato => {
-            totalAtivos++;
-            const diasRestantes = DateUtils.calcularDiasRestantes(contrato.data_vencimento);
-            contrato.diasRestantes = diasRestantes;
-
-            if (diasRestantes <= 0) {
-                vencidos.push(contrato);
-            } else if (diasRestantes >= 1 && diasRestantes <= 7) {
-                aVencer.push(contrato);
+                    if (diasRestantes <= 0) {
+                        vencidos.push(contrato);
+                    } else if (diasRestantes >= 1 && diasRestantes <= 7) {
+                        aVencer.push(contrato);
+                    }
+                });
             }
-        });
 
-        // Ordenação
-        aVencer.sort((a, b) => a.diasRestantes - b.diasRestantes); // Urgentes primeiro
-        vencidos.sort((a, b) => new Date(a.data_vencimento) - new Date(b.data_vencimento)); // Mais antigos primeiro
+            // Ordenação
+            aVencer.sort((a, b) => a.diasRestantes - b.diasRestantes); // Urgentes primeiro
+            vencidos.sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim)); // Mais antigos primeiro
 
-        console.log(`[AlertService] A vencer: ${aVencer.length} | Vencidos: ${vencidos.length}`);
-
-        DashboardService.updateCards(totalAtivos, aVencer.length, vencidos.length);
-        this.renderTabelaProximos(aVencer);
-        this.renderTabelaVencidos(vencidos);
+            if (typeof DashboardService !== 'undefined') {
+                DashboardService.updateCards(totalAtivos, aVencer.length, vencidos.length);
+            }
+            this.renderTabelaProximos(aVencer);
+            this.renderTabelaVencidos(vencidos);
+            
+        } catch (err) {
+            console.error("[AlertService] Erro crítico:", err);
+        }
     }
 
     static renderTabelaProximos(contratos) {
@@ -49,7 +55,7 @@ class AlertService {
                 <td><b>${c.equipamento}</b></td>
                 <td>${c.fornecedor}</td>
                 <td>${c.contrato || '-'}</td>
-                <td>${DateUtils.formatarDataBR(c.data_vencimento)}</td>
+                <td>${DateUtils.formatarDataBR(c.data_fim)}</td>
                 <td><span class="smart-alert alert-yellow">${c.diasRestantes} dias</span></td>
                 <td>
                     <button class="btn-action-small" onclick="Equipamentos.abrirModalEditar('${c.id}')">🔄</button>
@@ -67,7 +73,7 @@ class AlertService {
                 <td><b>${c.equipamento}</b></td>
                 <td>${c.fornecedor}</td>
                 <td>${c.contrato || '-'}</td>
-                <td>${DateUtils.formatarDataBR(c.data_vencimento)}</td>
+                <td>${DateUtils.formatarDataBR(c.data_fim)}</td>
                 <td><span class="smart-alert alert-red">VENCIDO (${Math.abs(c.diasRestantes)} dias)</span></td>
                 <td><button class="btn-action-small" onclick="Equipamentos.abrirModalEditar('${c.id}')">🔄</button></td>
             </tr>
@@ -77,7 +83,7 @@ class AlertService {
 
 class DashboardService {
     static updateCards(ativos, aVencer, vencidos) {
-        const elAtivos = document.getElementById('kpi-contratos');
+        const elAtivos = document.getElementById('dash-card-ativos');
         const elAVencer = document.getElementById('dash-card-vencer');
         const elVencidos = document.getElementById('dash-card-vencidos');
 
