@@ -1,48 +1,22 @@
-const Utils = {
-    formatarData: (d) => d ? d.split('-').reverse().join('/') : '--',
-    formatarMoeda: (v) => parseFloat(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-    
-    escapeStr: (str) => {
-        if (!str) return '';
-        return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, ' ');
-    },
-    
-    showToast: (message, type = 'success') => {
-        const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`;
-        let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
-        toast.innerHTML = `<span style="font-size: 1.2rem;">${icon}</span> <span>${message}</span>`;
-        container.appendChild(toast); void toast.offsetWidth; toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
-    },
-
-    showLoader: (msg = 'Processando...') => { 
-        const el = document.getElementById('global-loader-msg');
-        if(el) el.innerText = msg; 
-        const loader = document.getElementById('global-loader');
-        if(loader) loader.style.display = 'flex'; 
-    },
-    hideLoader: () => { 
-        const loader = document.getElementById('global-loader');
-        if(loader) loader.style.display = 'none'; 
-    },
-
-    confirmCallbackAction: null,
-    showConfirm: (title, message, onConfirm, isDanger = false) => {
-        document.getElementById('confirm-title').innerText = title; document.getElementById('confirm-msg').innerText = message; document.getElementById('confirm-icon').innerText = isDanger ? '🚨' : '⚠️';
-        const btnConfirm = document.getElementById('btn-confirm-action'); btnConfirm.style.background = isDanger ? 'var(--danger)' : 'var(--primary)';
-        btnConfirm.innerText = isDanger ? 'Sim, Confirmar' : 'Confirmar'; Utils.confirmCallbackAction = onConfirm; document.getElementById('modal-confirm').style.display = 'flex';
-    },
-    fecharConfirm: () => { document.getElementById('modal-confirm').style.display = 'none'; },
-
-    registrarLog: (acao, detalhe) => {
-        let logs = JSON.parse(localStorage.getItem('controle_logs')) || [];
-        logs.unshift({ data: new Date().toLocaleString('pt-BR'), acao, detalhe });
-        if (logs.length > 50) logs = logs.slice(0, 50);
-        localStorage.setItem('controle_logs', JSON.stringify(logs));
-        if(typeof UI !== 'undefined' && UI.renderizarLogs) UI.renderizarLogs();
+class DateUtils {
+    static calcularDiasRestantes(dataVencimento) {
+        if (!dataVencimento) return null;
+        
+        // Separa YYYY-MM-DD para evitar conversões automáticas de fuso horário
+        const [ano, mes, dia] = dataVencimento.split('-');
+        const vencimento = new Date(ano, mes - 1, dia);
+        
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0); // Zera a hora de hoje
+        
+        const diffTime = vencimento.getTime() - hoje.getTime();
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Retorna os dias
     }
-};
 
-document.getElementById('btn-confirm-action').addEventListener('click', () => { 
-    if (Utils.confirmCallbackAction) { const action = Utils.confirmCallbackAction; Utils.confirmCallbackAction = null; Utils.fecharConfirm(); action(); } 
-});
+    static formatarDataBR(dataString) {
+        if (!dataString) return '-';
+        const [ano, mes, dia] = dataString.split('-');
+        return `${dia}/${mes}/${ano}`;
+    }
+}
+window.DateUtils = DateUtils;
