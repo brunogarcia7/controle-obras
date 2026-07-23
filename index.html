@@ -41,6 +41,8 @@
         .menu-item.active { background: var(--primary); }
         .menu-item:hover:not(.active) { background: rgba(255,255,255,0.15); }
         
+        .badge-red { background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; margin-left: auto; }
+        
         .sidebar-spacer { flex: 1; }
 
         .main-content { flex: 1; padding: 30px; box-sizing: border-box; width: 100%; transition: 0.3s; }
@@ -73,11 +75,19 @@
         .btn-novo { background: var(--primary); color: white; border: none; padding: 0 20px; height: 40px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap;}
         .btn-novo:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
 
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .kpi-card { background: var(--white); padding: 18px 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.01); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; transition: background 0.3s, border-color 0.3s; }
         .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.03); }
         .kpi-title { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
         .kpi-value { font-size: 1.7rem; font-weight: 800; color: var(--text); }
+
+        .quick-status-bar { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+        .status-pill { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: 0.2s; display: inline-flex; align-items: center; }
+        .status-pill:hover { transform: translateY(-1px); filter: brightness(0.95); }
+        .status-pill.red { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); }
+        .status-pill.orange { background: rgba(249, 115, 22, 0.1); color: #ea580c; border-color: rgba(249, 115, 22, 0.3); }
+        .status-pill.yellow { background: rgba(245, 158, 11, 0.1); color: var(--warning); border-color: rgba(245, 158, 11, 0.3); }
+        .status-pill.green { background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: rgba(16, 185, 129, 0.3); }
 
         .secao-tabela { display: none; } 
         .animate-show { display: block; animation: fadeInScale 0.3s ease-out forwards; }
@@ -93,6 +103,10 @@
         .table-modern tbody tr:hover { background-color: var(--row-hover) !important; } 
         .table-modern td { padding: 14px 12px; vertical-align: middle; }
         .sort-icon { margin-left: 5px; font-size: 0.7rem; color: var(--primary); display: inline-block; }
+
+        .tabs-alertas button { background: var(--row-even); border: 1px solid var(--border); padding: 8px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; color: var(--text-light); }
+        .tabs-alertas button:hover { border-color: var(--primary); color: var(--primary); }
+        .tabs-alertas button.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .group-info { display: flex; flex-direction: column; }
         .main-txt { font-weight: 700; color: var(--text); font-size: 0.95rem; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;}
@@ -125,7 +139,7 @@
             @page { size: A4 landscape; margin: 15mm; }
             body { background: white; color: black; -webkit-print-color-adjust: exact; }
             
-            .sidebar, .top-controls, .dashboard-grid, .btn-anexo, .action-buttons, 
+            .sidebar, .top-controls, .dashboard-grid, .quick-status-bar, .btn-anexo, .action-buttons, 
             th.col-acoes, td.col-acoes, th.col-anexo, td.col-anexo, .header, 
             #toast-container, .modal-overlay { display: none !important; }
             
@@ -164,8 +178,8 @@
         .modal-box h3 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; color: var(--text); }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-size: 0.85rem; font-weight: bold; color: var(--text-light); margin-bottom: 8px; }
-        .form-group input, .form-group select { width: 100%; height: 42px; border-radius: 8px; border: 1px solid var(--border); padding: 0 12px; font-family: 'Inter'; box-sizing: border-box; transition: 0.2s; font-size: 0.95rem; color: var(--text); background: var(--input-bg); }
-        .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); outline: none; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; border-radius: 8px; border: 1px solid var(--border); padding: 12px; font-family: 'Inter'; box-sizing: border-box; transition: 0.2s; font-size: 0.95rem; color: var(--text); background: var(--input-bg); }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); outline: none; }
         .form-group input:disabled { background: var(--row-even); font-weight: bold; color: var(--text-light); opacity: 0.7; }
         .grid-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
@@ -193,6 +207,7 @@
             <h2><span class="icon">🏗️</span> <span class="text-hide">ControleObras</span></h2>
             
             <div class="menu-item active" id="menu-locacoes" onclick="UI.mudarAba('locacoes')"><span class="icon">📄</span> <span class="text-hide">Locações Ativas</span></div>
+            <div class="menu-item" id="menu-alertas" onclick="UI.mudarAba('alertas')"><span class="icon">⚠️</span> <span class="text-hide">Alertas de Contratos</span> <span id="badge-alertas" class="badge-red" style="display:none;">0</span></div>
             <div class="menu-item" id="menu-compras" onclick="UI.mudarAba('compras')"><span class="icon">🛒</span> <span class="text-hide">Patrimônio Próprio</span></div>
             <div class="menu-item" id="menu-fornecedores" onclick="UI.mudarAba('fornecedores')"><span class="icon">🏢</span> <span class="text-hide">Fornecedores</span></div>
             <div class="menu-item" id="menu-historico" onclick="UI.mudarAba('historico')"><span class="icon">↩️</span> <span class="text-hide">Equip. Devolvidos</span></div>
@@ -222,7 +237,7 @@
 
             <div class="header">
                 <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
-                <span class="badge-version">Versão 2.1 (Estável)</span>
+                <span class="badge-version">Versão 3.0 (Smart Alerts)</span>
             </div>
 
             <div class="top-controls">
@@ -250,7 +265,41 @@
                 <div class="kpi-card" style="border-left: 4px solid var(--success);"><span class="kpi-title">Itens Ativos</span><span class="kpi-value" id="kpi-ativos">0</span></div>
                 <div class="kpi-card" style="border-left: 4px solid var(--text-light);"><span class="kpi-title">Equip. Devolvidos</span><span class="kpi-value" id="kpi-arquivados">0</span></div>
                 <div class="kpi-card" style="border-left: 4px solid var(--warning);"><span class="kpi-title">Contratos Ativos</span><span class="kpi-value" id="kpi-contratos">0</span></div>
-                <div class="kpi-card" style="border-left: 4px solid #6366f1;"><span class="kpi-title">Fornecedores</span><span class="kpi-value" id="kpi-fornecedores">0</span></div>
+                <div class="kpi-card" style="border-left: 4px solid #f97316; cursor:pointer;" onclick="UI.mudarAba('alertas')"><span class="kpi-title">Contratos a Vencer</span><span class="kpi-value" id="dash-card-vencer">0</span></div>
+                <div class="kpi-card" style="border-left: 4px solid var(--danger); cursor:pointer;" onclick="UI.mudarAba('alertas')"><span class="kpi-title">Contratos Vencidos</span><span class="kpi-value" id="dash-card-vencidos">0</span></div>
+            </div>
+
+            <div class="quick-status-bar" id="quick-status-bar">
+                <span class="status-pill red" onclick="AlertasManager && AlertasManager.filtrarStatus('vencido')">🔴 Vencidos</span>
+                <span class="status-pill orange" onclick="AlertasManager && AlertasManager.filtrarStatus('hoje')">🟠 Vencem Hoje</span>
+                <span class="status-pill yellow" onclick="AlertasManager && AlertasManager.filtrarStatus('breve')">🟡 Vencem em Breve</span>
+                <span class="status-pill green" onclick="AlertasManager && AlertasManager.filtrarStatus('renovados')">🟢 Renovados este mês</span>
+            </div>
+
+            <div id="secao-alertas" class="secao-tabela">
+                <div class="card-table">
+                    <h3 style="color: #f97316;">⚠️ Gestão de Alertas e Vencimentos</h3>
+                    <div class="tabs-alertas" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                         <button class="active" id="tab-btn-proximos" onclick="AlertasManager && AlertasManager.mudarAbaAlerta('proximos')">Próximos do Vencimento</button>
+                         <button id="tab-btn-vencidos" onclick="AlertasManager && AlertasManager.mudarAbaAlerta('vencidos')">Contratos Vencidos</button>
+                         <button id="tab-btn-responsaveis" onclick="AlertasManager && AlertasManager.abrirConfigResponsavel()">Configurar Responsáveis</button>
+                         <button id="tab-btn-historico" onclick="AlertasManager && AlertasManager.mudarAbaAlerta('historico')">Central de Notificações</button>
+                    </div>
+                    <div id="loader-alertas" class="loader" style="display:none;"></div>
+                    <table class="table-modern" id="tabela-alertas">
+                        <thead>
+                            <tr>
+                                <th>Equipamento / Contrato</th>
+                                <th>Obra / Fornecedor</th>
+                                <th>Data Vencimento</th>
+                                <th>Dias Restantes</th>
+                                <th>Última Notificação</th>
+                                <th class="col-acoes">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-alertas"></tbody>
+                    </table>
+                </div>
             </div>
 
             <div id="secao-locacoes" class="secao-tabela animate-show">
@@ -474,16 +523,52 @@
         </div>
     </div>
 
+    <!-- Modais de Configuração de Responsáveis (Adicionado para o Módulo de Alertas) -->
+    <div class="modal-overlay" id="modal-config-responsaveis">
+        <div class="modal-box" style="max-width: 600px;">
+            <h3>👥 Configurar Responsáveis por Obra</h3>
+            <div class="form-group">
+                <label>Selecione a Obra</label>
+                <select id="config-resp-obra" onchange="AlertasManager.carregarDadosResponsavel()"></select>
+            </div>
+            <div class="grid-duplo">
+                <div class="form-group"><label>Nome do Responsável</label><input type="text" id="config-resp-nome" placeholder="Ex: Engenheiro Carlos"></div>
+                <div class="form-group"><label>Cargo</label><input type="text" id="config-resp-cargo" placeholder="Ex: Mestre de Obras"></div>
+            </div>
+            <div class="grid-duplo">
+                <div class="form-group"><label>E-mail Principal</label><input type="email" id="config-resp-email1" placeholder="email@empresa.com"></div>
+                <div class="form-group"><label>E-mail Secundário</label><input type="email" id="config-resp-email2" placeholder="opcional@empresa.com"></div>
+            </div>
+            <div class="grid-duplo">
+                <div class="form-group"><label>WhatsApp Principal</label><input type="text" id="config-resp-wpp1" placeholder="5534999999999"></div>
+                <div class="form-group"><label>WhatsApp Secundário</label><input type="text" id="config-resp-wpp2" placeholder="Opcional"></div>
+            </div>
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea id="config-resp-obs" rows="2" placeholder="Detalhes adicionais..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel-edit" onclick="UI.fecharModal('modal-config-responsaveis')">Fechar</button>
+                <button class="btn-save-edit" onclick="AlertasManager.salvarResponsavel()">Salvar Responsável</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-renomear-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarRenomearForn()">Atualizar</button></div></div></div>
     <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-mesclar-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarMesclarForn()">Mesclar</button></div></div></div>
 
-    <!-- O CARIMBO v=5.0 VAI DESTRUIR O CACHE DO SEU NAVEGADOR -->
-    <script src="js/config.js?v=5.0"></script>
-    <script src="js/utils.js?v=5.0"></script>
-    <script src="js/database.js?v=5.0"></script>
-    <script src="js/ui.js?v=5.0"></script>
-    <script src="js/equipamentos.js?v=5.0"></script>
-    <script src="js/exportacao.js?v=5.0"></script>
-    <script src="js/app.js?v=5.0"></script>
+    <!-- O CARIMBO v=6.0 VAI DESTRUIR O CACHE DO SEU NAVEGADOR COM A NOVA ARQUITETURA -->
+    <script src="js/config.js?v=6.0"></script>
+    <script src="js/utils.js?v=6.0"></script>
+    <script src="js/database.js?v=6.0"></script>
+    
+    <!-- NOVOS SCRIPTS DE NOTIFICAÇÃO E ALERTA (Devem carregar antes do UI e App) -->
+    <script src="js/notificationService.js?v=6.0"></script>
+    <script src="js/alertas.js?v=6.0"></script>
+    
+    <script src="js/ui.js?v=6.0"></script>
+    <script src="js/equipamentos.js?v=6.0"></script>
+    <script src="js/exportacao.js?v=6.0"></script>
+    <script src="js/app.js?v=6.0"></script>
 </body>
 </html>
