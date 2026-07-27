@@ -2,18 +2,38 @@ const DB = {
     client: supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY),
     
     carregarDados: async () => {
-        Utils.showLoader('A carregar base de dados...');
-        try {
-            const { data, error } = await DB.client.from('locacoes').select('*');
-            if (error) throw error;
-            State.dadosGlobais = data || [];
-        } catch (err) {
-            Utils.showToast("Erro ao conectar no banco.", "error");
-            console.error(err);
-        } finally {
-            Utils.hideLoader();
-        }
-    },
+    Utils.showLoader('A carregar base de dados...');
+    try {
+
+        console.log("========== INICIANDO LEITURA ==========");
+
+        const { data, error } = await DB.client
+            .from('locacoes')
+            .select('*');
+
+        console.log("Erro retornado:", error);
+        console.log("Quantidade de registros:", data ? data.length : 0);
+        console.log("Dados completos:", data);
+
+        if (error) throw error;
+
+        State.dadosGlobais = data || [];
+
+        console.log("State.dadosGlobais:", State.dadosGlobais);
+
+        console.log("========== FIM DA LEITURA ==========");
+
+    } catch (err) {
+
+        console.error("ERRO COMPLETO:");
+        console.error(err);
+
+        Utils.showToast("Erro ao conectar no banco.", "error");
+
+    } finally {
+        Utils.hideLoader();
+    }
+},
 
     salvar: async (id, payload) => {
         Utils.showLoader('Salvando no banco...');
