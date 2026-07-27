@@ -1,18 +1,13 @@
 // =====================================================
 // DATABASE.JS
-// Sistema Gestão de Equipamentos v6.1
+// Sistema Gestão de Equipamentos v6.2.1
 // =====================================================
 
 (() => {
     'use strict';
 
     const DB = {
-
         client: null,
-
-        // ---------------------------------------------
-        // Inicialização
-        // ---------------------------------------------
 
         inicializar() {
             if (DB.client) {
@@ -74,10 +69,6 @@
                 );
             }
 
-            /*
-             * Remove somente propriedades undefined.
-             * Valores null, zero e string vazia são preservados.
-             */
             return Object.fromEntries(
                 Object.entries(payload).filter(
                     ([, valor]) => valor !== undefined
@@ -117,10 +108,6 @@
                 erro
             });
         },
-
-        // ---------------------------------------------
-        // Carregamento principal
-        // ---------------------------------------------
 
         async carregarDados() {
             Utils.showLoader(
@@ -170,7 +157,7 @@
 
                 Utils.showToast(
                     semPermissao
-                        ? 'O Supabase bloqueou o acesso aos dados. Verifique as políticas RLS.'
+                        ? 'O Supabase bloqueou o acesso. Verifique as políticas RLS.'
                         : 'Erro ao conectar ao banco de dados.',
                     'error'
                 );
@@ -181,10 +168,6 @@
                 Utils.hideLoader();
             }
         },
-
-        // ---------------------------------------------
-        // Inserção e edição
-        // ---------------------------------------------
 
         async salvar(id, payload) {
             Utils.showLoader(
@@ -200,7 +183,11 @@
 
                 let consulta;
 
-                if (id !== undefined && id !== null && id !== '') {
+                if (
+                    id !== undefined &&
+                    id !== null &&
+                    id !== ''
+                ) {
                     consulta = client
                         .from(tabela)
                         .update(dadosLimpos)
@@ -211,11 +198,6 @@
                         .insert(dadosLimpos);
                 }
 
-                /*
-                 * O Supabase v2 não retorna registros modificados
-                 * automaticamente. O select() solicita o registro
-                 * criado ou atualizado.
-                 */
                 const { data, error } = await consulta
                     .select('*')
                     .single();
@@ -256,10 +238,6 @@
                 Utils.hideLoader();
             }
         },
-
-        // ---------------------------------------------
-        // Alteração de status
-        // ---------------------------------------------
 
         async mudarStatus(id, status, nomeItem = '') {
             Utils.showLoader(
@@ -331,7 +309,6 @@
         }
     };
 
-    // Inicializa antes dos outros módulos utilizarem DB.client.
     try {
         DB.inicializar();
     } catch (erro) {
