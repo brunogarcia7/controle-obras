@@ -1,6 +1,6 @@
 const CONFIG = {
     SUPABASE_URL: 'https://aidlesbrbwfxpziivkgw.supabase.co',
-    SUPABASE_KEY: 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0',
+    SUPABASE_KEY: 'COLE_SUA_CHAVE_AQUI_A_QUE_COMECA_COM_eyJ',
     COLUNAS_PADRAO: { obra: true, equip: true, periodo: true, contrato: true, valor: true, anexo: true, acoes: true }
 };
 
