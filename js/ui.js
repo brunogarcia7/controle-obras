@@ -1,195 +1,390 @@
-let _savedCols = JSON.parse(localStorage.getItem('controle_colunas')) || {};
+// =====================================================
+// UTILS.JS
+// Sistema Gestao de Equipamentos v6.1
+// =====================================================
 
-const UI = {
-    colunasAtivas: { ...CONFIG.COLUNAS_PADRAO, ..._savedCols },
+(() => {
+    'use strict';
 
-    inicializarTema: () => {
-        if (localStorage.getItem('controle_tema') === 'dark') { 
-            document.documentElement.setAttribute('data-theme', 'dark'); 
-            document.getElementById('tema-icone').innerText = '☀️'; document.getElementById('tema-texto').innerText = 'Modo Claro'; 
+    // -------------------------------------------------
+    // Funcoes internas
+    // -------------------------------------------------
+
+    const obterElemento = (id) => document.getElementById(id);
+
+    const interpretarDataLocal = (valor) => {
+        if (!valor) return null;
+
+        if (valor instanceof Date) {
+            return Number.isNaN(valor.getTime())
+                ? null
+                : new Date(valor.getFullYear(), valor.getMonth(), valor.getDate());
         }
-        UI.aplicarEstiloColunas();
-    },
 
-    toggleTema: () => {
-        if (document.documentElement.getAttribute('data-theme') === 'dark') {
-            document.documentElement.removeAttribute('data-theme'); localStorage.setItem('controle_tema', 'light');
-            document.getElementById('tema-icone').innerText = '🌙'; document.getElementById('tema-texto').innerText = 'Modo Escuro';
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark'); localStorage.setItem('controle_tema', 'dark');
-            document.getElementById('tema-icone').innerText = '☀️'; document.getElementById('tema-texto').innerText = 'Modo Claro';
+        const texto = String(valor).trim();
+        const formatoISO = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+        if (formatoISO) {
+            const ano = Number(formatoISO[1]);
+            const mes = Number(formatoISO[2]);
+            const dia = Number(formatoISO[3]);
+            const data = new Date(ano, mes - 1, dia);
+
+            if (
+                data.getFullYear() === ano &&
+                data.getMonth() === mes - 1 &&
+                data.getDate() === dia
+            ) {
+                return data;
+            }
+
+            return null;
         }
-    },
 
-    toggleSidebar: () => document.getElementById('sidebar').classList.toggle('collapsed'),
-    
-    abrirModal: (id) => {
-        if (id === 'modal-colunas') {
-            ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo'].forEach(key => {
-                const chk = document.getElementById(`chk-col-${key}`);
-                if (chk) chk.checked = UI.colunasAtivas[key] !== false;
-            });
-        }
-        document.getElementById(id).style.display = 'flex';
-    },
-    
-    fecharModal: (id) => document.getElementById(id).style.display = 'none',
+        const data = new Date(texto);
 
-    mudarAba: (aba) => {
-        document.querySelectorAll('.sidebar .menu-item').forEach(e => { if (!e.innerText.includes('Tema')) e.classList.remove('active'); });
-        document.querySelectorAll('.secao-tabela').forEach(e => e.classList.remove('animate-show'));
-        const menuEl = document.getElementById('menu-' + aba); const secaoEl = document.getElementById('secao-' + aba);
-        if (menuEl) menuEl.classList.add('active'); if (secaoEl) secaoEl.classList.add('animate-show');
-        if (aba === 'sistema') UI.renderizarLogs(); 
-        localStorage.setItem('controle_aba', aba); 
-    },
+        if (Number.isNaN(data.getTime())) return null;
 
-    aplicarEstiloColunas: () => {
-        let css = '';
-        if(!UI.colunasAtivas.obra) css += '.col-obra { display: none !important; } ';
-        if(!UI.colunasAtivas.equip) css += '.col-equip { display: none !important; } ';
-        if(!UI.colunasAtivas.periodo) css += '.col-periodo { display: none !important; } ';
-        if(!UI.colunasAtivas.contrato) css += '.col-contrato { display: none !important; } ';
-        if(!UI.colunasAtivas.valor) css += '.col-valor { display: none !important; } ';
-        if(!UI.colunasAtivas.anexo) css += '.col-anexo { display: none !important; } ';
-        // A Coluna AÇÕES nunca será ocultada
-        document.getElementById('dynamic-columns-style').innerHTML = css;
-    },
+        return new Date(
+            data.getFullYear(),
+            data.getMonth(),
+            data.getDate()
+        );
+    };
 
-    salvarColunas: () => {
-        ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo'].forEach(key => {
-            const chk = document.getElementById(`chk-col-${key}`);
-            if (chk) UI.colunasAtivas[key] = chk.checked;
-        });
-        localStorage.setItem('controle_colunas', JSON.stringify(UI.colunasAtivas));
-        UI.aplicarEstiloColunas(); 
-        UI.fecharModal('modal-colunas'); 
-        Utils.showToast("Visualização atualizada!", "success");
-    },
+    const iconesToast = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+    };
 
-    renderizarLogs: () => {
-        const tbody = document.getElementById('body-logs'); if(!tbody) return;
-        let logs = JSON.parse(localStorage.getItem('controle_logs')) || [];
-        tbody.innerHTML = '';
-        if(logs.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">Nenhum log registrado.</td></tr>'; return; }
-        logs.forEach(l => {
-            let cor = l.acao.includes('Exclu') || l.acao.includes('Arquiv') ? 'var(--danger)' : l.acao.includes('Edit') || l.acao.includes('Renova') ? 'var(--warning)' : 'var(--success)';
-            tbody.innerHTML += `<tr><td style="font-size:0.8rem; color:var(--text-light);">${l.data}</td><td><span style="color:${cor}; font-weight:bold; font-size:0.8rem;">${l.acao}</span></td><td style="font-size:0.85rem; font-weight:600;">${l.detalhe}</td></tr>`;
-        });
-    },
+    // -------------------------------------------------
+    // Utilitarios gerais
+    // -------------------------------------------------
 
-    atualizarKPIsEDashboards: () => {
-        let t = 0, at = 0, arq = 0, forn = new Set(), cont = new Set();
-        State.dadosFiltrados.forEach(i => {
-            let q = parseInt(i.quantidade) || 1; 
-            t += q;
-            // Padroniza as letras para fazer a conta correta dos KPIs
-            const statusNorm = String(i.status || '').toLowerCase().trim();
-            
-            if (statusNorm === 'ativo') { 
-                at += q; 
-                if (i.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(i.contrato)) cont.add(i.contrato); 
-            } 
-            else if (statusNorm === 'inativo') { arq += q; }
-            if (statusNorm !== 'excluido' && i.fornecedor && i.fornecedor !== 'Não identificado') forn.add(i.fornecedor);
-        });
-        document.getElementById('kpi-total').innerText = t; document.getElementById('kpi-ativos').innerText = at;
-        document.getElementById('kpi-arquivados').innerText = arq; document.getElementById('kpi-contratos').innerText = cont.size; 
-        document.getElementById('kpi-fornecedores').innerText = forn.size;
-    },
+    const Utils = {
+        showLoader(mensagem = 'Carregando...') {
+            const loader = obterElemento('global-loader');
+            const texto = obterElemento('global-loader-msg');
 
-    renderizarTabelas: () => {
-        try {
-            const bLoc = document.getElementById('body-locacoes'); const bComp = document.getElementById('body-compras'); 
-            const bHist = document.getElementById('body-historico'); const bExc = document.getElementById('body-excluidos');
-            
-            let arrLoc = [], arrComp = [], arrHist = [], arrExc = [];
-            const hojeISO = new Date().toISOString().split('T')[0];
+            if (texto) {
+                texto.textContent = String(
+                    mensagem || 'Carregando...'
+                );
+            }
 
-            State.dadosFiltrados.forEach(item => {
-                // BLINDAGEM: Ignora letras maiúsculas/minúsculas vindas do banco de dados
-                const statusNorm = String(item.status || '').toLowerCase().trim();
-                const isProprio = String(item.unidade || '').toLowerCase().trim().includes('proprio') || String(item.unidade || '').toLowerCase().trim().includes('próprio');
+            if (loader) {
+                loader.style.display = 'flex';
+                loader.setAttribute('aria-hidden', 'false');
+            }
 
-                let btnAnexo = `<span class="btn-sem-anexo">Sem anexo</span>`;
-                if (item.anexo && typeof item.anexo === 'string') {
-                    if (item.anexo.toLowerCase().includes('pdf')) btnAnexo = `<a href="${item.anexo}" target="_blank" class="btn-anexo pdf-style">📄 Ver PDF</a>`;
-                    else btnAnexo = `<a href="${item.anexo}" target="_blank" class="btn-anexo">📸 Ver Foto</a>`;
-                }
-                
-                let alertas = '';
-                if (!item.fornecedor || item.fornecedor === 'Não identificado') alertas += `<span class="smart-alert alert-yellow">⚠️ Sem Fornecedor</span>`;
-                if (statusNorm === 'ativo' && !isProprio && item.data_fim && item.data_fim < hojeISO) alertas += `<span class="smart-alert alert-red">🚨 Vencido</span>`;
+            if (window.State) {
+                window.State.carregando = true;
+            }
+        },
 
-                const badgeQtd = `<span class="qtd-badge">${item.quantidade || 1} UN</span>`;
-                const ctrStr = item.contrato && !['NF via IA App','NF Compra','Sem Contrato','Cadastro Manual'].includes(item.contrato) ? `<span class="highlight-txt">${item.contrato}</span>` : '--';
-                const indeniz = item.valor_indenizacao && item.valor_indenizacao > 0 ? `<br><div class="indeniz-tag">Indenização: ${Utils.formatarMoeda(item.valor_indenizacao)}</div>` : '';
+        hideLoader() {
+            const loader = obterElemento('global-loader');
 
-                const safeEquip = Utils.escapeStr(item.equipamento);
+            if (loader) {
+                loader.style.display = 'none';
+                loader.setAttribute('aria-hidden', 'true');
+            }
 
-                // BOTÕES CORRIGIDOS PARA TODAS AS ABAS
-                let botoesAcao = '';
-                if (statusNorm === 'ativo') {
-                    botoesAcao += `<button class="btn-action-small" data-action="editar" data-id="${item.id}" title="Editar">✏️</button>`;
-                    if (!isProprio) botoesAcao += `<button class="btn-action-small" data-action="renovar" data-id="${item.id}" data-fim="${item.data_fim}" data-uni="${item.unidade}" title="Renovar">🔄</button>`;
-                    botoesAcao += `<button class="btn-action-small" data-action="devolver" data-id="${item.id}" data-nome="${safeEquip}" title="Devolver (Histórico)">↩️</button>`;
-                    botoesAcao += `<button class="btn-action-small" data-action="excluir" data-id="${item.id}" data-nome="${safeEquip}" title="Excluir Permanente">🗑️</button>`;
-                } else if (statusNorm === 'inativo') {
-                    botoesAcao = `<span class="status-badge" style="margin-right:8px;">Devolvido</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Restaurar para Ativos">🔄</button>`;
-                } else if (statusNorm === 'excluido') {
-                    botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--danger); color:white;">Excluído</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Restaurar para Ativos">🔄</button>`;
-                } else {
-                    // Prevenção extra caso haja algum status quebrado
-                    botoesAcao = `<span class="status-badge" style="margin-right:8px; background:var(--warning); color:white;">Indefinido</span> <button class="btn-action-small" data-action="restaurar" data-id="${item.id}" data-nome="${safeEquip}" title="Forçar Restauração">🔄</button>`;
-                }
+            if (window.State) {
+                window.State.carregando = false;
+            }
+        },
 
-                const tr = `<tr>
-                    <td class="col-obra"><div class="group-info"><span class="main-txt">${item.obra || '--'}</span><span class="sub-txt">Forn: ${item.fornecedor || '--'}</span></div></td>
-                    <td class="col-equip"><span class="main-txt">${badgeQtd} ${item.equipamento || '--'}</span><div style="margin-top:4px;">${alertas}</div></td>
-                    <td class="col-periodo"><div class="group-info"><span class="main-txt">${isProprio ? Utils.formatarData(item.data_inicio) : (item.unidade || 'Mês')}</span>${!isProprio ? `<span class="sub-txt" style="color:var(--primary); font-weight:600;">Vence: ${Utils.formatarData(item.data_fim)}</span>` : ''}</div></td>
-                    <td class="col-contrato"><div class="group-info"><span class="main-txt">${ctrStr}</span></div></td>
-                    <td class="col-valor"><div class="group-info"><span class="price-tag">${Utils.formatarMoeda(item.valor)}</span>${indeniz}</div></td>
-                    <td class="col-anexo">${btnAnexo}</td>
-                    <td class="col-acoes"><div class="action-buttons">${botoesAcao}</div></td>
-                </tr>`;
-                
-                // Direcionamento robusto das linhas para a aba certa
-                if (statusNorm === 'excluido') arrExc.push(tr);
-                else if (statusNorm === 'inativo') arrHist.push(tr);
-                else if (isProprio && statusNorm === 'ativo') arrComp.push(tr);
-                else arrLoc.push(tr);
+        showToast(mensagem, tipo = 'info', duracao = 4000) {
+            const container = obterElemento('toast-container');
+
+            if (!container) {
+                console.log(`[${tipo}] ${mensagem}`);
+                return;
+            }
+
+            const tipoSeguro = [
+                'success',
+                'error',
+                'warning',
+                'info'
+            ].includes(tipo)
+                ? tipo
+                : 'info';
+
+            const toast = document.createElement('div');
+
+            toast.className = `toast ${tipoSeguro}`;
+
+            toast.setAttribute(
+                'role',
+                tipoSeguro === 'error' ? 'alert' : 'status'
+            );
+
+            const icone = document.createElement('span');
+            icone.textContent = iconesToast[tipoSeguro];
+            icone.setAttribute('aria-hidden', 'true');
+
+            const texto = document.createElement('span');
+            texto.textContent = String(mensagem ?? '');
+
+            toast.appendChild(icone);
+            toast.appendChild(texto);
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
             });
 
-            if(bLoc) bLoc.innerHTML = arrLoc.join('');
-            if(bComp) bComp.innerHTML = arrComp.join('');
-            if(bHist) bHist.innerHTML = arrHist.join('');
-            if(bExc) bExc.innerHTML = arrExc.join('');
+            window.setTimeout(() => {
+                toast.classList.remove('show');
 
-            document.querySelectorAll('.loader').forEach(e => e.style.display = 'none');
-            
-            const tbLoc = document.getElementById('tabela-locacoes'); if(tbLoc) tbLoc.style.display = arrLoc.length > 0 ? 'table' : 'none';
-            const tbComp = document.getElementById('tabela-compras'); if(tbComp) tbComp.style.display = arrComp.length > 0 ? 'table' : 'none';
-            const tbHist = document.getElementById('tabela-historico'); if(tbHist) tbHist.style.display = arrHist.length > 0 ? 'table' : 'none';
-            const tbExc = document.getElementById('tabela-excluidos'); if(tbExc) tbExc.style.display = arrExc.length > 0 ? 'table' : 'none';
+                window.setTimeout(() => {
+                    toast.remove();
+                }, 350);
+            }, Math.max(1000, Number(duracao) || 4000));
+        },
 
-        } catch (errorRender) {
-            console.error("Erro de Renderização de Tabelas: ", errorRender);
+        registrarLog(acao, detalhe = '') {
+            try {
+                const chave = 'controle_logs';
+
+                const salvo = JSON.parse(
+                    localStorage.getItem(chave) || '[]'
+                );
+
+                const logs = Array.isArray(salvo)
+                    ? salvo
+                    : [];
+
+                logs.unshift({
+                    data: new Date().toLocaleString('pt-BR'),
+                    acao: String(acao || 'Ação'),
+                    detalhe: String(detalhe || '')
+                });
+
+                localStorage.setItem(
+                    chave,
+                    JSON.stringify(logs.slice(0, 500))
+                );
+
+                if (
+                    window.UI &&
+                    typeof window.UI.renderizarLogs === 'function' &&
+                    obterElemento('secao-sistema')
+                        ?.classList.contains('animate-show')
+                ) {
+                    window.UI.renderizarLogs();
+                }
+            } catch (erro) {
+                console.warn(
+                    '[Utils] Não foi possível registrar o log:',
+                    erro
+                );
+            }
+        },
+
+        showConfirm(
+            titulo,
+            mensagem,
+            callback,
+            perigoso = false
+        ) {
+            const modal = obterElemento('modal-confirm');
+            const tituloEl = obterElemento('confirm-title');
+            const mensagemEl = obterElemento('confirm-msg');
+            const iconeEl = obterElemento('confirm-icon');
+            const botao = obterElemento('btn-confirm-action');
+
+            /*
+             * Proteção para páginas que não possuam
+             * o modal personalizado.
+             */
+            if (!modal || !botao) {
+                const confirmado = window.confirm(
+                    `${titulo || 'Confirmação'}\n\n${mensagem || ''}`
+                );
+
+                if (
+                    confirmado &&
+                    typeof callback === 'function'
+                ) {
+                    Promise.resolve(callback()).catch((erro) => {
+                        console.error(
+                            '[Utils] Erro na ação confirmada:',
+                            erro
+                        );
+
+                        Utils.showToast(
+                            'Não foi possível concluir a operação.',
+                            'error'
+                        );
+                    });
+                }
+
+                return;
+            }
+
+            if (tituloEl) {
+                tituloEl.textContent = String(
+                    titulo || 'Confirmação'
+                );
+            }
+
+            if (mensagemEl) {
+                mensagemEl.textContent = String(
+                    mensagem || ''
+                );
+            }
+
+            if (iconeEl) {
+                iconeEl.textContent = perigoso
+                    ? '🚨'
+                    : '⚠️';
+            }
+
+            botao.textContent = perigoso
+                ? 'Confirmar exclusão'
+                : 'Confirmar';
+
+            botao.style.background = perigoso
+                ? 'var(--danger)'
+                : 'var(--primary)';
+
+            botao.disabled = false;
+
+            /*
+             * onclick é substituído em cada abertura.
+             * Isso impede o acúmulo de eventos antigos.
+             */
+            botao.onclick = async () => {
+                botao.disabled = true;
+
+                Utils.fecharConfirm();
+
+                try {
+                    if (typeof callback === 'function') {
+                        await callback();
+                    }
+                } catch (erro) {
+                    console.error(
+                        '[Utils] Erro na ação confirmada:',
+                        erro
+                    );
+
+                    Utils.hideLoader();
+
+                    Utils.showToast(
+                        'Não foi possível concluir a operação.',
+                        'error'
+                    );
+                } finally {
+                    botao.disabled = false;
+                }
+            };
+
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+        },
+
+        fecharConfirm() {
+            const modal = obterElemento('modal-confirm');
+            const botao = obterElemento(
+                'btn-confirm-action'
+            );
+
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+
+            if (botao) {
+                botao.onclick = null;
+            }
+        },
+
+        formatarMoeda(valor) {
+            const numero = Number(valor);
+
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(
+                Number.isFinite(numero)
+                    ? numero
+                    : 0
+            );
+        },
+
+        formatarData(valor) {
+            const data = interpretarDataLocal(valor);
+
+            if (!data) {
+                return '-';
+            }
+
+            return new Intl.DateTimeFormat(
+                'pt-BR'
+            ).format(data);
+        },
+
+        escapeStr(valor) {
+            return String(valor ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
         }
-    },
+    };
 
-    renderizarModuloFornecedores: () => {
-        const bodyForn = document.getElementById('body-fornecedores'); if(!bodyForn) return;
-        bodyForn.innerHTML = '';
-        let contagemForns = {}; 
-        State.dadosFiltrados.forEach(item => { 
-            const statusNorm = String(item.status || '').toLowerCase().trim();
-            if(statusNorm === 'ativo') { let f = item.fornecedor || 'Não identificado'; contagemForns[f] = (contagemForns[f] || 0) + 1; }
-        });
-        Object.keys(contagemForns).sort((a, b) => a.localeCompare(b)).forEach(forn => {
-            const safeForn = Utils.escapeStr(forn);
-            bodyForn.innerHTML += `<tr><td class="col-obra"><span class="main-txt">${forn}</span></td><td class="col-equip"><span class="status-badge highlight">${contagemForns[forn]} ativos</span></td><td class="col-acoes"><div class="action-buttons"><button class="btn-action-small" data-action="renomear-forn" data-nome="${safeForn}" title="Renomear">✏️</button><button class="btn-action-small" data-action="mesclar-forn" data-nome="${safeForn}" title="Mesclar">🔗</button></div></td></tr>`;
-        });
-        const tbForn = document.getElementById('tabela-fornecedores');
-        if(tbForn) tbForn.style.display = Object.keys(contagemForns).length > 0 ? 'table' : 'none';
+    // -------------------------------------------------
+    // Utilitarios de data
+    // -------------------------------------------------
+
+    class DateUtils {
+        static calcularDiasRestantes(dataVencimento) {
+            const vencimento = interpretarDataLocal(
+                dataVencimento
+            );
+
+            if (!vencimento) {
+                return null;
+            }
+
+            const hoje = new Date();
+
+            hoje.setHours(0, 0, 0, 0);
+            vencimento.setHours(0, 0, 0, 0);
+
+            const diferenca =
+                vencimento.getTime() - hoje.getTime();
+
+            return Math.round(
+                diferenca / 86400000
+            );
+        }
+
+        static formatarDataBR(data) {
+            return Utils.formatarData(data);
+        }
+
+        /*
+         * Compatibilidade com módulos antigos que ainda
+         * utilizem DateUtils.formatar().
+         */
+        static formatar(data) {
+            return DateUtils.formatarDataBR(data);
+        }
     }
-};
+
+    // -------------------------------------------------
+    // Exposicao global
+    // -------------------------------------------------
+
+    window.Utils = Utils;
+    window.DateUtils = DateUtils;
+})();
