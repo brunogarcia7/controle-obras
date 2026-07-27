@@ -1,122 +1,345 @@
-const DB = {
+// =====================================================
+// DATABASE.JS
+// Sistema Gestão de Equipamentos v6.1
+// =====================================================
 
-    client: supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY),
+(() => {
+    'use strict';
 
-    carregarDados: async () => {
+    const DB = {
 
-        Utils.showLoader('A carregar base de dados...');
+        client: null,
 
-        try {
+        // ---------------------------------------------
+        // Inicialização
+        // ---------------------------------------------
 
-            console.log("======================================");
-            console.log("INICIANDO LEITURA DO SUPABASE");
-            console.log("======================================");
-
-            console.log("CONFIG:", CONFIG);
-            console.log("CLIENT:", DB.client);
-
-            const { data, error } = await DB.client
-                .from('locacoes')
-                .select('*');
-
-            console.log("ERRO RETORNADO:");
-            console.log(error);
-
-            console.log("DADOS RETORNADOS:");
-            console.log(data);
-
-            if (error) throw error;
-
-            State.dadosGlobais = data || [];
-
-            console.log("REGISTROS CARREGADOS:", State.dadosGlobais.length);
-            console.log("STATE:", State.dadosGlobais);
-
-            console.log("======================================");
-            console.log("LEITURA FINALIZADA");
-            console.log("======================================");
-
-        } catch (err) {
-
-            console.error("ERRO GERAL");
-            console.error(err);
-
-            Utils.showToast("Erro ao conectar no banco.", "error");
-
-        } finally {
-
-            Utils.hideLoader();
-
-        }
-
-    },
-
-    salvar: async (id, payload) => {
-
-        Utils.showLoader('Salvando no banco...');
-
-        try {
-
-            let res;
-
-            if (id) {
-                res = await DB.client
-                    .from('locacoes')
-                    .update(payload)
-                    .eq('id', id);
-            } else {
-                res = await DB.client
-                    .from('locacoes')
-                    .insert([payload]);
+        inicializar() {
+            if (DB.client) {
+                return DB.client;
             }
 
-            if (res.error) throw res.error;
+            if (
+                !window.supabase ||
+                typeof window.supabase.createClient !== 'function'
+            ) {
+                throw new Error(
+                    'A biblioteca do Supabase não foi carregada.'
+                );
+            }
 
-            Utils.registrarLog(
-                id ? 'Edição' : 'Novo',
-                `Item: ${payload.equipamento}`
+            if (!window.CONFIG) {
+                throw new Error(
+                    'O arquivo config.js não foi carregado.'
+                );
+            }
+
+            if (
+                !CONFIG.SUPABASE_URL ||
+                !CONFIG.SUPABASE_KEY
+            ) {
+                throw new Error(
+                    'URL ou chave do Supabase não configurada.'
+                );
+            }
+
+            DB.client = window.supabase.createClient(
+                CONFIG.SUPABASE_URL,
+                CONFIG.SUPABASE_KEY
             );
 
-            return true;
-
-        } catch (e) {
-
-            console.error(e);
-            Utils.showToast("Erro ao salvar.", "error");
-            return false;
-
-        } finally {
-
-            Utils.hideLoader();
-
-        }
-
-    },
-
-    mudarStatus: async (id, status, nomeItem) => {
-
-        Utils.showLoader('Atualizando status...');
-
-        const { error } = await DB.client
-            .from('locacoes')
-            .update({ status })
-            .eq('id', id);
-
-        Utils.hideLoader();
-
-        if (!error) {
-
-            Utils.registrarLog(
-                'Status alterado',
-                `${nomeItem} movido para ${status}`
+            console.info(
+                '[DB] Cliente Supabase inicializado.'
             );
 
-            return true;
+            return DB.client;
+        },
+
+        obterTabela() {
+            return CONFIG.TABELA_PRINCIPAL || 'locacoes';
+        },
+
+        obterClient() {
+            return DB.client || DB.inicializar();
+        },
+
+        limparPayload(payload) {
+            if (
+                !payload ||
+                typeof payload !== 'object' ||
+                Array.isArray(payload)
+            ) {
+                throw new Error(
+                    'Os dados enviados para gravação são inválidos.'
+                );
+            }
+
+            /*
+             * Remove somente propriedades undefined.
+             * Valores null, zero e string vazia são preservados.
+             */
+            return Object.fromEntries(
+                Object.entries(payload).filter(
+                    ([, valor]) => valor !== undefined
+                )
+            );
+        },
+
+        atualizarRegistroNoState(registro, idOriginal = null) {
+            if (
+                !window.State ||
+                !Array.isArray(State.dadosGlobais) ||
+                !registro
+            ) {
+                return;
+            }
+
+            const id = idOriginal ?? registro.id;
+
+            const indice = State.dadosGlobais.findIndex(
+                item => String(item.id) === String(id)
+            );
+
+            if (indice >= 0) {
+                State.dadosGlobais[indice] = registro;
+            } else {
+                State.dadosGlobais.unshift(registro);
+            }
+        },
+
+        registrarErro(contexto, erro) {
+            console.error(`[DB] ${contexto}`, {
+                message: erro?.message,
+                code: erro?.code,
+                details: erro?.details,
+                hint: erro?.hint,
+                status: erro?.status,
+                erro
+            });
+        },
+
+        // ---------------------------------------------
+        // Carregamento principal
+        // ---------------------------------------------
+
+        async carregarDados() {
+            Utils.showLoader(
+                'Carregando base de dados...'
+            );
+
+            try {
+                const client = DB.obterClient();
+                const tabela = DB.obterTabela();
+
+                console.info(
+                    `[DB] Buscando registros em "${tabela}"...`
+                );
+
+                const { data, error } = await client
+                    .from(tabela)
+                    .select('*');
+
+                if (error) {
+                    throw error;
+                }
+
+                const registros = Array.isArray(data)
+                    ? data
+                    : [];
+
+                State.dadosGlobais = registros;
+
+                console.info(
+                    `[DB] ${registros.length} registro(s) carregado(s).`
+                );
+
+                return registros;
+
+            } catch (erro) {
+                DB.registrarErro(
+                    'Erro ao carregar os dados.',
+                    erro
+                );
+
+                State.dadosGlobais = [];
+
+                const semPermissao =
+                    erro?.code === '42501' ||
+                    erro?.status === 401 ||
+                    erro?.status === 403;
+
+                Utils.showToast(
+                    semPermissao
+                        ? 'O Supabase bloqueou o acesso aos dados. Verifique as políticas RLS.'
+                        : 'Erro ao conectar ao banco de dados.',
+                    'error'
+                );
+
+                return [];
+
+            } finally {
+                Utils.hideLoader();
+            }
+        },
+
+        // ---------------------------------------------
+        // Inserção e edição
+        // ---------------------------------------------
+
+        async salvar(id, payload) {
+            Utils.showLoader(
+                id
+                    ? 'Salvando alterações...'
+                    : 'Cadastrando item...'
+            );
+
+            try {
+                const client = DB.obterClient();
+                const tabela = DB.obterTabela();
+                const dadosLimpos = DB.limparPayload(payload);
+
+                let consulta;
+
+                if (id !== undefined && id !== null && id !== '') {
+                    consulta = client
+                        .from(tabela)
+                        .update(dadosLimpos)
+                        .eq('id', id);
+                } else {
+                    consulta = client
+                        .from(tabela)
+                        .insert(dadosLimpos);
+                }
+
+                /*
+                 * O Supabase v2 não retorna registros modificados
+                 * automaticamente. O select() solicita o registro
+                 * criado ou atualizado.
+                 */
+                const { data, error } = await consulta
+                    .select('*')
+                    .single();
+
+                if (error) {
+                    throw error;
+                }
+
+                DB.atualizarRegistroNoState(data, id);
+
+                Utils.registrarLog(
+                    id ? 'Edição' : 'Novo cadastro',
+                    `Item: ${
+                        dadosLimpos.equipamento ||
+                        data?.equipamento ||
+                        'Não informado'
+                    }`
+                );
+
+                return data;
+
+            } catch (erro) {
+                DB.registrarErro(
+                    'Erro ao salvar o registro.',
+                    erro
+                );
+
+                Utils.showToast(
+                    erro?.code === '42501'
+                        ? 'Sem permissão para salvar. Verifique as políticas RLS.'
+                        : 'Erro ao salvar o registro.',
+                    'error'
+                );
+
+                return null;
+
+            } finally {
+                Utils.hideLoader();
+            }
+        },
+
+        // ---------------------------------------------
+        // Alteração de status
+        // ---------------------------------------------
+
+        async mudarStatus(id, status, nomeItem = '') {
+            Utils.showLoader(
+                'Atualizando status...'
+            );
+
+            try {
+                if (
+                    id === undefined ||
+                    id === null ||
+                    id === ''
+                ) {
+                    throw new Error(
+                        'ID do registro não informado.'
+                    );
+                }
+
+                if (!status) {
+                    throw new Error(
+                        'Status não informado.'
+                    );
+                }
+
+                const client = DB.obterClient();
+                const tabela = DB.obterTabela();
+
+                const { data, error } = await client
+                    .from(tabela)
+                    .update({ status })
+                    .eq('id', id)
+                    .select('*')
+                    .single();
+
+                if (error) {
+                    throw error;
+                }
+
+                DB.atualizarRegistroNoState(data, id);
+
+                Utils.registrarLog(
+                    'Status alterado',
+                    `${
+                        nomeItem ||
+                        data?.equipamento ||
+                        `Registro ${id}`
+                    } movido para ${status}`
+                );
+
+                return data;
+
+            } catch (erro) {
+                DB.registrarErro(
+                    'Erro ao atualizar o status.',
+                    erro
+                );
+
+                Utils.showToast(
+                    erro?.code === '42501'
+                        ? 'Sem permissão para alterar o status.'
+                        : 'Erro ao atualizar o status.',
+                    'error'
+                );
+
+                return null;
+
+            } finally {
+                Utils.hideLoader();
+            }
         }
+    };
 
-        console.error(error);
-
-        return false;
+    // Inicializa antes dos outros módulos utilizarem DB.client.
+    try {
+        DB.inicializar();
+    } catch (erro) {
+        console.error(
+            '[DB] Falha na inicialização:',
+            erro
+        );
     }
 
-};
+    window.DB = DB;
+})();
