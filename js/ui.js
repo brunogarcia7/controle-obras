@@ -1,390 +1,577 @@
 // =====================================================
-// UTILS.JS
-// Sistema Gestao de Equipamentos v6.1
+// UI.JS
+// Sistema Gestão de Equipamentos v6.2.2
 // =====================================================
 
 (() => {
     'use strict';
 
-    // -------------------------------------------------
-    // Funcoes internas
-    // -------------------------------------------------
+    const CHAVE_COLUNAS = 'controle_colunas';
+    const CHAVE_TEMA = 'controle_tema';
+    const CHAVE_ABA = 'controle_aba';
 
     const obterElemento = (id) => document.getElementById(id);
 
-    const interpretarDataLocal = (valor) => {
-        if (!valor) return null;
-
-        if (valor instanceof Date) {
-            return Number.isNaN(valor.getTime())
-                ? null
-                : new Date(valor.getFullYear(), valor.getMonth(), valor.getDate());
+    const lerJSONLocal = (chave, valorPadrao = {}) => {
+        try {
+            const valor = JSON.parse(localStorage.getItem(chave) || 'null');
+            return valor && typeof valor === 'object' ? valor : valorPadrao;
+        } catch (erro) {
+            console.warn(`[UI] Valor local inválido em ${chave}:`, erro);
+            return valorPadrao;
         }
-
-        const texto = String(valor).trim();
-        const formatoISO = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
-
-        if (formatoISO) {
-            const ano = Number(formatoISO[1]);
-            const mes = Number(formatoISO[2]);
-            const dia = Number(formatoISO[3]);
-            const data = new Date(ano, mes - 1, dia);
-
-            if (
-                data.getFullYear() === ano &&
-                data.getMonth() === mes - 1 &&
-                data.getDate() === dia
-            ) {
-                return data;
-            }
-
-            return null;
-        }
-
-        const data = new Date(texto);
-
-        if (Number.isNaN(data.getTime())) return null;
-
-        return new Date(
-            data.getFullYear(),
-            data.getMonth(),
-            data.getDate()
-        );
     };
 
-    const iconesToast = {
-        success: '✅',
-        error: '❌',
-        warning: '⚠️',
-        info: 'ℹ️'
+    const textoSeguro = (valor, padrao = '--') => {
+        const texto = String(valor ?? '').trim();
+        return Utils.escapeStr(texto || padrao);
     };
 
-    // -------------------------------------------------
-    // Utilitarios gerais
-    // -------------------------------------------------
+    const atributoSeguro = (valor) => Utils.escapeStr(String(valor ?? ''));
 
-    const Utils = {
-        showLoader(mensagem = 'Carregando...') {
-            const loader = obterElemento('global-loader');
-            const texto = obterElemento('global-loader-msg');
+    const normalizarStatus = (valor) =>
+        String(valor || '').trim().toLowerCase();
 
-            if (texto) {
-                texto.textContent = String(
-                    mensagem || 'Carregando...'
-                );
-            }
+    const ehPatrimonioProprio = (item) => {
+        const unidade = String(item?.unidade || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
 
-            if (loader) {
-                loader.style.display = 'flex';
-                loader.setAttribute('aria-hidden', 'false');
-            }
+        return unidade.includes('proprio');
+    };
 
-            if (window.State) {
-                window.State.carregando = true;
-            }
+    const urlAnexoSegura = (valor) => {
+        if (!valor || typeof valor !== 'string') return '';
+
+        try {
+            const url = new URL(valor, window.location.href);
+            return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+        } catch (_) {
+            return '';
+        }
+    };
+
+    const criarLinhaVazia = (mensagem) => `
+        <tr>
+            <td colspan="7" style="text-align:center;padding:28px;color:var(--text-light);">
+                ${Utils.escapeStr(mensagem)}
+            </td>
+        </tr>
+    `;
+
+    const colunasSalvas = lerJSONLocal(CHAVE_COLUNAS, {});
+
+    const UI = {
+        colunasAtivas: {
+            ...(CONFIG.COLUNAS_PADRAO || {}),
+            ...colunasSalvas,
+            acoes: true
         },
 
-        hideLoader() {
-            const loader = obterElemento('global-loader');
+        inicializarTema() {
+            const temaSalvo =
+                localStorage.getItem(CHAVE_TEMA) ||
+                localStorage.getItem('tema') ||
+                'light';
 
-            if (loader) {
-                loader.style.display = 'none';
-                loader.setAttribute('aria-hidden', 'true');
+            const escuro = temaSalvo === 'dark';
+            document.documentElement.toggleAttribute('data-theme', escuro);
+
+            if (!escuro) {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
             }
 
-            if (window.State) {
-                window.State.carregando = false;
-            }
+            const icone = obterElemento('tema-icone');
+            const texto = obterElemento('tema-texto');
+
+            if (icone) icone.textContent = escuro ? '☀️' : '🌙';
+            if (texto) texto.textContent = escuro ? 'Modo Claro' : 'Modo Escuro';
+
+            if (window.State) State.temaAtual = escuro ? 'dark' : 'light';
+
+            UI.aplicarEstiloColunas();
         },
 
-        showToast(mensagem, tipo = 'info', duracao = 4000) {
-            const container = obterElemento('toast-container');
+        toggleTema() {
+            const escuroAtual =
+                document.documentElement.getAttribute('data-theme') === 'dark';
 
-            if (!container) {
-                console.log(`[${tipo}] ${mensagem}`);
+            const novoTema = escuroAtual ? 'light' : 'dark';
+            localStorage.setItem(CHAVE_TEMA, novoTema);
+            localStorage.setItem('tema', novoTema);
+
+            UI.inicializarTema();
+        },
+
+        toggleSidebar() {
+            obterElemento('sidebar')?.classList.toggle('collapsed');
+        },
+
+        abrirModal(id) {
+            const modal = obterElemento(id);
+            if (!modal) {
+                console.warn(`[UI] Modal não encontrado: ${id}`);
                 return;
             }
 
-            const tipoSeguro = [
-                'success',
-                'error',
-                'warning',
-                'info'
-            ].includes(tipo)
-                ? tipo
-                : 'info';
-
-            const toast = document.createElement('div');
-
-            toast.className = `toast ${tipoSeguro}`;
-
-            toast.setAttribute(
-                'role',
-                tipoSeguro === 'error' ? 'alert' : 'status'
-            );
-
-            const icone = document.createElement('span');
-            icone.textContent = iconesToast[tipoSeguro];
-            icone.setAttribute('aria-hidden', 'true');
-
-            const texto = document.createElement('span');
-            texto.textContent = String(mensagem ?? '');
-
-            toast.appendChild(icone);
-            toast.appendChild(texto);
-
-            container.appendChild(toast);
-
-            requestAnimationFrame(() => {
-                toast.classList.add('show');
-            });
-
-            window.setTimeout(() => {
-                toast.classList.remove('show');
-
-                window.setTimeout(() => {
-                    toast.remove();
-                }, 350);
-            }, Math.max(1000, Number(duracao) || 4000));
-        },
-
-        registrarLog(acao, detalhe = '') {
-            try {
-                const chave = 'controle_logs';
-
-                const salvo = JSON.parse(
-                    localStorage.getItem(chave) || '[]'
-                );
-
-                const logs = Array.isArray(salvo)
-                    ? salvo
-                    : [];
-
-                logs.unshift({
-                    data: new Date().toLocaleString('pt-BR'),
-                    acao: String(acao || 'Ação'),
-                    detalhe: String(detalhe || '')
-                });
-
-                localStorage.setItem(
-                    chave,
-                    JSON.stringify(logs.slice(0, 500))
-                );
-
-                if (
-                    window.UI &&
-                    typeof window.UI.renderizarLogs === 'function' &&
-                    obterElemento('secao-sistema')
-                        ?.classList.contains('animate-show')
-                ) {
-                    window.UI.renderizarLogs();
-                }
-            } catch (erro) {
-                console.warn(
-                    '[Utils] Não foi possível registrar o log:',
-                    erro
-                );
-            }
-        },
-
-        showConfirm(
-            titulo,
-            mensagem,
-            callback,
-            perigoso = false
-        ) {
-            const modal = obterElemento('modal-confirm');
-            const tituloEl = obterElemento('confirm-title');
-            const mensagemEl = obterElemento('confirm-msg');
-            const iconeEl = obterElemento('confirm-icon');
-            const botao = obterElemento('btn-confirm-action');
-
-            /*
-             * Proteção para páginas que não possuam
-             * o modal personalizado.
-             */
-            if (!modal || !botao) {
-                const confirmado = window.confirm(
-                    `${titulo || 'Confirmação'}\n\n${mensagem || ''}`
-                );
-
-                if (
-                    confirmado &&
-                    typeof callback === 'function'
-                ) {
-                    Promise.resolve(callback()).catch((erro) => {
-                        console.error(
-                            '[Utils] Erro na ação confirmada:',
-                            erro
-                        );
-
-                        Utils.showToast(
-                            'Não foi possível concluir a operação.',
-                            'error'
-                        );
+            if (id === 'modal-colunas') {
+                ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo']
+                    .forEach((chave) => {
+                        const checkbox = obterElemento(`chk-col-${chave}`);
+                        if (checkbox) {
+                            checkbox.checked = UI.colunasAtivas[chave] !== false;
+                        }
                     });
-                }
-
-                return;
             }
-
-            if (tituloEl) {
-                tituloEl.textContent = String(
-                    titulo || 'Confirmação'
-                );
-            }
-
-            if (mensagemEl) {
-                mensagemEl.textContent = String(
-                    mensagem || ''
-                );
-            }
-
-            if (iconeEl) {
-                iconeEl.textContent = perigoso
-                    ? '🚨'
-                    : '⚠️';
-            }
-
-            botao.textContent = perigoso
-                ? 'Confirmar exclusão'
-                : 'Confirmar';
-
-            botao.style.background = perigoso
-                ? 'var(--danger)'
-                : 'var(--primary)';
-
-            botao.disabled = false;
-
-            /*
-             * onclick é substituído em cada abertura.
-             * Isso impede o acúmulo de eventos antigos.
-             */
-            botao.onclick = async () => {
-                botao.disabled = true;
-
-                Utils.fecharConfirm();
-
-                try {
-                    if (typeof callback === 'function') {
-                        await callback();
-                    }
-                } catch (erro) {
-                    console.error(
-                        '[Utils] Erro na ação confirmada:',
-                        erro
-                    );
-
-                    Utils.hideLoader();
-
-                    Utils.showToast(
-                        'Não foi possível concluir a operação.',
-                        'error'
-                    );
-                } finally {
-                    botao.disabled = false;
-                }
-            };
 
             modal.style.display = 'flex';
             modal.setAttribute('aria-hidden', 'false');
         },
 
-        fecharConfirm() {
-            const modal = obterElemento('modal-confirm');
-            const botao = obterElemento(
-                'btn-confirm-action'
+        fecharModal(id) {
+            const modal = obterElemento(id);
+            if (!modal) return;
+
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        },
+
+        mudarAba(aba) {
+            const abaSegura = String(aba || 'locacoes');
+            const menu = obterElemento(`menu-${abaSegura}`);
+            const secao = obterElemento(`secao-${abaSegura}`);
+
+            if (!menu || !secao) {
+                console.warn(`[UI] Aba não encontrada: ${abaSegura}`);
+                if (abaSegura !== 'locacoes') UI.mudarAba('locacoes');
+                return;
+            }
+
+            document
+                .querySelectorAll('.sidebar .menu-item[id^="menu-"]')
+                .forEach((elemento) => elemento.classList.remove('active'));
+
+            document
+                .querySelectorAll('.secao-tabela')
+                .forEach((elemento) => elemento.classList.remove('animate-show'));
+
+            menu.classList.add('active');
+            secao.classList.add('animate-show');
+
+            localStorage.setItem(CHAVE_ABA, abaSegura);
+            if (window.State) State.abaAtual = abaSegura;
+
+            if (abaSegura === 'sistema') UI.renderizarLogs();
+            if (abaSegura === 'alertas' && window.AlertasManager) {
+                window.AlertasManager.renderizarTela();
+            }
+        },
+
+        aplicarEstiloColunas() {
+            const regras = [];
+
+            ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo']
+                .forEach((chave) => {
+                    if (UI.colunasAtivas[chave] === false) {
+                        regras.push(`.col-${chave} { display: none !important; }`);
+                    }
+                });
+
+            const estilo = obterElemento('dynamic-columns-style');
+            if (estilo) estilo.textContent = regras.join('\n');
+        },
+
+        salvarColunas() {
+            ['obra', 'equip', 'periodo', 'contrato', 'valor', 'anexo']
+                .forEach((chave) => {
+                    const checkbox = obterElemento(`chk-col-${chave}`);
+                    if (checkbox) UI.colunasAtivas[chave] = checkbox.checked;
+                });
+
+            UI.colunasAtivas.acoes = true;
+            localStorage.setItem(
+                CHAVE_COLUNAS,
+                JSON.stringify(UI.colunasAtivas)
             );
 
-            if (modal) {
-                modal.style.display = 'none';
-                modal.setAttribute('aria-hidden', 'true');
+            UI.aplicarEstiloColunas();
+            UI.fecharModal('modal-colunas');
+            Utils.showToast('Visualização atualizada!', 'success');
+        },
+
+        renderizarLogs() {
+            const tbody = obterElemento('body-logs');
+            if (!tbody) return;
+
+            let logs = [];
+            try {
+                const valor = JSON.parse(
+                    localStorage.getItem('controle_logs') || '[]'
+                );
+                logs = Array.isArray(valor) ? valor : [];
+            } catch (erro) {
+                console.warn('[UI] Log local inválido:', erro);
             }
 
-            if (botao) {
-                botao.onclick = null;
+            if (logs.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align:center;padding:20px;">
+                            Nenhum log registrado.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = logs.map((log) => {
+                const acao = String(log?.acao || 'Ação');
+                const cor = /exclu|arquiv/i.test(acao)
+                    ? 'var(--danger)'
+                    : /edit|renova/i.test(acao)
+                        ? 'var(--warning)'
+                        : 'var(--success)';
+
+                return `
+                    <tr>
+                        <td style="font-size:.8rem;color:var(--text-light);">
+                            ${textoSeguro(log?.data, '-')}
+                        </td>
+                        <td>
+                            <span style="color:${cor};font-weight:bold;font-size:.8rem;">
+                                ${textoSeguro(acao, 'Ação')}
+                            </span>
+                        </td>
+                        <td style="font-size:.85rem;font-weight:600;">
+                            ${textoSeguro(log?.detalhe, '-')}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        },
+
+        atualizarKPIsEDashboards() {
+            const registros = Array.isArray(State.dadosFiltrados)
+                ? State.dadosFiltrados
+                : [];
+
+            let total = 0;
+            let ativos = 0;
+            let arquivados = 0;
+            const fornecedores = new Set();
+            const contratos = new Set();
+
+            registros.forEach((item) => {
+                const quantidade = Math.max(1, Number.parseInt(item.quantidade, 10) || 1);
+                const status = normalizarStatus(item.status);
+
+                total += quantidade;
+
+                if (status === 'ativo') {
+                    ativos += quantidade;
+
+                    const contrato = String(item.contrato || '').trim();
+                    if (
+                        contrato &&
+                        ![
+                            'NF via IA App',
+                            'NF Compra',
+                            'Sem Contrato',
+                            'Cadastro Manual'
+                        ].includes(contrato)
+                    ) {
+                        contratos.add(contrato);
+                    }
+                } else if (status === 'inativo') {
+                    arquivados += quantidade;
+                }
+
+                if (
+                    status !== 'excluido' &&
+                    item.fornecedor &&
+                    item.fornecedor !== 'Não identificado'
+                ) {
+                    fornecedores.add(item.fornecedor);
+                }
+            });
+
+            const valores = {
+                'kpi-total': total,
+                'kpi-ativos': ativos,
+                'kpi-arquivados': arquivados,
+                'kpi-contratos': contratos.size,
+                'kpi-fornecedores': fornecedores.size
+            };
+
+            Object.entries(valores).forEach(([id, valor]) => {
+                const elemento = obterElemento(id);
+                if (elemento) elemento.textContent = String(valor);
+            });
+        },
+
+        renderizarTabelas() {
+            try {
+                const listas = {
+                    locacoes: [],
+                    compras: [],
+                    historico: [],
+                    excluidos: []
+                };
+
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+
+                const registros = Array.isArray(State.dadosFiltrados)
+                    ? State.dadosFiltrados
+                    : [];
+
+                registros.forEach((item) => {
+                    const status = normalizarStatus(item.status);
+                    const proprio = ehPatrimonioProprio(item);
+                    const quantidade = Math.max(
+                        1,
+                        Number.parseInt(item.quantidade, 10) || 1
+                    );
+
+                    const urlAnexo = urlAnexoSegura(item.anexo);
+                    let botaoAnexo = '<span class="btn-sem-anexo">Sem anexo</span>';
+
+                    if (urlAnexo) {
+                        const pdf = /\.pdf(?:$|[?#])/i.test(urlAnexo) ||
+                            String(item.anexo).toLowerCase().includes('pdf');
+
+                        botaoAnexo = `
+                            <a href="${atributoSeguro(urlAnexo)}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="btn-anexo${pdf ? ' pdf-style' : ''}">
+                                ${pdf ? '📄 Ver PDF' : '📸 Ver Foto'}
+                            </a>
+                        `;
+                    }
+
+                    let alertas = '';
+                    if (!item.fornecedor || item.fornecedor === 'Não identificado') {
+                        alertas += '<span class="smart-alert alert-yellow">⚠️ Sem Fornecedor</span>';
+                    }
+
+                    const diasRestantes = item.data_fim
+                        ? DateUtils.calcularDiasRestantes(item.data_fim)
+                        : null;
+
+                    if (
+                        status === 'ativo' &&
+                        !proprio &&
+                        diasRestantes !== null &&
+                        diasRestantes < 0
+                    ) {
+                        alertas += '<span class="smart-alert alert-red">🚨 Vencido</span>';
+                    }
+
+                    const contratoOriginal = String(item.contrato || '').trim();
+                    const contratoVisivel =
+                        contratoOriginal &&
+                        ![
+                            'NF via IA App',
+                            'NF Compra',
+                            'Sem Contrato',
+                            'Cadastro Manual'
+                        ].includes(contratoOriginal)
+                            ? `<span class="highlight-txt">${textoSeguro(contratoOriginal, '--')}</span>`
+                            : '--';
+
+                    const indenizacao = Number(item.valor_indenizacao) || 0;
+                    const indenizacaoHtml = indenizacao > 0
+                        ? `<br><div class="indeniz-tag">Indenização: ${Utils.formatarMoeda(indenizacao)}</div>`
+                        : '';
+
+                    const id = atributoSeguro(item.id);
+                    const nome = atributoSeguro(item.equipamento || 'Equipamento');
+                    const fim = atributoSeguro(item.data_fim || '');
+                    const unidade = atributoSeguro(item.unidade || 'Dia');
+
+                    let botoes = '';
+
+                    if (status === 'ativo') {
+                        botoes += `<button class="btn-action-small" data-action="editar" data-id="${id}" title="Editar">✏️</button>`;
+
+                        if (!proprio) {
+                            botoes += `<button class="btn-action-small" data-action="renovar" data-id="${id}" data-fim="${fim}" data-uni="${unidade}" title="Renovar">🔄</button>`;
+                        }
+
+                        botoes += `<button class="btn-action-small" data-action="devolver" data-id="${id}" data-nome="${nome}" title="Devolver (Histórico)">↩️</button>`;
+                        botoes += `<button class="btn-action-small" data-action="excluir" data-id="${id}" data-nome="${nome}" title="Mover para Itens Excluídos">🗑️</button>`;
+                    } else if (status === 'inativo') {
+                        botoes = `
+                            <span class="status-badge" style="margin-right:8px;">Devolvido</span>
+                            <button class="btn-action-small" data-action="restaurar" data-id="${id}" data-nome="${nome}" title="Restaurar para Ativos">🔄</button>
+                        `;
+                    } else if (status === 'excluido') {
+                        botoes = `
+                            <span class="status-badge" style="margin-right:8px;background:var(--danger);color:#fff;">Excluído</span>
+                            <button class="btn-action-small" data-action="restaurar" data-id="${id}" data-nome="${nome}" title="Restaurar para Ativos">🔄</button>
+                        `;
+                    } else {
+                        botoes = `
+                            <span class="status-badge" style="margin-right:8px;background:var(--warning);color:#fff;">Status indefinido</span>
+                            <button class="btn-action-small" data-action="restaurar" data-id="${id}" data-nome="${nome}" title="Forçar restauração">🔄</button>
+                        `;
+                    }
+
+                    const periodoPrincipal = proprio
+                        ? Utils.formatarData(item.data_inicio)
+                        : textoSeguro(item.unidade, 'Mês');
+
+                    const periodoSecundario = !proprio
+                        ? `<span class="sub-txt" style="color:var(--primary);font-weight:600;">Vence: ${Utils.formatarData(item.data_fim)}</span>`
+                        : '';
+
+                    const linha = `
+                        <tr>
+                            <td class="col-obra">
+                                <div class="group-info">
+                                    <span class="main-txt">${textoSeguro(item.obra, '--')}</span>
+                                    <span class="sub-txt">Forn: ${textoSeguro(item.fornecedor, '--')}</span>
+                                </div>
+                            </td>
+                            <td class="col-equip">
+                                <span class="main-txt">
+                                    <span class="qtd-badge">${quantidade} UN</span>
+                                    ${textoSeguro(item.equipamento, '--')}
+                                </span>
+                                <div style="margin-top:4px;">${alertas}</div>
+                            </td>
+                            <td class="col-periodo">
+                                <div class="group-info">
+                                    <span class="main-txt">${periodoPrincipal}</span>
+                                    ${periodoSecundario}
+                                </div>
+                            </td>
+                            <td class="col-contrato">
+                                <div class="group-info"><span class="main-txt">${contratoVisivel}</span></div>
+                            </td>
+                            <td class="col-valor">
+                                <div class="group-info">
+                                    <span class="price-tag">${Utils.formatarMoeda(item.valor)}</span>
+                                    ${indenizacaoHtml}
+                                </div>
+                            </td>
+                            <td class="col-anexo">${botaoAnexo}</td>
+                            <td class="col-acoes"><div class="action-buttons">${botoes}</div></td>
+                        </tr>
+                    `;
+
+                    if (status === 'excluido') {
+                        listas.excluidos.push(linha);
+                    } else if (status === 'inativo') {
+                        listas.historico.push(linha);
+                    } else if (proprio && status === 'ativo') {
+                        listas.compras.push(linha);
+                    } else {
+                        listas.locacoes.push(linha);
+                    }
+                });
+
+                const configuracoes = [
+                    ['body-locacoes', 'tabela-locacoes', listas.locacoes, 'Nenhuma locação ativa encontrada.'],
+                    ['body-compras', 'tabela-compras', listas.compras, 'Nenhum patrimônio próprio encontrado.'],
+                    ['body-historico', 'tabela-historico', listas.historico, 'Nenhum equipamento devolvido encontrado.'],
+                    ['body-excluidos', 'tabela-excluidos', listas.excluidos, 'Nenhum item excluído encontrado.']
+                ];
+
+                configuracoes.forEach(([bodyId, tabelaId, linhas, vazio]) => {
+                    const corpo = obterElemento(bodyId);
+                    const tabela = obterElemento(tabelaId);
+
+                    if (corpo) corpo.innerHTML = linhas.length
+                        ? linhas.join('')
+                        : criarLinhaVazia(vazio);
+
+                    if (tabela) tabela.style.display = 'table';
+                });
+
+                document
+                    .querySelectorAll('.loader')
+                    .forEach((elemento) => {
+                        elemento.style.display = 'none';
+                    });
+
+            } catch (erro) {
+                console.error('[UI] Erro ao renderizar tabelas:', erro);
+                Utils.showToast(
+                    'Os dados chegaram, mas não foi possível montar as tabelas.',
+                    'error'
+                );
             }
         },
 
-        formatarMoeda(valor) {
-            const numero = Number(valor);
+        renderizarModuloFornecedores() {
+            const tbody = obterElemento('body-fornecedores');
+            const tabela = obterElemento('tabela-fornecedores');
+            if (!tbody) return;
 
-            return new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-            }).format(
-                Number.isFinite(numero)
-                    ? numero
-                    : 0
-            );
-        },
+            const contagem = new Map();
+            const registros = Array.isArray(State.dadosFiltrados)
+                ? State.dadosFiltrados
+                : [];
 
-        formatarData(valor) {
-            const data = interpretarDataLocal(valor);
+            registros.forEach((item) => {
+                if (normalizarStatus(item.status) !== 'ativo') return;
 
-            if (!data) {
-                return '-';
+                const fornecedor = String(
+                    item.fornecedor || 'Não identificado'
+                ).trim();
+
+                const quantidade = Math.max(
+                    1,
+                    Number.parseInt(item.quantidade, 10) || 1
+                );
+
+                contagem.set(
+                    fornecedor,
+                    (contagem.get(fornecedor) || 0) + quantidade
+                );
+            });
+
+            const fornecedores = [...contagem.keys()]
+                .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+            if (fornecedores.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align:center;padding:28px;color:var(--text-light);">
+                            Nenhum fornecedor ativo encontrado.
+                        </td>
+                    </tr>
+                `;
+                if (tabela) tabela.style.display = 'table';
+                return;
             }
 
-            return new Intl.DateTimeFormat(
-                'pt-BR'
-            ).format(data);
-        },
+            tbody.innerHTML = fornecedores.map((fornecedor) => {
+                const fornecedorAtributo = atributoSeguro(fornecedor);
 
-        escapeStr(valor) {
-            return String(valor ?? '')
-                .replaceAll('&', '&amp;')
-                .replaceAll('<', '&lt;')
-                .replaceAll('>', '&gt;')
-                .replaceAll('"', '&quot;')
-                .replaceAll("'", '&#39;');
+                return `
+                    <tr>
+                        <td class="col-obra"><span class="main-txt">${textoSeguro(fornecedor)}</span></td>
+                        <td class="col-equip"><span class="status-badge highlight">${contagem.get(fornecedor)} ativos</span></td>
+                        <td class="col-acoes">
+                            <div class="action-buttons">
+                                <button class="btn-action-small" data-action="renomear-forn" data-nome="${fornecedorAtributo}" title="Renomear">✏️</button>
+                                <button class="btn-action-small" data-action="mesclar-forn" data-nome="${fornecedorAtributo}" title="Mesclar">🔗</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            if (tabela) tabela.style.display = 'table';
         }
     };
 
-    // -------------------------------------------------
-    // Utilitarios de data
-    // -------------------------------------------------
-
-    class DateUtils {
-        static calcularDiasRestantes(dataVencimento) {
-            const vencimento = interpretarDataLocal(
-                dataVencimento
-            );
-
-            if (!vencimento) {
-                return null;
-            }
-
-            const hoje = new Date();
-
-            hoje.setHours(0, 0, 0, 0);
-            vencimento.setHours(0, 0, 0, 0);
-
-            const diferenca =
-                vencimento.getTime() - hoje.getTime();
-
-            return Math.round(
-                diferenca / 86400000
-            );
-        }
-
-        static formatarDataBR(data) {
-            return Utils.formatarData(data);
-        }
-
-        /*
-         * Compatibilidade com módulos antigos que ainda
-         * utilizem DateUtils.formatar().
-         */
-        static formatar(data) {
-            return DateUtils.formatarDataBR(data);
-        }
-    }
-
-    // -------------------------------------------------
-    // Exposicao global
-    // -------------------------------------------------
-
-    window.Utils = Utils;
-    window.DateUtils = DateUtils;
+    window.UI = UI;
 })();
