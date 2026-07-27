@@ -241,7 +241,7 @@
 
             <div class="header">
                 <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
-                <span class="badge-version">Versão 3.0 (Smart Alerts)</span>
+                <span class="badge-version">Versão 6.2.2 (Smart Alerts)</span>
             </div>
 
             <div class="top-controls">
@@ -563,33 +563,39 @@
     <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-mesclar-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarMesclarForn()">Mesclar</button></div></div></div>
     <!--
         Scripts locais:
-        1. O parâmetro v=6.2.1 força o navegador a buscar os arquivos novos.
+        1. O parâmetro v=6.2.2 força o navegador a buscar os arquivos novos.
         2. A ordem abaixo é obrigatória.
         3. O atributo defer preserva a ordem e faz o DOMContentLoaded aguardar os módulos.
     -->
-    <script defer src="./js/config.js?v=6.2.1"
+    <script defer src="./js/config.js?v=6.2.2"
             onerror="console.error('[BOOT] Falha ao carregar config.js')"></script>
 
-    <script defer src="./js/utils.js?v=6.2.1"
+    <script defer src="./js/utils.js?v=6.2.2"
             onerror="console.error('[BOOT] Falha ao carregar utils.js')"></script>
 
-    <script defer src="./js/database.js?v=6.2.1"
+    <script defer src="./js/database.js?v=6.2.2"
             onerror="console.error('[BOOT] Falha ao carregar database.js')"></script>
 
-    <script defer src="./js/alertas.js?v=6.2.1"
+    <script defer src="./js/responsaveis.js?v=6.2.2"
+            onerror="console.error('[BOOT] Falha ao carregar responsaveis.js')"></script>
+
+    <script defer src="./js/notificationService.js?v=6.2.2"
+            onerror="console.error('[BOOT] Falha ao carregar notificationService.js')"></script>
+
+    <script defer src="./js/alertas.js?v=6.2.2"
             onerror="console.error('[BOOT] Falha ao carregar alertas.js')"></script>
 
-    <script defer src="./js/ui.js?v=6.2.1"
+    <script defer src="./js/ui.js?v=6.2.2"
             onerror="console.error('[BOOT] Falha ao carregar ui.js')"></script>
 
-    <script defer src="./js/equipamentos.js?v=6.2.1"
+    <script defer src="./js/equipamentos.js?v=6.2.2"
             onerror="console.error('[BOOT] Falha ao carregar equipamentos.js')"></script>
 
-    <script defer src="./js/exportacao.js?v=6.2.1"
+    <script defer src="./js/exportacao.js?v=6.2.2"
             onerror="console.error('[BOOT] Falha ao carregar exportacao.js')"></script>
 
     <!-- app.js deve permanecer por último -->
-    <script defer src="./js/app.js?v=6.2.1"
+    <script defer src="./js/app.js?v=6.2.2"
             onerror="console.error('[BOOT] Falha ao carregar app.js')"></script>
 
     <!-- Diagnóstico de inicialização -->
