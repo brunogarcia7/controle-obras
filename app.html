@@ -5,44 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>📱 App Controle de Obras</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --white: #fff; --text: #1e293b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
-        
         .app-container { max-width: 600px; margin: 0 auto; }
-        
         .header { text-align: center; margin-bottom: 25px; }
         .header h1 { margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--primary); }
         .card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #475569; }
-        .form-group input, .form-group select { width: 100%; height: 45px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-size: 1rem; background: var(--bg); outline: none;}
+        .form-group input, .form-group select { width: 100%; height: 45px; border-radius: 8px; border: 1px solid var(--border); padding: 0 15px; font-size: 1rem; background: var(--bg); outline: none; }
         .form-group input:focus { border-color: var(--primary); }
-        
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        
-        .btn-camera { background: rgba(37,99,235,0.05); color: var(--primary); border: 2px dashed var(--primary); height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; cursor: pointer; width: 100%; font-size: 0.95rem; transition: 0.2s;}
+        .btn-camera, .btn-arquivo { height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; cursor: pointer; width: 100%; font-size: 0.95rem; transition: 0.2s; }
+        .btn-camera { background: rgba(37,99,235,0.05); color: var(--primary); border: 2px dashed var(--primary); }
         .btn-camera:hover { background: rgba(37,99,235,0.10); }
-        
-        .btn-arquivo { background: rgba(16,185,129,0.05); color: var(--success); border: 2px dashed var(--success); height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; cursor: pointer; width: 100%; font-size: 0.95rem; transition: 0.2s;}
+        .btn-arquivo { background: rgba(16,185,129,0.05); color: var(--success); border: 2px dashed var(--success); }
         .btn-arquivo:hover { background: rgba(16,185,129,0.10); }
-
-        .btn-salvar { background: var(--primary); color: var(--white); border: none; height: 50px; border-radius: 8px; width: 100%; font-size: 1.1rem; font-weight: 800; margin-top: 20px; cursor: pointer; transition: 0.2s;}
+        .btn-camera:disabled, .btn-arquivo:disabled { opacity: 0.55; cursor: not-allowed; }
+        .btn-salvar { background: var(--primary); color: var(--white); border: none; height: 50px; border-radius: 8px; width: 100%; font-size: 1.1rem; font-weight: 800; margin-top: 20px; cursor: pointer; transition: 0.2s; }
         .btn-salvar:active { background: #1d4ed8; transform: scale(0.98); }
         .btn-salvar:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
-        
         #loader-salvar { display: none; text-align: center; font-weight: bold; margin-top: 15px; color: var(--primary); }
         #loader-ia { display: none; text-align: center; font-size: 0.85rem; font-weight: bold; margin-top: 10px; color: #6366f1; padding: 10px; border-radius: 8px; }
-        #foto-status { font-size: 0.8rem; text-align: center; display: none; margin-top: 10px; font-weight: bold; word-break: break-all; }
+        #foto-status { font-size: 0.8rem; text-align: center; display: none; margin-top: 10px; font-weight: bold; word-break: break-word; }
         #versao-app { text-align: center; font-size: 0.7rem; color: #94a3b8; margin-top: 20px; display: block; }
     </style>
 </head>
 <body>
-
 <div class="app-container">
-
     <div class="header">
         <h1>📸 Leitor NF / Cadastro</h1>
         <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">Envio direto para a nuvem</p>
@@ -52,21 +46,21 @@
         <div class="form-group">
             <label>Anexar Foto ou PDF da NF</label>
             <div class="grid-2">
-                <input type="file" id="foto-camera" accept="image/*" capture="environment" style="display:none;" onchange="previewFotoEProcessarIA(event)">
-                <button class="btn-camera" onclick="document.getElementById('foto-camera').click()">📷 Câmera</button>
-                
-                <input type="file" id="foto-arquivo" accept="image/*,application/pdf" style="display:none;" onchange="previewFotoEProcessarIA(event)">
-                <button class="btn-arquivo" onclick="document.getElementById('foto-arquivo').click()">📄 Arquivo</button>
+                <input type="file" id="foto-camera" accept="image/*" capture="environment" style="display:none;">
+                <button type="button" id="btn-camera" class="btn-camera">📷 Câmera</button>
+
+                <input type="file" id="foto-arquivo" accept="image/*,application/pdf" style="display:none;">
+                <button type="button" id="btn-arquivo" class="btn-arquivo">📄 Arquivo</button>
             </div>
             <p id="foto-status"></p>
-            <div id="loader-ia">🤖 Processando documento...</div>
+            <div id="loader-ia" role="status" aria-live="polite">🤖 Processando documento...</div>
         </div>
 
         <div class="form-group">
             <label>Tipo de Entrada</label>
             <select id="tipo"><option value="Locação">Locação (Aluguel)</option><option value="Compra">Patrimônio (Compra)</option></select>
         </div>
-        
+
         <div class="form-group">
             <label>Obra / Destino</label>
             <input type="text" id="obra" list="lista-obras" placeholder="Ex: Sede Start Química" autocomplete="off">
@@ -91,308 +85,439 @@
         <div class="grid-2">
             <div class="form-group">
                 <label>Quantidade</label>
-                <input type="number" id="quantidade" value="1">
+                <input type="number" id="quantidade" value="1" min="1">
             </div>
             <div class="form-group">
                 <label>Valor Total (R$)</label>
-                <input type="number" id="valor" step="0.01" placeholder="0.00">
+                <input type="number" id="valor" step="0.01" min="0" placeholder="0.00">
             </div>
         </div>
 
-        <button class="btn-salvar" id="btn-enviar-sistema" onclick="salvarDados()">🚀 Enviar para o Sistema</button>
-        <div id="loader-salvar">⏳ Salvando na nuvem... Aguarde.</div>
+        <button type="button" class="btn-salvar" id="btn-enviar-sistema">🚀 Enviar para o Sistema</button>
+        <div id="loader-salvar" role="status" aria-live="polite">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
-    
-    <span id="versao-app">Versão 31.0 (Com Número de Contrato)</span>
 
+    <span id="versao-app">Versão 31.1 (Correção Mobile + Gemini)</span>
 </div>
 
-    <script>
-        const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
-        const SUPABASE_KEY = 'COLE_SUA_CHAVE_AQUI_A_QUE_COMECA_COM_eyJ';
-        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+    'use strict';
 
-        let arquivoAnexoGlobal = null;
+    const SUPABASE_URL = window.CONFIG?.SUPABASE_URL || '';
+    const SUPABASE_KEY = window.CONFIG?.SUPABASE_KEY || '';
 
-        async function carregarObras() {
-            try {
-                const cache = sessionStorage.getItem('obras_cache');
-                const datalist = document.getElementById('lista-obras');
-                
-                if (cache) {
-                    datalist.innerHTML = cache;
-                    return;
-                }
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        throw new Error('A biblioteca do Supabase não foi carregada.');
+    }
+    if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_KEY.includes('COLE_SUA_CHAVE')) {
+        throw new Error('A configuração pública do Supabase não foi carregada.');
+    }
 
-                const { data, error } = await db.from('locacoes').select('obra');
-                if (error) throw error;
-                
-                const obrasUnicas = [...new Set(data.map(item => item.obra?.trim()).filter(Boolean))].sort();
-                
-                const optionsHTML = obrasUnicas.map(obra => `<option value="${obra}">`).join('');
-                datalist.innerHTML = optionsHTML;
-                
-                sessionStorage.setItem('obras_cache', optionsHTML);
-            } catch (err) {
-                console.error("Erro ao carregar obras:", err);
-            }
-        }
-        document.addEventListener('DOMContentLoaded', carregarObras);
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const MIME_PERMITIDOS = new Set([
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/heic',
+        'image/heif',
+        'application/pdf'
+    ]);
+    const LIMITE_PDF_BYTES = 4 * 1024 * 1024;
+    const LIMITE_IMAGEM_ORIGINAL_BYTES = 20 * 1024 * 1024;
+    const LIMITE_PROCESSADO_BYTES = 12 * 1024 * 1024;
+    const TIMEOUT_IA_MS = 45000;
 
-        window.onerror = function(msg, url, line) {
-            console.error("[Sistema] Erro Interno:", msg, "Linha:", line);
-            return true;
+    let arquivoAnexoGlobal = null;
+    let processamentoEmAndamento = false;
+
+    const elementos = {
+        fotoCamera: document.getElementById('foto-camera'),
+        fotoArquivo: document.getElementById('foto-arquivo'),
+        btnCamera: document.getElementById('btn-camera'),
+        btnArquivo: document.getElementById('btn-arquivo'),
+        btnSalvar: document.getElementById('btn-enviar-sistema'),
+        statusFoto: document.getElementById('foto-status'),
+        loaderIA: document.getElementById('loader-ia'),
+        loaderSalvar: document.getElementById('loader-salvar')
+    };
+
+    function definirControlesProcessando(processando) {
+        processamentoEmAndamento = processando;
+        elementos.btnCamera.disabled = processando;
+        elementos.btnArquivo.disabled = processando;
+    }
+
+    function exibirStatusIA(mensagem, tipo = 'processando') {
+        const estilos = {
+            processando: { cor: '#6366f1', fundo: 'rgba(99, 102, 241, 0.1)' },
+            sucesso: { cor: 'var(--success)', fundo: 'rgba(16, 185, 129, 0.1)' },
+            aviso: { cor: 'var(--warning)', fundo: 'rgba(245, 158, 11, 0.1)' },
+            erro: { cor: 'var(--danger)', fundo: 'rgba(239, 68, 68, 0.1)' }
         };
+        const estilo = estilos[tipo] || estilos.processando;
+        elementos.loaderIA.style.display = 'block';
+        elementos.loaderIA.innerText = mensagem;
+        elementos.loaderIA.style.color = estilo.cor;
+        elementos.loaderIA.style.background = estilo.fundo;
+    }
 
-        function comprimirImagem(base64Str, maxWidth, callback) {
-            let img = new Image();
-            img.src = base64Str;
-            img.onload = function() {
-                let canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
+    function abrirSeletor(input) {
+        if (processamentoEmAndamento) return;
+        input.value = '';
+        input.click();
+    }
 
-                if (width > height) {
-                    if (width > maxWidth) {
-                        height = Math.round(height * (maxWidth / width));
-                        width = maxWidth;
-                    }
-                } else {
-                    if (height > maxWidth) {
-                        width = Math.round(width * (maxWidth / height));
-                        height = maxWidth;
-                    }
-                }
-                canvas.width = width;
-                canvas.height = height;
-                let ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                callback(canvas.toDataURL('image/jpeg', 0.8));
+    function obterMimeType(file) {
+        const mimeInformado = String(file.type || '').toLowerCase().split(';')[0].trim();
+        if (MIME_PERMITIDOS.has(mimeInformado)) return mimeInformado;
+
+        const extensao = String(file.name || '').toLowerCase().split('.').pop();
+        const porExtensao = {
+            jpg: 'image/jpeg',
+            jpeg: 'image/jpeg',
+            png: 'image/png',
+            webp: 'image/webp',
+            heic: 'image/heic',
+            heif: 'image/heif',
+            pdf: 'application/pdf'
+        };
+        return porExtensao[extensao] || mimeInformado;
+    }
+
+    function lerComoDataURL(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(new Error('Não foi possível ler o arquivo selecionado.'));
+            reader.onabort = () => reject(new Error('A leitura do arquivo foi cancelada.'));
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    function extrairBase64(dataURL) {
+        const separador = dataURL.indexOf(',');
+        if (separador < 0) throw new Error('O arquivo não foi convertido para Base64 corretamente.');
+        const base64 = dataURL.slice(separador + 1).replace(/\s/g, '');
+        if (!base64) throw new Error('A imagem convertida está vazia.');
+        return base64;
+    }
+
+    function carregarImagem(file) {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                resolve(img);
             };
-            img.onerror = () => callback(base64Str);
-        }
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error('O navegador não conseguiu decodificar esta imagem.'));
+            };
+            img.src = url;
+        });
+    }
 
-        function formatarValorParaInput(texto) {
-            if (!texto) return 0;
-            let limpo = String(texto).replace(/[^\d.,]/g, '');
-            if (limpo.includes(',') && limpo.includes('.')) {
-                limpo = limpo.replace(/\./g, '').replace(',', '.');
-            } else if (limpo.includes(',')) {
-                limpo = limpo.replace(',', '.');
+    async function comprimirImagem(file, maxDimensao = 1600, qualidade = 0.82) {
+        const mimeOriginal = obterMimeType(file);
+
+        try {
+            const img = await carregarImagem(file);
+            let largura = img.naturalWidth || img.width;
+            let altura = img.naturalHeight || img.height;
+
+            if (!largura || !altura) throw new Error('Dimensões inválidas.');
+
+            const escala = Math.min(1, maxDimensao / Math.max(largura, altura));
+            largura = Math.max(1, Math.round(largura * escala));
+            altura = Math.max(1, Math.round(altura * escala));
+
+            const canvas = document.createElement('canvas');
+            canvas.width = largura;
+            canvas.height = altura;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas indisponível.');
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, largura, altura);
+
+            const blob = await new Promise((resolve, reject) => {
+                canvas.toBlob(
+                    resultado => resultado ? resolve(resultado) : reject(new Error('Falha ao compactar a imagem.')),
+                    'image/jpeg',
+                    qualidade
+                );
+            });
+
+            return { blob, mimeType: 'image/jpeg' };
+        } catch (erro) {
+            if (MIME_PERMITIDOS.has(mimeOriginal) && mimeOriginal !== 'application/pdf') {
+                console.warn('[Mobile] Compressão não aplicada; enviando arquivo original.', erro);
+                return { blob: file, mimeType: mimeOriginal };
             }
-            return parseFloat(limpo) || 0;
+            throw erro;
+        }
+    }
+
+    async function prepararArquivoParaIA(file) {
+        const mimeType = obterMimeType(file);
+        if (!MIME_PERMITIDOS.has(mimeType)) {
+            throw new Error(`Formato não suportado: ${mimeType || 'desconhecido'}. Use JPG, PNG, WEBP, HEIC, HEIF ou PDF.`);
         }
 
-        function previewFotoEProcessarIA(event) {
+        const isPDF = mimeType === 'application/pdf';
+        if (isPDF && file.size > LIMITE_PDF_BYTES) {
+            throw new Error('PDF maior que 4 MB. Reduza o arquivo ou preencha os dados manualmente.');
+        }
+        if (!isPDF && file.size > LIMITE_IMAGEM_ORIGINAL_BYTES) {
+            throw new Error('Imagem maior que 20 MB. Reduza a resolução e tente novamente.');
+        }
+
+        const preparado = isPDF
+            ? { blob: file, mimeType }
+            : await comprimirImagem(file);
+
+        if (preparado.blob.size > LIMITE_PROCESSADO_BYTES) {
+            throw new Error('O arquivo processado ficou maior que 12 MB. Reduza a resolução e tente novamente.');
+        }
+
+        const dataURL = await lerComoDataURL(preparado.blob);
+        return {
+            mimeType: preparado.mimeType,
+            base64: extrairBase64(dataURL),
+            tamanhoProcessado: preparado.blob.size
+        };
+    }
+
+    async function chamarGeminiOCR(arquivoPreparado) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), TIMEOUT_IA_MS);
+
+        try {
+            const resposta = await fetch(`${SUPABASE_URL}/functions/v1/gemini-ocr`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_KEY
+                },
+                body: JSON.stringify({
+                    data: arquivoPreparado.base64,
+                    mimeType: arquivoPreparado.mimeType
+                }),
+                signal: controller.signal
+            });
+
+            const corpoTexto = await resposta.text();
+            let data = null;
             try {
-                const file = event.target.files[0];
-                if (!file) return;
-                
-                arquivoAnexoGlobal = file; 
-                let mimeAparente = file.type || '';
-                const isPDF = file.name.toLowerCase().endsWith('.pdf') || mimeAparente.includes('pdf');
-                const mimeTypeVerdadeiro = isPDF ? 'application/pdf' : 'image/jpeg';
-                
-                const statusBox = document.getElementById('foto-status');
-                statusBox.style.display = 'block';
-                statusBox.innerText = isPDF ? `📄 PDF Selecionado: ${file.name}` : `✅ Foto Anexada: ${file.name}`;
-                statusBox.style.color = isPDF ? 'var(--danger)' : 'var(--success)';
-                
-                const loaderIA = document.getElementById('loader-ia');
-                
-                if (file.size > 4 * 1024 * 1024 && isPDF) {
-                    loaderIA.style.display = 'block';
-                    loaderIA.innerText = "⚠️ PDF muito grande para a IA. Preencha manualmente.";
-                    loaderIA.style.color = "var(--warning)";
-                    loaderIA.style.background = "rgba(245, 158, 11, 0.1)";
-                    return; 
-                }
-
-                loaderIA.style.display = 'block';
-                loaderIA.innerText = "🤖 Lendo dados com Inteligência Artificial na nuvem...";
-                loaderIA.style.color = "#6366f1";
-                loaderIA.style.background = "rgba(99, 102, 241, 0.1)";
-
-                const reader = new FileReader();
-                reader.onload = async (e) => { 
-                    const originalBase64 = e.target.result;
-                    
-                    try {
-                        let finalBase64 = originalBase64;
-                        if (!isPDF) {
-                            finalBase64 = await new Promise(resolve => comprimirImagem(originalBase64, 1200, resolve));
-                        }
-                        
-                        const promptOCR = `Você é um especialista em leitura de notas fiscais brasileiras (NF-e, NFS-e, recibos, faturas de locação e compra).
-Sua tarefa é extrair APENAS as seguintes informações, retornando um JSON simples e limpo, sem formatação markdown ou textos adicionais:
-
-{
-  "fornecedor": "Nome da empresa emissora (razão social ou nome fantasia). NUNCA o destinatário.",
-  "equipamento": "Descrição limpa do principal equipamento ou material. Remova prefixos como LOCAÇÃO DE, LOCAÇÃO, ALUGUEL DE, etc. Exemplo: 'LOCAÇÃO BETONEIRA 400L' vira 'Betoneira 400L'. Se houver vários itens, escolha o mais relevante para construção civil.",
-  "quantidade": número inteiro (quantidade do equipamento escolhido),
-  "valor": "Valor total da nota como string (ex: 1.500,00)",
-  "contrato": "Número do contrato, pedido, fatura ou da nota fiscal (apenas letras e números). Se não encontrar, deixe como string vazia."
-}
-
-Regras rígidas:
-- O campo "fornecedor" deve conter o nome do emissor da nota (quem vendeu/alugou), nunca o cliente.
-- O campo "valor" deve ser o total final da nota.
-- O campo "contrato" deve ser direto, ex: 12345.
-- Não invente informações. Se não achar, deixe vazio (string vazia) ou zero.
-- Retorne APENAS o JSON, sem crases ou markdown.`;
-
-                        const base64Data = finalBase64.includes(',') ? finalBase64.split(',')[1] : finalBase64;
-                        const safeMime = mimeTypeVerdadeiro.split(';')[0].trim();
-
-                        const payload = {
-                            contents: [{
-                                parts: [
-                                    { text: promptOCR },
-                                    { inline_data: { mime_type: safeMime, data: base64Data } }
-                                ]
-                            }],
-                            generationConfig: {
-                                responseMimeType: "application/json",
-                                temperature: 0
-                            }
-                        };
-
-                        const resposta = await fetch(`${SUPABASE_URL}/functions/v1/gemini-ocr`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${SUPABASE_KEY}`
-                            },
-                            body: JSON.stringify(payload)
-                        });
-
-                        const data = await resposta.json();
-
-                        if (data.error) {
-                            throw new Error(data.error); 
-                        }
-                        if (!resposta.ok) {
-                            throw new Error(`Falha no servidor: ${resposta.status}`);
-                        }
-                        
-                        const fornecedor = data.fornecedor || '';
-                        const equipamento = data.equipamento || '';
-                        const quantidade = data.quantidade || 1;
-                        const valor = data.valor || '';
-                        const contrato = data.contrato || '';
-
-                        console.log("\n===== OCR =====");
-                        console.log(`Fornecedor: ${fornecedor}`);
-                        console.log(`Equipamento: ${equipamento}`);
-                        console.log(`Quantidade: ${quantidade}`);
-                        console.log(`Valor: R$ ${valor}`);
-                        console.log(`Contrato: ${contrato}`);
-                        console.log("=================\n");
-
-                        if (fornecedor && fornecedor.toLowerCase() !== "não identificado") {
-                            document.getElementById('fornecedor').value = fornecedor;
-                        }
-                        if (equipamento) {
-                            document.getElementById('equipamento').value = equipamento;
-                            document.getElementById('quantidade').value = quantidade;
-                        }
-                        if (valor) {
-                            document.getElementById('valor').value = formatarValorParaInput(valor);
-                        }
-                        if (contrato) {
-                            document.getElementById('contrato').value = contrato;
-                        }
-
-                        loaderIA.innerText = "✅ Dados lidos com sucesso!";
-                        loaderIA.style.color = "var(--success)";
-                        loaderIA.style.background = "rgba(16, 185, 129, 0.1)";
-
-                    } catch (error) {
-                        loaderIA.innerText = `⚠️ Falha na IA: ${error.message} Preencha manualmente.`;
-                        loaderIA.style.color = "var(--warning)";
-                        loaderIA.style.background = "rgba(245, 158, 11, 0.1)";
-                    }
-                };
-                reader.readAsDataURL(file);
-            } catch(err) {
-                alert("Erro interno na seleção do arquivo: " + err.message);
+                data = corpoTexto ? JSON.parse(corpoTexto) : {};
+            } catch {
+                throw new Error(`Resposta inválida do servidor (${resposta.status}).`);
             }
-        }
 
-        async function salvarDados() {
-            try {
-                const obra = document.getElementById('obra').value.trim();
-                const equip = document.getElementById('equipamento').value.trim();
-                const forn = document.getElementById('fornecedor').value.trim() || 'Não identificado';
-                const qtd = parseInt(document.getElementById('quantidade').value) || 1;
-                const valor = parseFloat(document.getElementById('valor').value) || 0;
-                const tipo = document.getElementById('tipo').value;
-                
-                const contratoInput = document.getElementById('contrato').value.trim();
-                const contratoFinal = contratoInput || (tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App');
-
-                if (!obra || !equip) return alert("⚠️ ATENÇÃO: Preencha a Obra e o Equipamento antes de salvar!");
-
-                document.getElementById('loader-salvar').style.display = 'block';
-                document.getElementById('btn-enviar-sistema').disabled = true;
-
-                let urlAnexo = null;
-
-                if (arquivoAnexoGlobal) {
-                    try {
-                        const isPDF = arquivoAnexoGlobal.name.toLowerCase().endsWith('.pdf') || arquivoAnexoGlobal.type === 'application/pdf';
-                        const extensao = isPDF ? 'pdf' : 'jpg';
-                        const fileName = `mobile_nf_${Date.now()}.${extensao}`;
-                        
-                        const { data, error } = await db.storage.from('comprovantes').upload(fileName, arquivoAnexoGlobal);
-                        if (!error && data) {
-                            urlAnexo = db.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
-                        } else {
-                            console.error("Erro no Storage:", error);
-                        }
-                    } catch(e) { 
-                        console.error("Upload falhou:", e); 
-                    }
-                }
-
-                const dataAtual = new Date().toISOString().split('T')[0];
-                
-                const payload = {
-                    obra: obra,
-                    equipamento: equip,
-                    fornecedor: forn,
-                    quantidade: qtd,
-                    valor: valor,
-                    data_inicio: dataAtual,
-                    status: 'ativo',
-                    anexo: urlAnexo,
-                    unidade: tipo === 'Compra' ? 'Proprio' : 'Mês',
-                    contrato: contratoFinal
-                };
-
-                const { error } = await db.from('locacoes').insert([payload]);
-
-                if (error) {
-                    alert("❌ Erro ao Salvar no Banco: " + error.message);
-                } else {
-                    alert("✅ Equipamento salvo com sucesso no Painel!");
-                    document.getElementById('equipamento').value = '';
-                    document.getElementById('valor').value = '';
-                    document.getElementById('fornecedor').value = '';
-                    document.getElementById('contrato').value = '';
-                    document.getElementById('foto-camera').value = '';
-                    document.getElementById('foto-arquivo').value = '';
-                    document.getElementById('foto-status').style.display = 'none';
-                    document.getElementById('loader-ia').style.display = 'none';
-                    arquivoAnexoGlobal = null;
-                }
-            } catch(err) {
-                alert("❌ Erro grave no botão de salvar: " + err.message);
-            } finally {
-                document.getElementById('loader-salvar').style.display = 'none';
-                document.getElementById('btn-enviar-sistema').disabled = false;
+            if (!resposta.ok) {
+                throw new Error(data?.error || data?.message || `Falha no servidor (${resposta.status}).`);
             }
+            if (data?.error) throw new Error(data.error);
+
+            return data;
+        } catch (erro) {
+            if (erro.name === 'AbortError') {
+                throw new Error('A análise excedeu 45 segundos. Verifique a conexão e tente novamente.');
+            }
+            throw erro;
+        } finally {
+            clearTimeout(timer);
         }
-    </script>
+    }
+
+    function formatarValorParaInput(texto) {
+        if (texto === null || texto === undefined || texto === '') return 0;
+        let limpo = String(texto).replace(/[^\d.,-]/g, '');
+        if (limpo.includes(',') && limpo.includes('.')) {
+            limpo = limpo.replace(/\./g, '').replace(',', '.');
+        } else if (limpo.includes(',')) {
+            limpo = limpo.replace(',', '.');
+        }
+        return Number.parseFloat(limpo) || 0;
+    }
+
+    function preencherFormularioComOCR(data) {
+        const fornecedor = String(data.fornecedor || '').trim();
+        const equipamento = String(data.equipamento || '').trim();
+        const quantidade = Number.parseInt(data.quantidade, 10) || 1;
+        const valor = data.valor ?? '';
+        const contrato = String(data.contrato || '').trim();
+
+        if (fornecedor && fornecedor.toLowerCase() !== 'não identificado') {
+            document.getElementById('fornecedor').value = fornecedor;
+        }
+        if (equipamento) {
+            document.getElementById('equipamento').value = equipamento;
+        }
+        document.getElementById('quantidade').value = Math.max(1, quantidade);
+        if (valor !== '') {
+            document.getElementById('valor').value = formatarValorParaInput(valor);
+        }
+        if (contrato) {
+            document.getElementById('contrato').value = contrato;
+        }
+    }
+
+    async function previewFotoEProcessarIA(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        arquivoAnexoGlobal = file;
+        const mimeType = obterMimeType(file);
+        const isPDF = mimeType === 'application/pdf';
+
+        elementos.statusFoto.style.display = 'block';
+        elementos.statusFoto.innerText = isPDF
+            ? `📄 PDF selecionado: ${file.name}`
+            : `✅ Imagem selecionada: ${file.name}`;
+        elementos.statusFoto.style.color = isPDF ? 'var(--primary)' : 'var(--success)';
+
+        definirControlesProcessando(true);
+        exibirStatusIA('🤖 Preparando arquivo e enviando para análise...', 'processando');
+
+        try {
+            const arquivoPreparado = await prepararArquivoParaIA(file);
+            console.info('[Mobile] Arquivo preparado para OCR.', {
+                mimeType: arquivoPreparado.mimeType,
+                tamanhoProcessado: arquivoPreparado.tamanhoProcessado
+            });
+
+            const dados = await chamarGeminiOCR(arquivoPreparado);
+            preencherFormularioComOCR(dados);
+            exibirStatusIA('✅ Dados lidos com sucesso!', 'sucesso');
+        } catch (erro) {
+            console.error('[Mobile] Falha no OCR:', erro);
+            exibirStatusIA(`⚠️ Falha na IA: ${erro.message} Preencha manualmente ou tente outra foto.`, 'aviso');
+        } finally {
+            definirControlesProcessando(false);
+        }
+    }
+
+    async function carregarObras() {
+        try {
+            const cache = sessionStorage.getItem('obras_cache');
+            const datalist = document.getElementById('lista-obras');
+            if (cache) {
+                datalist.innerHTML = cache;
+                return;
+            }
+
+            const { data, error } = await db.from('locacoes').select('obra');
+            if (error) throw error;
+
+            const obrasUnicas = [...new Set((data || []).map(item => item.obra?.trim()).filter(Boolean))].sort();
+            const optionsHTML = obrasUnicas.map(obra => `<option value="${String(obra).replace(/"/g, '&quot;')}">`).join('');
+            datalist.innerHTML = optionsHTML;
+            sessionStorage.setItem('obras_cache', optionsHTML);
+        } catch (erro) {
+            console.error('[Mobile] Erro ao carregar obras:', erro);
+        }
+    }
+
+    function obterExtensaoUpload(file) {
+        const porMime = {
+            'application/pdf': 'pdf',
+            'image/jpeg': 'jpg',
+            'image/png': 'png',
+            'image/webp': 'webp',
+            'image/heic': 'heic',
+            'image/heif': 'heif'
+        };
+        return porMime[obterMimeType(file)] || 'bin';
+    }
+
+    async function salvarDados() {
+        try {
+            const obra = document.getElementById('obra').value.trim();
+            const equip = document.getElementById('equipamento').value.trim();
+            const forn = document.getElementById('fornecedor').value.trim() || 'Não identificado';
+            const qtd = Number.parseInt(document.getElementById('quantidade').value, 10) || 1;
+            const valor = Number.parseFloat(document.getElementById('valor').value) || 0;
+            const tipo = document.getElementById('tipo').value;
+            const contratoInput = document.getElementById('contrato').value.trim();
+            const contratoFinal = contratoInput || (tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App');
+
+            if (!obra || !equip) {
+                alert('⚠️ ATENÇÃO: Preencha a Obra e o Equipamento antes de salvar!');
+                return;
+            }
+
+            elementos.loaderSalvar.style.display = 'block';
+            elementos.btnSalvar.disabled = true;
+
+            let urlAnexo = null;
+            if (arquivoAnexoGlobal) {
+                try {
+                    const mimeType = obterMimeType(arquivoAnexoGlobal);
+                    const extensao = obterExtensaoUpload(arquivoAnexoGlobal);
+                    const fileName = `mobile_nf_${Date.now()}.${extensao}`;
+                    const { data, error } = await db.storage
+                        .from('comprovantes')
+                        .upload(fileName, arquivoAnexoGlobal, { contentType: mimeType, upsert: false });
+
+                    if (error) throw error;
+                    urlAnexo = db.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
+                } catch (erroUpload) {
+                    console.error('[Mobile] Upload do anexo falhou:', erroUpload);
+                }
+            }
+
+            const payload = {
+                obra,
+                equipamento: equip,
+                fornecedor: forn,
+                quantidade: qtd,
+                valor,
+                data_inicio: new Date().toISOString().split('T')[0],
+                status: 'ativo',
+                anexo: urlAnexo,
+                unidade: tipo === 'Compra' ? 'Proprio' : 'Mês',
+                contrato: contratoFinal
+            };
+
+            const { error } = await db.from('locacoes').insert([payload]);
+            if (error) throw error;
+
+            alert('✅ Equipamento salvo com sucesso no Painel!');
+            document.getElementById('equipamento').value = '';
+            document.getElementById('valor').value = '';
+            document.getElementById('fornecedor').value = '';
+            document.getElementById('contrato').value = '';
+            document.getElementById('quantidade').value = '1';
+            elementos.fotoCamera.value = '';
+            elementos.fotoArquivo.value = '';
+            elementos.statusFoto.style.display = 'none';
+            elementos.loaderIA.style.display = 'none';
+            arquivoAnexoGlobal = null;
+        } catch (erro) {
+            console.error('[Mobile] Erro ao salvar:', erro);
+            alert(`❌ Erro ao salvar no banco: ${erro.message}`);
+        } finally {
+            elementos.loaderSalvar.style.display = 'none';
+            elementos.btnSalvar.disabled = false;
+        }
+    }
+
+    elementos.btnCamera.addEventListener('click', () => abrirSeletor(elementos.fotoCamera));
+    elementos.btnArquivo.addEventListener('click', () => abrirSeletor(elementos.fotoArquivo));
+    elementos.fotoCamera.addEventListener('change', previewFotoEProcessarIA);
+    elementos.fotoArquivo.addEventListener('change', previewFotoEProcessarIA);
+    elementos.btnSalvar.addEventListener('click', salvarDados);
+    document.addEventListener('DOMContentLoaded', carregarObras);
+
+    window.addEventListener('error', event => {
+        console.error('[Mobile] Erro JavaScript não tratado:', event.error || event.message);
+    });
+    window.addEventListener('unhandledrejection', event => {
+        console.error('[Mobile] Promise rejeitada sem tratamento:', event.reason);
+    });
+</script>
 </body>
 </html>
