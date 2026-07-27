@@ -1,5 +1,4 @@
-// Memória global do sistema (O que estava faltando!)
-const State = {
+window.State = {
     dadosGlobais: [],
     dadosFiltrados: [],
     sortColunaAtual: 'data_fim',
@@ -52,7 +51,7 @@ const App = {
             
             localStorage.setItem('controle_filtros', JSON.stringify({ obra: fObra, forn: fForn, texto: fTexto }));
 
-            State.dadosFiltrados = State.dadosGlobais.filter(item => {
+            window.State.dadosFiltrados = window.State.dadosGlobais.filter(item => {
                 const matchObra = fObra === 'todas' || item.obra === fObra; 
                 const matchForn = fForn === 'todos' || item.fornecedor === fForn;
                 
@@ -69,11 +68,11 @@ const App = {
             const btnLimpar = document.getElementById('btn-limpar-filtros');
             if(btnLimpar) btnLimpar.style.display = (fObra !== 'todas' || fForn !== 'todos' || fTexto !== '') ? 'flex' : 'none';
 
-            State.dadosFiltrados.sort((a, b) => {
-                let valA = a[State.sortColunaAtual]; let valB = b[State.sortColunaAtual];
-                if (typeof valA === 'number' || typeof valB === 'number') { return State.sortDirecaoAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0); }
+            window.State.dadosFiltrados.sort((a, b) => {
+                let valA = a[window.State.sortColunaAtual]; let valB = b[window.State.sortColunaAtual];
+                if (typeof valA === 'number' || typeof valB === 'number') { return window.State.sortDirecaoAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0); }
                 valA = String(valA || '').toLowerCase(); valB = String(valB || '').toLowerCase();
-                return State.sortDirecaoAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                return window.State.sortDirecaoAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
             });
 
             App.atualizarSetasOrdenacao(); 
@@ -86,14 +85,14 @@ const App = {
     },
 
     ordenarColuna: (coluna) => {
-        if (State.sortColunaAtual === coluna) { State.sortDirecaoAsc = !State.sortDirecaoAsc; } else { State.sortColunaAtual = coluna; State.sortDirecaoAsc = true; }
+        if (window.State.sortColunaAtual === coluna) { window.State.sortDirecaoAsc = !window.State.sortDirecaoAsc; } else { window.State.sortColunaAtual = coluna; window.State.sortDirecaoAsc = true; }
         App.aplicarFiltrosELocalSort();
     },
 
     atualizarSetasOrdenacao: () => {
-        document.querySelectorAll('.sort-icon').forEach(span => span.innerText = ''); const seta = State.sortDirecaoAsc ? ' ▲' : ' ▼';
+        document.querySelectorAll('.sort-icon').forEach(span => span.innerText = ''); const seta = window.State.sortDirecaoAsc ? ' ▲' : ' ▼';
         const idsSetas = ['sort-obra', 'sort-equipamento', 'sort-data_fim', 'sort-contrato', 'sort-valor', 'sort-comp-obra', 'sort-comp-equip', 'sort-comp-data', 'sort-comp-contrato', 'sort-comp-valor', 'sort-hist-obra', 'sort-hist-equip', 'sort-hist-data', 'sort-hist-contrato', 'sort-hist-valor', 'sort-ex-obra', 'sort-ex-equip', 'sort-ex-data', 'sort-ex-contrato', 'sort-ex-valor'];
-        idsSetas.forEach(id => { const el = document.getElementById(id); if (el && id.includes(State.sortColunaAtual)) { el.innerText = seta; } });
+        idsSetas.forEach(id => { const el = document.getElementById(id); if (el && id.includes(window.State.sortColunaAtual)) { el.innerText = seta; } });
     },
 
     limparFiltros: () => {
@@ -126,8 +125,8 @@ window.onload = () => {
     App.bindEventos();
     App.carregarDados();
     
-    // Gatilho do Smart Alerts (Agora protegido e no lugar certo)
-    if (typeof AlertService !== 'undefined') {
-        AlertService.updateAll();
+    // Inicia o motor de Vencimentos em background
+    if (typeof window.AlertService !== 'undefined') {
+        window.AlertService.updateAll();
     }
 };
