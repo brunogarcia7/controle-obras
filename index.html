@@ -557,19 +557,17 @@
     <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-renomear-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarRenomearForn()">Atualizar</button></div></div></div>
     <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-mesclar-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarMesclarForn()">Mesclar</button></div></div></div>
 
-    <!-- O CARIMBO v=6.0 VAI DESTRUIR O CACHE DO SEU NAVEGADOR COM A NOVA ARQUITETURA -->
-    <script src="js/config.js?v=6.0"></script>
-    <script src="js/utils.js?v=6.0"></script>
-    <script src="js/database.js?v=6.0"></script>
+    <!-- O CARIMBO v=6.1 VAI DESTRUIR O CACHE DO SEU NAVEGADOR -->
+    <script src="js/config.js?v=6.1"></script>
+    <script src="js/utils.js?v=6.1"></script>
+    <script src="js/database.js?v=6.1"></script>
     
-    <!-- NOVOS SCRIPTS DE NOTIFICAÇÃO E ALERTA (Devem carregar antes do UI e App) -->
-    <script src="js/responsaveis.js?v=6.0"></script> <!-- ARQUIVO ADICIONADO AQUI -->
-    <script src="js/notificationService.js?v=6.0"></script>
-    <script src="js/alertas.js?v=6.0"></script>
+    <!-- MÓDULO ÚNICO (Substitui os arquivos antigos) -->
+    <script src="js/alertas.js?v=6.1"></script>
     
-    <script src="js/ui.js?v=6.0"></script>
-    <script src="js/equipamentos.js?v=6.0"></script>
-    <script src="js/exportacao.js?v=6.0"></script>
-    <script src="js/app.js?v=6.0"></script>
+    <script src="js/ui.js?v=6.1"></script>
+    <script src="js/equipamentos.js?v=6.1"></script>
+    <script src="js/exportacao.js?v=6.1"></script>
+    <script src="js/app.js?v=6.1"></script>
 </body>
 </html>
