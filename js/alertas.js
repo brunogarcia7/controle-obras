@@ -1,14 +1,100 @@
-class AlertService {
-    static async updateAll() {
-        console.log("[AlertService] Carregando contratos ativos...");
-        
-        try {
-            // CORREÇÃO: Usando DB.client e a coluna data_fim
-            const { data: contratos, error } = await DB.client.from('locacoes')
-                .select('*')
-                .eq('status', 'ativo')
-                .not('data_fim', 'is', null);
+// ==========================================
+// 🚨 MÓDULO ÚNICO: SMART ALERTS
+// ==========================================
 
+// 1. Utilitário Isolado de Datas
+window.DateUtils = {
+    calcularDiasRestantes: (dataFim) => {
+        if (!dataFim) return null;
+        const [ano, mes, dia] = dataFim.split('-');
+        const vencimento = new Date(ano, mes - 1, dia);
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0); // Zera hora para ser exato
+        return Math.ceil((vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+    },
+    formatar: (dataStr) => {
+        if (!dataStr) return '-';
+        const [a, m, d] = dataStr.split('-');
+        return `${d}/${m}/${a}`;
+    }
+};
+
+// 2. Memória Interna da Tela de Alertas
+window.AlertasState = {
+    abaAtual: 'proximos',
+    aVencer: [],
+    vencidos: []
+};
+
+// 3. Controle dos Botões (O que você clica na tela)
+window.AlertasManager = {
+    mudarAbaAlerta: (aba) => {
+        window.AlertasState.abaAtual = aba;
+        // Muda a cor do botão ativo
+        document.querySelectorAll('.tabs-alertas button').forEach(b => b.classList.remove('active'));
+        const btn = document.getElementById('tab-btn-' + aba);
+        if(btn) btn.classList.add('active');
+        
+        window.AlertasManager.renderizarTela();
+    },
+    
+    abrirConfigResponsavel: () => {
+        const modal = document.getElementById('modal-config-responsaveis');
+        if(modal) modal.style.display = 'flex';
+    },
+
+    filtrarStatus: (status) => {
+        console.log("Filtro rápido clicado:", status);
+    },
+    
+    renderizarTela: () => {
+        const tbody = document.getElementById('body-alertas');
+        if (!tbody) return;
+        
+        const aba = window.AlertasState.abaAtual;
+        let html = '';
+        
+        if (aba === 'proximos') {
+            if (window.AlertasState.aVencer.length === 0) {
+                html = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Nenhum contrato próximo do vencimento (1 a 7 dias).</td></tr>';
+            } else {
+                html = window.AlertasState.aVencer.map(c => `
+                    <tr>
+                        <td><b>${c.equipamento}</b><br><small>Contrato: ${c.contrato || 'S/N'}</small></td>
+                        <td>${c.obra || '-'}<br><small>${c.fornecedor || '-'}</small></td>
+                        <td>${DateUtils.formatar(c.data_fim)}</td>
+                        <td><span class="smart-alert alert-yellow">${c.diasRestantes} dias restantes</span></td>
+                        <td>-</td>
+                        <td><button class="btn-action-small" onclick="alert('Função de E-mail em desenvolvimento!')">📧</button></td>
+                    </tr>
+                `).join('');
+            }
+        } else if (aba === 'vencidos') {
+            if (window.AlertasState.vencidos.length === 0) {
+                html = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Nenhum contrato vencido! 🎉</td></tr>';
+            } else {
+                html = window.AlertasState.vencidos.map(c => `
+                    <tr>
+                        <td><b>${c.equipamento}</b><br><small>Contrato: ${c.contrato || 'S/N'}</small></td>
+                        <td>${c.obra || '-'}<br><small>${c.fornecedor || '-'}</small></td>
+                        <td>${DateUtils.formatar(c.data_fim)}</td>
+                        <td><span class="smart-alert alert-red">VENCIDO (${Math.abs(c.diasRestantes)} dias)</span></td>
+                        <td>-</td>
+                        <td><button class="btn-action-small" onclick="alert('Função de E-mail em desenvolvimento!')">📧</button></td>
+                    </tr>
+                `).join('');
+            }
+        }
+        tbody.innerHTML = html;
+    }
+};
+
+// 4. O Motor de Cálculos (Busca dados e atualiza o Dashboard)
+window.AlertService = {
+    updateAll: async () => {
+        try {
+            console.log("[SmartAlerts] Buscando contratos ativos...");
+            const { data: contratos, error } = await DB.client.from('locacoes').select('*').eq('status', 'ativo');
             if (error) throw error;
 
             let totalAtivos = 0;
@@ -16,82 +102,40 @@ class AlertService {
             let vencidos = [];
 
             if (contratos) {
-                console.log(`[AlertService] Contratos processados: ${contratos.length}`);
-                
                 contratos.forEach(contrato => {
                     totalAtivos++;
-                    // CORREÇÃO: Usando data_fim
-                    const diasRestantes = DateUtils.calcularDiasRestantes(contrato.data_fim);
-                    contrato.diasRestantes = diasRestantes;
-
-                    if (diasRestantes <= 0) {
-                        vencidos.push(contrato);
-                    } else if (diasRestantes >= 1 && diasRestantes <= 7) {
-                        aVencer.push(contrato);
+                    if (contrato.data_fim) {
+                        const dias = DateUtils.calcularDiasRestantes(contrato.data_fim);
+                        contrato.diasRestantes = dias;
+                        
+                        if (dias !== null) {
+                            if (dias <= 0) vencidos.push(contrato);
+                            else if (dias >= 1 && dias <= 7) aVencer.push(contrato);
+                        }
                     }
                 });
             }
 
-            // Ordenação
-            aVencer.sort((a, b) => a.diasRestantes - b.diasRestantes); // Urgentes primeiro
-            vencidos.sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim)); // Mais antigos primeiro
+            // Ordena urgentes primeiro
+            aVencer.sort((a, b) => a.diasRestantes - b.diasRestantes);
+            vencidos.sort((a, b) => new Date(a.data_fim) - new Date(b.data_fim));
 
-            if (typeof DashboardService !== 'undefined') {
-                DashboardService.updateCards(totalAtivos, aVencer.length, vencidos.length);
-            }
-            this.renderTabelaProximos(aVencer);
-            this.renderTabelaVencidos(vencidos);
-            
+            window.AlertasState.aVencer = aVencer;
+            window.AlertasState.vencidos = vencidos;
+
+            // Atualiza Dashboard
+            const kpiAtivos = document.getElementById('kpi-contratos');
+            const kpiVencer = document.getElementById('dash-card-vencer');
+            const kpiVencidos = document.getElementById('dash-card-vencidos');
+
+            if (kpiAtivos) kpiAtivos.innerText = totalAtivos;
+            if (kpiVencer) kpiVencer.innerText = aVencer.length;
+            if (kpiVencidos) kpiVencidos.innerText = vencidos.length;
+
+            window.AlertasManager.renderizarTela();
+
         } catch (err) {
-            console.error("[AlertService] Erro crítico:", err);
+            console.error("[SmartAlerts] Erro crítico:", err);
         }
     }
-
-    static renderTabelaProximos(contratos) {
-        const tbody = document.getElementById('body-proximos');
-        if (!tbody) return;
-        tbody.innerHTML = contratos.map(c => `
-            <tr>
-                <td><b>${c.equipamento}</b></td>
-                <td>${c.fornecedor}</td>
-                <td>${c.contrato || '-'}</td>
-                <td>${DateUtils.formatarDataBR(c.data_fim)}</td>
-                <td><span class="smart-alert alert-yellow">${c.diasRestantes} dias</span></td>
-                <td>
-                    <button class="btn-action-small" onclick="Equipamentos.abrirModalEditar('${c.id}')">🔄</button>
-                    <button class="btn-action-small" onclick="NotificationService.enviarNotificacaoMock('${c.id}')">📧</button>
-                </td>
-            </tr>
-        `).join('');
-    }
-
-    static renderTabelaVencidos(contratos) {
-        const tbody = document.getElementById('body-vencidos');
-        if (!tbody) return;
-        tbody.innerHTML = contratos.map(c => `
-            <tr>
-                <td><b>${c.equipamento}</b></td>
-                <td>${c.fornecedor}</td>
-                <td>${c.contrato || '-'}</td>
-                <td>${DateUtils.formatarDataBR(c.data_fim)}</td>
-                <td><span class="smart-alert alert-red">VENCIDO (${Math.abs(c.diasRestantes)} dias)</span></td>
-                <td><button class="btn-action-small" onclick="Equipamentos.abrirModalEditar('${c.id}')">🔄</button></td>
-            </tr>
-        `).join('');
-    }
-}
-
-class DashboardService {
-    static updateCards(ativos, aVencer, vencidos) {
-        const elAtivos = document.getElementById('dash-card-ativos');
-        const elAVencer = document.getElementById('dash-card-vencer');
-        const elVencidos = document.getElementById('dash-card-vencidos');
-
-        if (elAtivos) elAtivos.innerText = ativos;
-        if (elAVencer) elAVencer.innerText = aVencer;
-        if (elVencidos) elVencidos.innerText = vencidos;
-    }
-}
-
-window.AlertService = AlertService;
-window.DashboardService = DashboardService;
+};
