@@ -97,7 +97,7 @@
         <div id="loader-salvar" role="status" aria-live="polite">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
 
-    <span id="versao-app">Versão 31.1 (Correção Mobile + Gemini)</span>
+    <span id="versao-app">Versão 31.2 (Hotfix compatibilidade Gemini)</span>
 </div>
 
 <script>
@@ -294,6 +294,39 @@
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), TIMEOUT_IA_MS);
 
+        // Compatibilidade com a Edge Function gemini-ocr que já está publicada.
+        // Ela espera receber o payload completo do generateContent, e não apenas
+        // { data, mimeType }.
+        const promptOCR = `Você é um especialista em leitura de notas fiscais brasileiras, recibos, faturas de locação e documentos de compra.
+Extraia somente os campos abaixo e não invente informações:
+{
+  "fornecedor": "empresa emissora, nunca o destinatário",
+  "equipamento": "principal equipamento ou material, sem prefixos como LOCAÇÃO DE ou ALUGUEL DE",
+  "quantidade": 1,
+  "valor": "valor total final do documento",
+  "contrato": "número do contrato, pedido, fatura ou nota fiscal; vazio se não existir"
+}
+Retorne somente JSON válido, sem markdown ou explicações.`;
+
+        const payloadGemini = {
+            contents: [{
+                role: 'user',
+                parts: [
+                    { text: promptOCR },
+                    {
+                        inline_data: {
+                            mime_type: arquivoPreparado.mimeType,
+                            data: arquivoPreparado.base64
+                        }
+                    }
+                ]
+            }],
+            generationConfig: {
+                responseMimeType: 'application/json',
+                maxOutputTokens: 1024
+            }
+        };
+
         try {
             const resposta = await fetch(`${SUPABASE_URL}/functions/v1/gemini-ocr`, {
                 method: 'POST',
@@ -301,10 +334,7 @@
                     'Content-Type': 'application/json',
                     'apikey': SUPABASE_KEY
                 },
-                body: JSON.stringify({
-                    data: arquivoPreparado.base64,
-                    mimeType: arquivoPreparado.mimeType
-                }),
+                body: JSON.stringify(payloadGemini),
                 signal: controller.signal
             });
 
