@@ -1,125 +1,608 @@
-const App = {
-    carregarFiltrosSelect: async () => {
-        const { data } = await DB.client.from('locacoes').select('obra, fornecedor');
-        if(data) {
-            const obras = [...new Set(data.map(i => i.obra))].filter(Boolean).sort();
-            const forns = [...new Set(data.map(i => i.fornecedor))].filter(Boolean).sort();
-            const selObra = document.getElementById('filtroObra'); const selForn = document.getElementById('filtroForn');
-            const listObras = document.getElementById('lista-obras'); const listForns = document.getElementById('lista-forns');
-            
-            if(selObra && selForn) {
-                selObra.innerHTML = '<option value="todas">🏢 Todas as Obras</option>'; 
-                selForn.innerHTML = '<option value="todos">🚚 Todos os Fornecedores</option>';
-                obras.forEach(o => { selObra.add(new Option(o, o)); if(listObras) listObras.appendChild(new Option(o)); });
-                forns.forEach(f => { selForn.add(new Option(f, f)); if(listForns) listForns.appendChild(new Option(f)); });
+// =====================================================
+// APP.JS
+// Sistema Gestão de Equipamentos v6.2.1
+// =====================================================
+
+(() => {
+    'use strict';
+
+    const App = {
+        eventosVinculados: false,
+
+        carregarFiltrosSelect() {
+            const registros = Array.isArray(State.dadosGlobais)
+                ? State.dadosGlobais
+                : [];
+
+            const obras = [
+                ...new Set(
+                    registros
+                        .map(item => item.obra)
+                        .filter(Boolean)
+                )
+            ].sort((a, b) =>
+                String(a).localeCompare(
+                    String(b),
+                    'pt-BR'
+                )
+            );
+
+            const fornecedores = [
+                ...new Set(
+                    registros
+                        .map(item => item.fornecedor)
+                        .filter(Boolean)
+                )
+            ].sort((a, b) =>
+                String(a).localeCompare(
+                    String(b),
+                    'pt-BR'
+                )
+            );
+
+            const selObra =
+                document.getElementById('filtroObra');
+
+            const selForn =
+                document.getElementById('filtroForn');
+
+            const listaObras =
+                document.getElementById('lista-obras');
+
+            const listaForns =
+                document.getElementById('lista-forns');
+
+            if (selObra) {
+                selObra.innerHTML =
+                    '<option value="todas">🏢 Todas as Obras</option>';
+
+                obras.forEach((obra) => {
+                    selObra.add(
+                        new Option(obra, obra)
+                    );
+                });
             }
 
-            const savedFiltros = JSON.parse(localStorage.getItem('controle_filtros'));
-            if (savedFiltros) {
-                if (selObra && [...selObra.options].some(o => o.value === savedFiltros.obra)) selObra.value = savedFiltros.obra;
-                if (selForn && [...selForn.options].some(o => o.value === savedFiltros.forn)) selForn.value = savedFiltros.forn;
-                const fieldContrato = document.getElementById('filtroContrato');
-                if(fieldContrato) fieldContrato.value = savedFiltros.texto || '';
+            if (selForn) {
+                selForn.innerHTML =
+                    '<option value="todos">🚚 Todos os Fornecedores</option>';
+
+                fornecedores.forEach((fornecedor) => {
+                    selForn.add(
+                        new Option(fornecedor, fornecedor)
+                    );
+                });
+            }
+
+            if (listaObras) {
+                listaObras.innerHTML = '';
+
+                obras.forEach((obra) => {
+                    listaObras.appendChild(
+                        new Option(obra)
+                    );
+                });
+            }
+
+            if (listaForns) {
+                listaForns.innerHTML = '';
+
+                fornecedores.forEach((fornecedor) => {
+                    listaForns.appendChild(
+                        new Option(fornecedor)
+                    );
+                });
+            }
+
+            let filtrosSalvos = null;
+
+            try {
+                filtrosSalvos = JSON.parse(
+                    localStorage.getItem(
+                        'controle_filtros'
+                    )
+                );
+            } catch (erro) {
+                console.warn(
+                    '[App] Filtros locais inválidos:',
+                    erro
+                );
+            }
+
+            if (!filtrosSalvos) {
+                return;
+            }
+
+            if (
+                selObra &&
+                [...selObra.options].some(
+                    opcao =>
+                        opcao.value ===
+                        filtrosSalvos.obra
+                )
+            ) {
+                selObra.value = filtrosSalvos.obra;
+            }
+
+            if (
+                selForn &&
+                [...selForn.options].some(
+                    opcao =>
+                        opcao.value ===
+                        filtrosSalvos.forn
+                )
+            ) {
+                selForn.value = filtrosSalvos.forn;
+            }
+
+            const campoTexto =
+                document.getElementById(
+                    'filtroContrato'
+                );
+
+            if (campoTexto) {
+                campoTexto.value =
+                    filtrosSalvos.texto || '';
+            }
+        },
+
+        async carregarDados() {
+            try {
+                const registros =
+                    await DB.carregarDados();
+
+                App.carregarFiltrosSelect();
+
+                const abaSalva =
+                    localStorage.getItem(
+                        'controle_aba'
+                    ) || 'locacoes';
+
+                UI.mudarAba(abaSalva);
+                App.aplicarFiltrosELocalSort();
+
+                if (
+                    window.AlertService &&
+                    typeof window.AlertService
+                        .updateAll === 'function'
+                ) {
+                    await window.AlertService.updateAll();
+                }
+
+                console.info(
+                    `[App] Inicialização concluída com ${registros.length} registro(s).`
+                );
+
+                return registros;
+
+            } catch (erro) {
+                console.error(
+                    '[App] Falha ao carregar os dados:',
+                    erro
+                );
+
+                Utils.hideLoader();
+
+                Utils.showToast(
+                    'Não foi possível inicializar o sistema.',
+                    'error'
+                );
+
+                return [];
+            }
+        },
+
+        aplicarFiltrosELocalSort() {
+            try {
+                const campoObra =
+                    document.getElementById(
+                        'filtroObra'
+                    );
+
+                const campoForn =
+                    document.getElementById(
+                        'filtroForn'
+                    );
+
+                const campoTexto =
+                    document.getElementById(
+                        'filtroContrato'
+                    );
+
+                const fObra =
+                    campoObra?.value || 'todas';
+
+                const fForn =
+                    campoForn?.value || 'todos';
+
+                const fTexto =
+                    String(campoTexto?.value || '')
+                        .trim()
+                        .toLowerCase();
+
+                localStorage.setItem(
+                    'controle_filtros',
+                    JSON.stringify({
+                        obra: fObra,
+                        forn: fForn,
+                        texto: fTexto
+                    })
+                );
+
+                const origem =
+                    Array.isArray(State.dadosGlobais)
+                        ? State.dadosGlobais
+                        : [];
+
+                State.dadosFiltrados =
+                    origem.filter((item) => {
+                        const matchObra =
+                            fObra === 'todas' ||
+                            item.obra === fObra;
+
+                        const matchForn =
+                            fForn === 'todos' ||
+                            item.fornecedor === fForn;
+
+                        const equipamento =
+                            String(
+                                item.equipamento || ''
+                            );
+
+                        const contrato =
+                            String(
+                                item.contrato || ''
+                            );
+
+                        const fornecedor =
+                            String(
+                                item.fornecedor || ''
+                            );
+
+                        const obra =
+                            String(item.obra || '');
+
+                        const textoAlvo =
+                            `${
+                                equipamento
+                            } ${
+                                contrato
+                            } ${
+                                fornecedor
+                            } ${
+                                obra
+                            }`.toLowerCase();
+
+                        const matchTexto =
+                            fTexto === '' ||
+                            textoAlvo.includes(fTexto);
+
+                        return (
+                            matchObra &&
+                            matchForn &&
+                            matchTexto
+                        );
+                    });
+
+                const botaoLimpar =
+                    document.getElementById(
+                        'btn-limpar-filtros'
+                    );
+
+                if (botaoLimpar) {
+                    botaoLimpar.style.display =
+                        fObra !== 'todas' ||
+                        fForn !== 'todos' ||
+                        fTexto !== ''
+                            ? 'flex'
+                            : 'none';
+                }
+
+                State.dadosFiltrados.sort(
+                    (itemA, itemB) => {
+                        let valorA =
+                            itemA[
+                                State.sortColunaAtual
+                            ];
+
+                        let valorB =
+                            itemB[
+                                State.sortColunaAtual
+                            ];
+
+                        const numerico =
+                            typeof valorA ===
+                                'number' ||
+                            typeof valorB ===
+                                'number';
+
+                        if (numerico) {
+                            const a =
+                                Number(valorA) || 0;
+
+                            const b =
+                                Number(valorB) || 0;
+
+                            return State.sortDirecaoAsc
+                                ? a - b
+                                : b - a;
+                        }
+
+                        valorA = String(
+                            valorA || ''
+                        ).toLowerCase();
+
+                        valorB = String(
+                            valorB || ''
+                        ).toLowerCase();
+
+                        return State.sortDirecaoAsc
+                            ? valorA.localeCompare(
+                                valorB,
+                                'pt-BR'
+                            )
+                            : valorB.localeCompare(
+                                valorA,
+                                'pt-BR'
+                            );
+                    }
+                );
+
+                App.atualizarSetasOrdenacao();
+                UI.renderizarTabelas();
+                UI.atualizarKPIsEDashboards();
+                UI.renderizarModuloFornecedores();
+
+                const contador =
+                    document.getElementById(
+                        'registro-contador'
+                    );
+
+                if (contador) {
+                    const quantidade =
+                        State.dadosFiltrados.length;
+
+                    contador.textContent =
+                        `${quantidade} ${
+                            quantidade === 1
+                                ? 'encontrado'
+                                : 'encontrados'
+                        }`;
+
+                    contador.classList.toggle(
+                        'active',
+                        quantidade > 0
+                    );
+                }
+
+            } catch (erro) {
+                console.error(
+                    '[App] Erro ao filtrar ou renderizar:',
+                    erro
+                );
+
+                Utils.showToast(
+                    'Os dados foram carregados, mas ocorreu um erro ao montar a tela.',
+                    'error'
+                );
+            }
+        },
+
+        ordenarColuna(coluna) {
+            if (
+                State.sortColunaAtual === coluna
+            ) {
+                State.sortDirecaoAsc =
+                    !State.sortDirecaoAsc;
+            } else {
+                State.sortColunaAtual = coluna;
+                State.sortDirecaoAsc = true;
+            }
+
+            App.aplicarFiltrosELocalSort();
+        },
+
+        atualizarSetasOrdenacao() {
+            document
+                .querySelectorAll('.sort-icon')
+                .forEach((span) => {
+                    span.innerText = '';
+                });
+
+            const seta =
+                State.sortDirecaoAsc
+                    ? ' ▲'
+                    : ' ▼';
+
+            const idsSetas = [
+                'sort-obra',
+                'sort-equipamento',
+                'sort-data_fim',
+                'sort-contrato',
+                'sort-valor',
+                'sort-comp-obra',
+                'sort-comp-equip',
+                'sort-comp-data',
+                'sort-comp-contrato',
+                'sort-comp-valor',
+                'sort-hist-obra',
+                'sort-hist-equip',
+                'sort-hist-data',
+                'sort-hist-contrato',
+                'sort-hist-valor',
+                'sort-ex-obra',
+                'sort-ex-equip',
+                'sort-ex-data',
+                'sort-ex-contrato',
+                'sort-ex-valor'
+            ];
+
+            idsSetas.forEach((id) => {
+                const elemento =
+                    document.getElementById(id);
+
+                if (
+                    elemento &&
+                    id.includes(
+                        State.sortColunaAtual
+                    )
+                ) {
+                    elemento.innerText = seta;
+                }
+            });
+        },
+
+        limparFiltros() {
+            const campoObra =
+                document.getElementById(
+                    'filtroObra'
+                );
+
+            const campoForn =
+                document.getElementById(
+                    'filtroForn'
+                );
+
+            const campoTexto =
+                document.getElementById(
+                    'filtroContrato'
+                );
+
+            if (campoObra) {
+                campoObra.value = 'todas';
+            }
+
+            if (campoForn) {
+                campoForn.value = 'todos';
+            }
+
+            if (campoTexto) {
+                campoTexto.value = '';
+            }
+
+            App.aplicarFiltrosELocalSort();
+
+            Utils.showToast(
+                'Filtros limpos!',
+                'success'
+            );
+        },
+
+        bindEventos() {
+            if (App.eventosVinculados) {
+                return;
+            }
+
+            document.body.addEventListener(
+                'click',
+                (evento) => {
+                    const botao =
+                        evento.target.closest(
+                            '.btn-action-small'
+                        );
+
+                    if (!botao) {
+                        return;
+                    }
+
+                    const acao =
+                        botao.dataset.action;
+
+                    const id =
+                        botao.dataset.id;
+
+                    const nome =
+                        botao.dataset.nome;
+
+                    if (acao === 'editar') {
+                        Equipamentos.abrirEdicao(id);
+                    }
+
+                    if (acao === 'devolver') {
+                        Equipamentos.devolverItem(
+                            id,
+                            nome
+                        );
+                    }
+
+                    if (acao === 'excluir') {
+                        Equipamentos
+                            .excluirPermanenteItem(
+                                id,
+                                nome
+                            );
+                    }
+
+                    if (acao === 'restaurar') {
+                        Equipamentos.restaurarItem(
+                            id,
+                            nome
+                        );
+                    }
+
+                    if (acao === 'renovar') {
+                        Equipamentos.renovarItem(
+                            id,
+                            botao.dataset.fim,
+                            botao.dataset.uni
+                        );
+                    }
+
+                    if (
+                        acao === 'renomear-forn'
+                    ) {
+                        Equipamentos
+                            .abrirRenomearForn(
+                                nome
+                            );
+                    }
+
+                    if (
+                        acao === 'mesclar-forn'
+                    ) {
+                        Equipamentos
+                            .abrirMesclarForn(
+                                nome
+                            );
+                    }
+                }
+            );
+
+            App.eventosVinculados = true;
+        },
+
+        async inicializar() {
+            try {
+                UI.inicializarTema();
+                App.bindEventos();
+                await App.carregarDados();
+            } catch (erro) {
+                console.error(
+                    '[App] Erro de inicialização:',
+                    erro
+                );
+
+                Utils.hideLoader();
+
+                Utils.showToast(
+                    'Falha ao iniciar o sistema.',
+                    'error'
+                );
             }
         }
-    },
+    };
 
-    carregarDados: async () => {
-        try {
-            await App.carregarFiltrosSelect();
-            await DB.carregarDados();
-            const abaSalva = localStorage.getItem('controle_aba') || 'locacoes';
-            UI.mudarAba(abaSalva);
-            App.aplicarFiltrosELocalSort(); 
-        } catch (errorLoad) {
-            console.error(errorLoad);
-        }
-    },
+    window.App = App;
 
-    aplicarFiltrosELocalSort: () => {
-        try {
-            const fObra = document.getElementById('filtroObra').value; 
-            const fForn = document.getElementById('filtroForn').value; 
-            const fTexto = document.getElementById('filtroContrato').value.trim().toLowerCase();
-            
-            localStorage.setItem('controle_filtros', JSON.stringify({ obra: fObra, forn: fForn, texto: fTexto }));
-
-            State.dadosFiltrados = State.dadosGlobais.filter(item => {
-                const matchObra = fObra === 'todas' || item.obra === fObra; 
-                const matchForn = fForn === 'todos' || item.fornecedor === fForn;
-                
-                const equip = item.equipamento ? String(item.equipamento) : '';
-                const contr = item.contrato ? String(item.contrato) : '';
-                const forn = item.fornecedor ? String(item.fornecedor) : '';
-                const obr = item.obra ? String(item.obra) : '';
-
-                const textoAlvo = `${equip} ${contr} ${forn} ${obr}`.toLowerCase();
-                const matchTexto = fTexto === '' || textoAlvo.includes(fTexto);
-                return matchObra && matchForn && matchTexto;
-            });
-
-            const btnLimpar = document.getElementById('btn-limpar-filtros');
-            if(btnLimpar) btnLimpar.style.display = (fObra !== 'todas' || fForn !== 'todos' || fTexto !== '') ? 'flex' : 'none';
-
-            State.dadosFiltrados.sort((a, b) => {
-                let valA = a[State.sortColunaAtual]; let valB = b[State.sortColunaAtual];
-                if (typeof valA === 'number' || typeof valB === 'number') { return State.sortDirecaoAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0); }
-                valA = String(valA || '').toLowerCase(); valB = String(valB || '').toLowerCase();
-                return State.sortDirecaoAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            });
-
-            App.atualizarSetasOrdenacao(); 
-            UI.renderizarTabelas(); 
-            UI.atualizarKPIsEDashboards(); 
-            UI.renderizarModuloFornecedores();
-        } catch (errorFilter) {
-            console.error(errorFilter);
-        }
-    },
-
-    ordenarColuna: (coluna) => {
-        if (State.sortColunaAtual === coluna) { State.sortDirecaoAsc = !State.sortDirecaoAsc; } else { State.sortColunaAtual = coluna; State.sortDirecaoAsc = true; }
-        App.aplicarFiltrosELocalSort();
-    },
-
-    atualizarSetasOrdenacao: () => {
-        document.querySelectorAll('.sort-icon').forEach(span => span.innerText = ''); const seta = State.sortDirecaoAsc ? ' ▲' : ' ▼';
-        const idsSetas = ['sort-obra', 'sort-equipamento', 'sort-data_fim', 'sort-contrato', 'sort-valor', 'sort-comp-obra', 'sort-comp-equip', 'sort-comp-data', 'sort-comp-contrato', 'sort-comp-valor', 'sort-hist-obra', 'sort-hist-equip', 'sort-hist-data', 'sort-hist-contrato', 'sort-hist-valor', 'sort-ex-obra', 'sort-ex-equip', 'sort-ex-data', 'sort-ex-contrato', 'sort-ex-valor'];
-        idsSetas.forEach(id => { const el = document.getElementById(id); if (el && id.includes(State.sortColunaAtual)) { el.innerText = seta; } });
-    },
-
-    limparFiltros: () => {
-        document.getElementById('filtroObra').value = 'todas'; document.getElementById('filtroForn').value = 'todos'; document.getElementById('filtroContrato').value = '';
-        App.aplicarFiltrosELocalSort(); Utils.showToast("Filtros limpos!", "success");
-    },
-
-    bindEventos: () => {
-        document.body.addEventListener('click', (e) => {
-            const btn = e.target.closest('.btn-action-small');
-            if (!btn) return;
-            
-            const action = btn.dataset.action;
-            const id = btn.dataset.id;
-            const nome = btn.dataset.nome;
-
-            if (action === 'editar') Equipamentos.abrirEdicao(id);
-            if (action === 'devolver') Equipamentos.devolverItem(id, nome);
-            if (action === 'excluir') Equipamentos.excluirPermanenteItem(id, nome);
-            if (action === 'restaurar') Equipamentos.restaurarItem(id, nome);
-            if (action === 'renovar') Equipamentos.renovarItem(id, btn.dataset.fim, btn.dataset.uni);
-            if (action === 'renomear-forn') Equipamentos.abrirRenomearForn(nome);
-            if (action === 'mesclar-forn') Equipamentos.abrirMesclarForn(nome);
-        });
+    if (
+        document.readyState === 'loading'
+    ) {
+        document.addEventListener(
+            'DOMContentLoaded',
+            () => App.inicializar(),
+            { once: true }
+        );
+    } else {
+        App.inicializar();
     }
-};
-
-window.onload = () => {
-    UI.inicializarTema();
-    App.bindEventos();
-    App.carregarDados();
-    
-    // Inicia o motor de Vencimentos em background
-    if (typeof window.AlertService !== 'undefined') {
-        window.AlertService.updateAll();
-    }
-};
+})();
