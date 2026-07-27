@@ -83,7 +83,6 @@
             <input type="text" id="fornecedor" placeholder="Nome da loja ou locadora">
         </div>
 
-        <!-- NOVO CAMPO: Contrato -->
         <div class="form-group">
             <label>Nº do Contrato / NF</label>
             <input type="text" id="contrato" placeholder="Ex: 12345 (Preenchido pela IA ou Manual)">
@@ -110,7 +109,7 @@
 
     <script>
         const SUPABASE_URL = 'https://aidlesbrbwfxpziivkgw.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_1wUqabj2T6y9L5tC-tAnwA_bzj-fyx0';
+        const SUPABASE_KEY = 'COLE_SUA_CHAVE_AQUI_A_QUE_COMECA_COM_eyJ';
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let arquivoAnexoGlobal = null;
@@ -329,7 +328,6 @@ Regras rígidas:
                 const valor = parseFloat(document.getElementById('valor').value) || 0;
                 const tipo = document.getElementById('tipo').value;
                 
-                // Captura o contrato ou coloca o padrão se estiver vazio
                 const contratoInput = document.getElementById('contrato').value.trim();
                 const contratoFinal = contratoInput || (tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App');
 
