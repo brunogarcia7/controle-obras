@@ -1,0 +1,26 @@
+Validação local do projeto corrigido
+Data: 2026-07-28
+
+1. Sintaxe JavaScript
+- node --check em js/*.js: APROVADO
+- node --check em supabase/functions/gemini-ocr/core.js: APROVADO
+- node --check em tests/ocr-core.test.mjs: APROVADO
+
+2. Scripts inline
+- app.html: APROVADO
+- index.html: APROVADO
+
+3. Testes da Edge Function
+- contrato simplificado: APROVADO
+- endpoint/header/payload Gemini: APROVADO
+- fallback gemini-3.6-flash -> gemini-3.5-flash: APROVADO
+- fallback structured output -> JSON legado: APROVADO
+- compatibilidade com payload antigo: APROVADO
+- Base64 inválido -> HTTP 400: APROVADO
+- publishable key inválida -> HTTP 401: APROVADO
+- todos os modelos falham -> HTTP 502 com detalhes: APROVADO
+- JSON inválido -> HTTP 400: APROVADO
+
+Resultado: 8 testes automatizados aprovados.
+
+Limite da validação: não foi executado deploy no Supabase nem chamada real ao Google Gemini, porque a chave GEMINI_API_KEY e credenciais do projeto não foram fornecidas no ZIP.
