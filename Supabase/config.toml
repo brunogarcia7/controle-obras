@@ -1,4 +1,0 @@
-project_id = "aidlesbrbwfxpziivkgw"
-
-[functions.gemini-ocr]
-verify_jwt = false
