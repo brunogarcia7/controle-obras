@@ -84,17 +84,17 @@ window.AlertasManager = {
 
                         <td>
 
-                            <b>${c.equipamento}</b><br>
+                            <b>${Utils.escapeStr(c.equipamento || "-")}</b><br>
 
-                            <small>Contrato: ${c.contrato || "S/N"}</small>
+                            <small>Contrato: ${Utils.escapeStr(c.contrato || "S/N")}</small>
 
                         </td>
 
                         <td>
 
-                            ${c.obra || "-"}<br>
+                            ${Utils.escapeStr(c.obra || "-")}<br>
 
-                            <small>${c.fornecedor || "-"}</small>
+                            <small>${Utils.escapeStr(c.fornecedor || "-")}</small>
 
                         </td>
 
@@ -160,17 +160,17 @@ window.AlertasManager = {
 
                         <td>
 
-                            <b>${c.equipamento}</b><br>
+                            <b>${Utils.escapeStr(c.equipamento || "-")}</b><br>
 
-                            <small>Contrato: ${c.contrato || "S/N"}</small>
+                            <small>Contrato: ${Utils.escapeStr(c.contrato || "S/N")}</small>
 
                         </td>
 
                         <td>
 
-                            ${c.obra || "-"}<br>
+                            ${Utils.escapeStr(c.obra || "-")}<br>
 
-                            <small>${c.fornecedor || "-"}</small>
+                            <small>${Utils.escapeStr(c.fornecedor || "-")}</small>
 
                         </td>
 
