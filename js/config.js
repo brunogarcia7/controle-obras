@@ -1,6 +1,6 @@
 // =====================================================
 // CONFIG.JS
-// Sistema Gestão de Equipamentos v6.1
+// Sistema Gestão de Equipamentos v6.3.0
 // =====================================================
 
 // Configuração principal do sistema
@@ -23,11 +23,14 @@ const CONFIG = Object.freeze({
 
     TABELA_LOGS: "logs",
 
+    // Edge Function responsável pelo OCR seguro no servidor
+    OCR_FUNCTION_NAME: "gemini-ocr",
+
     // ==========================
     // SISTEMA
     // ==========================
 
-    VERSAO: "6.1",
+    VERSAO: "6.3.0",
 
     NOME_SISTEMA: "Gestão de Equipamentos",
 
@@ -91,6 +94,8 @@ const State = {
 
     // Upload temporário
     base64AnexoTemporario: null,
+
+    arquivoAnexoTemporario: null,
 
     mimeTypeTemporario: "",
 
