@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>📱 App Controle de Obras</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E📸%3C/text%3E%3C/svg%3E">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js"></script>
+    <script src="js/config.js?v=6.3.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --white: #fff; --text: #1e293b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
@@ -97,7 +101,7 @@
         <div id="loader-salvar" role="status" aria-live="polite">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
 
-    <span id="versao-app">Versão 31.2 (Hotfix compatibilidade Gemini)</span>
+    <span id="versao-app">Versão 32.0 (OCR Gemini com diagnóstico completo)</span>
 </div>
 
 <script>
@@ -105,12 +109,17 @@
 
     const SUPABASE_URL = window.CONFIG?.SUPABASE_URL || '';
     const SUPABASE_KEY = window.CONFIG?.SUPABASE_KEY || '';
+    const OCR_FUNCTION_NAME = window.CONFIG?.OCR_FUNCTION_NAME || 'gemini-ocr';
+    const OCR_ENDPOINT = `${SUPABASE_URL}/functions/v1/${OCR_FUNCTION_NAME}`;
 
     if (!window.supabase || typeof window.supabase.createClient !== 'function') {
         throw new Error('A biblioteca do Supabase não foi carregada.');
     }
-    if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_KEY.includes('sb_publishable_9KvVV2MI7cQtmLSR7Pq8aw_oIi-Rt5K')) {
-        throw new Error('A configuração pública do Supabase não foi carregada.');
+    if (!SUPABASE_URL || !/^https:\/\/[a-z0-9]+\.supabase\.co$/i.test(SUPABASE_URL)) {
+        throw new Error('A URL pública do Supabase não foi configurada corretamente.');
+    }
+    if (!SUPABASE_KEY || (!SUPABASE_KEY.startsWith('sb_publishable_') && !SUPABASE_KEY.startsWith('eyJ'))) {
+        throw new Error('A chave pública do Supabase não foi configurada corretamente.');
     }
 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -122,13 +131,15 @@
         'image/heif',
         'application/pdf'
     ]);
-    const LIMITE_PDF_BYTES = 4 * 1024 * 1024;
+    const LIMITE_PDF_BYTES = 8 * 1024 * 1024;
     const LIMITE_IMAGEM_ORIGINAL_BYTES = 20 * 1024 * 1024;
-    const LIMITE_PROCESSADO_BYTES = 12 * 1024 * 1024;
-    const TIMEOUT_IA_MS = 45000;
+    const LIMITE_PROCESSADO_BYTES = 8 * 1024 * 1024;
+    const TIMEOUT_IA_MS = 75000;
 
     let arquivoAnexoGlobal = null;
-    let processamentoEmAndamento = false;
+    let processamentoIA = false;
+    let salvamentoEmAndamento = false;
+    let ocrControllerAtivo = null;
 
     const elementos = {
         fotoCamera: document.getElementById('foto-camera'),
@@ -141,10 +152,37 @@
         loaderSalvar: document.getElementById('loader-salvar')
     };
 
-    function definirControlesProcessando(processando) {
-        processamentoEmAndamento = processando;
-        elementos.btnCamera.disabled = processando;
-        elementos.btnArquivo.disabled = processando;
+    function criarRequestId() {
+        if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+        return `ocr-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+    }
+
+    function registrarEtapaOCR(etapa, dados = {}, nivel = 'info') {
+        const payload = {
+            etapa,
+            horario: new Date().toISOString(),
+            ...dados
+        };
+        const metodo = nivel === 'error' ? 'error' : nivel === 'warn' ? 'warn' : 'info';
+        console[metodo]('[OCR]', payload);
+    }
+
+    function atualizarEstadoControles() {
+        const bloqueado = processamentoIA || salvamentoEmAndamento;
+        elementos.btnCamera.disabled = bloqueado;
+        elementos.btnArquivo.disabled = bloqueado;
+        elementos.btnSalvar.disabled = bloqueado;
+    }
+
+    function definirProcessamentoIA(ativo) {
+        processamentoIA = ativo;
+        atualizarEstadoControles();
+    }
+
+    function definirSalvamento(ativo) {
+        salvamentoEmAndamento = ativo;
+        atualizarEstadoControles();
+        elementos.loaderSalvar.style.display = ativo ? 'block' : 'none';
     }
 
     function exibirStatusIA(mensagem, tipo = 'processando') {
@@ -162,7 +200,7 @@
     }
 
     function abrirSeletor(input) {
-        if (processamentoEmAndamento) return;
+        if (processamentoIA || salvamentoEmAndamento) return;
         input.value = '';
         input.click();
     }
@@ -198,7 +236,10 @@
         const separador = dataURL.indexOf(',');
         if (separador < 0) throw new Error('O arquivo não foi convertido para Base64 corretamente.');
         const base64 = dataURL.slice(separador + 1).replace(/\s/g, '');
-        if (!base64) throw new Error('A imagem convertida está vazia.');
+        if (!base64) throw new Error('O arquivo convertido está vazio.');
+        if (base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
+            throw new Error('O arquivo convertido contém Base64 inválido.');
+        }
         return base64;
     }
 
@@ -218,14 +259,18 @@
         });
     }
 
-    async function comprimirImagem(file, maxDimensao = 1600, qualidade = 0.82) {
+    async function comprimirImagem(file, maxDimensao = 1800, qualidade = 0.84) {
         const mimeOriginal = obterMimeType(file);
+        registrarEtapaOCR('compressao_iniciada', {
+            nome: file.name,
+            mimeType: mimeOriginal,
+            tamanhoOriginal: file.size
+        });
 
         try {
             const img = await carregarImagem(file);
             let largura = img.naturalWidth || img.width;
             let altura = img.naturalHeight || img.height;
-
             if (!largura || !altura) throw new Error('Dimensões inválidas.');
 
             const escala = Math.min(1, maxDimensao / Math.max(largura, altura));
@@ -250,25 +295,42 @@
                 );
             });
 
+            registrarEtapaOCR('compressao_concluida', {
+                largura,
+                altura,
+                tamanhoProcessado: blob.size,
+                mimeType: 'image/jpeg'
+            });
             return { blob, mimeType: 'image/jpeg' };
         } catch (erro) {
             if (MIME_PERMITIDOS.has(mimeOriginal) && mimeOriginal !== 'application/pdf') {
-                console.warn('[Mobile] Compressão não aplicada; enviando arquivo original.', erro);
+                registrarEtapaOCR('compressao_nao_aplicada', {
+                    motivo: erro.message,
+                    mimeType: mimeOriginal,
+                    tamanhoProcessado: file.size
+                }, 'warn');
                 return { blob: file, mimeType: mimeOriginal };
             }
             throw erro;
         }
     }
 
-    async function prepararArquivoParaIA(file) {
+    async function prepararArquivoParaIA(file, requestId) {
         const mimeType = obterMimeType(file);
+        registrarEtapaOCR('arquivo_recebido', {
+            requestId,
+            nome: file.name,
+            mimeType,
+            tamanho: file.size
+        });
+
         if (!MIME_PERMITIDOS.has(mimeType)) {
             throw new Error(`Formato não suportado: ${mimeType || 'desconhecido'}. Use JPG, PNG, WEBP, HEIC, HEIF ou PDF.`);
         }
 
         const isPDF = mimeType === 'application/pdf';
         if (isPDF && file.size > LIMITE_PDF_BYTES) {
-            throw new Error('PDF maior que 4 MB. Reduza o arquivo ou preencha os dados manualmente.');
+            throw new Error('PDF maior que 8 MB. Reduza o arquivo ou preencha os dados manualmente.');
         }
         if (!isPDF && file.size > LIMITE_IMAGEM_ORIGINAL_BYTES) {
             throw new Error('Imagem maior que 20 MB. Reduza a resolução e tente novamente.');
@@ -279,86 +341,122 @@
             : await comprimirImagem(file);
 
         if (preparado.blob.size > LIMITE_PROCESSADO_BYTES) {
-            throw new Error('O arquivo processado ficou maior que 12 MB. Reduza a resolução e tente novamente.');
+            throw new Error('O arquivo processado ficou maior que 8 MB. Reduza a resolução e tente novamente.');
         }
 
-        const dataURL = await lerComoDataURL(preparado.blob);
-        return {
+        registrarEtapaOCR('base64_iniciada', {
+            requestId,
             mimeType: preparado.mimeType,
-            base64: extrairBase64(dataURL),
             tamanhoProcessado: preparado.blob.size
+        });
+        const dataURL = await lerComoDataURL(preparado.blob);
+        const base64 = extrairBase64(dataURL);
+        registrarEtapaOCR('base64_concluida', {
+            requestId,
+            caracteres: base64.length,
+            tamanhoProcessado: preparado.blob.size
+        });
+
+        return {
+            name: file.name,
+            mimeType: preparado.mimeType,
+            data: base64,
+            size: preparado.blob.size
         };
     }
 
-    async function chamarGeminiOCR(arquivoPreparado) {
+    function criarErroDaResposta(data, status, requestIdPadrao) {
+        const mensagem = data?.error || data?.message || `Falha no servidor (${status}).`;
+        const detalhes = Array.isArray(data?.details?.attempts)
+            ? data.details.attempts.map(item => `${item.model}: HTTP ${item.status} - ${item.error}`).join(' | ')
+            : '';
+        const erro = new Error(detalhes ? `${mensagem} ${detalhes}` : mensagem);
+        erro.code = data?.code || 'OCR_SERVER_ERROR';
+        erro.stage = data?.stage || 'edge-function';
+        erro.requestId = data?.requestId || requestIdPadrao;
+        erro.status = status;
+        erro.details = data?.details;
+        return erro;
+    }
+
+    async function chamarGeminiOCR(arquivoPreparado, requestId) {
         const controller = new AbortController();
+        ocrControllerAtivo = controller;
         const timer = setTimeout(() => controller.abort(), TIMEOUT_IA_MS);
-
-        // Compatibilidade com a Edge Function gemini-ocr que já está publicada.
-        // Ela espera receber o payload completo do generateContent, e não apenas
-        // { data, mimeType }.
-        const promptOCR = `Você é um especialista em leitura de notas fiscais brasileiras, recibos, faturas de locação e documentos de compra.
-Extraia somente os campos abaixo e não invente informações:
-{
-  "fornecedor": "empresa emissora, nunca o destinatário",
-  "equipamento": "principal equipamento ou material, sem prefixos como LOCAÇÃO DE ou ALUGUEL DE",
-  "quantidade": 1,
-  "valor": "valor total final do documento",
-  "contrato": "número do contrato, pedido, fatura ou nota fiscal; vazio se não existir"
-}
-Retorne somente JSON válido, sem markdown ou explicações.`;
-
-        const payloadGemini = {
-            contents: [{
-                role: 'user',
-                parts: [
-                    { text: promptOCR },
-                    {
-                        inline_data: {
-                            mime_type: arquivoPreparado.mimeType,
-                            data: arquivoPreparado.base64
-                        }
-                    }
-                ]
-            }],
-            generationConfig: {
-                responseMimeType: 'application/json',
-                maxOutputTokens: 1024
+        const payload = {
+            requestId,
+            file: {
+                name: arquivoPreparado.name,
+                mimeType: arquivoPreparado.mimeType,
+                size: arquivoPreparado.size,
+                data: arquivoPreparado.data
             }
         };
 
         try {
-            const resposta = await fetch(`${SUPABASE_URL}/functions/v1/gemini-ocr`, {
+            registrarEtapaOCR('edge_envio_iniciado', {
+                requestId,
+                endpoint: OCR_ENDPOINT,
+                mimeType: arquivoPreparado.mimeType,
+                tamanho: arquivoPreparado.size
+            });
+
+            const resposta = await fetch(OCR_ENDPOINT, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'apikey': SUPABASE_KEY
+                    'Accept': 'application/json',
+                    'apikey': SUPABASE_KEY,
+                    'x-request-id': requestId
                 },
-                body: JSON.stringify(payloadGemini),
-                signal: controller.signal
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+                cache: 'no-store'
             });
 
             const corpoTexto = await resposta.text();
-            let data = null;
-            try {
-                data = corpoTexto ? JSON.parse(corpoTexto) : {};
-            } catch {
-                throw new Error(`Resposta inválida do servidor (${resposta.status}).`);
+            let data = {};
+            if (corpoTexto) {
+                try {
+                    data = JSON.parse(corpoTexto);
+                } catch {
+                    const erro = new Error(`A Edge Function retornou conteúdo não JSON (HTTP ${resposta.status}).`);
+                    erro.stage = 'edge-response-parse';
+                    erro.requestId = requestId;
+                    erro.responsePreview = corpoTexto.slice(0, 240);
+                    throw erro;
+                }
             }
 
-            if (!resposta.ok) {
-                throw new Error(data?.error || data?.message || `Falha no servidor (${resposta.status}).`);
-            }
-            if (data?.error) throw new Error(data.error);
+            registrarEtapaOCR('edge_resposta_recebida', {
+                requestId: data?._meta?.requestId || data?.requestId || requestId,
+                status: resposta.status,
+                ok: resposta.ok,
+                modelo: data?._meta?.model,
+                duracaoMs: data?._meta?.durationMs,
+                codigo: data?.code,
+                etapaErro: data?.stage
+            }, resposta.ok ? 'info' : 'warn');
 
+            if (!resposta.ok || data?.error) {
+                throw criarErroDaResposta(data, resposta.status, requestId);
+            }
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
+                throw new Error('A Edge Function não retornou um objeto de OCR válido.');
+            }
             return data;
         } catch (erro) {
             if (erro.name === 'AbortError') {
-                throw new Error('A análise excedeu 45 segundos. Verifique a conexão e tente novamente.');
+                const timeoutError = new Error('A análise excedeu 75 segundos. Consulte os logs da Edge Function e tente novamente.');
+                timeoutError.code = 'OCR_TIMEOUT';
+                timeoutError.stage = 'frontend-timeout';
+                timeoutError.requestId = requestId;
+                throw timeoutError;
             }
             throw erro;
         } finally {
             clearTimeout(timer);
+            if (ocrControllerAtivo === controller) ocrControllerAtivo = null;
         }
     }
 
@@ -383,69 +481,97 @@ Retorne somente JSON válido, sem markdown ou explicações.`;
         if (fornecedor && fornecedor.toLowerCase() !== 'não identificado') {
             document.getElementById('fornecedor').value = fornecedor;
         }
-        if (equipamento) {
-            document.getElementById('equipamento').value = equipamento;
-        }
-        document.getElementById('quantidade').value = Math.max(1, quantidade);
-        if (valor !== '') {
-            document.getElementById('valor').value = formatarValorParaInput(valor);
-        }
-        if (contrato) {
-            document.getElementById('contrato').value = contrato;
-        }
+        if (equipamento) document.getElementById('equipamento').value = equipamento;
+        document.getElementById('quantidade').value = String(Math.max(1, quantidade));
+        if (valor !== '') document.getElementById('valor').value = String(formatarValorParaInput(valor));
+        if (contrato) document.getElementById('contrato').value = contrato;
+
+        registrarEtapaOCR('formulario_preenchido', {
+            fornecedorPreenchido: Boolean(fornecedor),
+            equipamentoPreenchido: Boolean(equipamento),
+            quantidade: Math.max(1, quantidade),
+            valorPreenchido: valor !== '',
+            contratoPreenchido: Boolean(contrato)
+        });
     }
 
     async function previewFotoEProcessarIA(event) {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        arquivoAnexoGlobal = file;
+        const requestId = criarRequestId();
         const mimeType = obterMimeType(file);
         const isPDF = mimeType === 'application/pdf';
 
+        arquivoAnexoGlobal = file;
         elementos.statusFoto.style.display = 'block';
         elementos.statusFoto.innerText = isPDF
             ? `📄 PDF selecionado: ${file.name}`
             : `✅ Imagem selecionada: ${file.name}`;
         elementos.statusFoto.style.color = isPDF ? 'var(--primary)' : 'var(--success)';
 
-        definirControlesProcessando(true);
-        exibirStatusIA('🤖 Preparando arquivo e enviando para análise...', 'processando');
+        definirProcessamentoIA(true);
+        exibirStatusIA('🤖 Validando e preparando o documento...', 'processando');
 
         try {
-            const arquivoPreparado = await prepararArquivoParaIA(file);
-            console.info('[Mobile] Arquivo preparado para OCR.', {
-                mimeType: arquivoPreparado.mimeType,
-                tamanhoProcessado: arquivoPreparado.tamanhoProcessado
-            });
-
-            const dados = await chamarGeminiOCR(arquivoPreparado);
+            const arquivoPreparado = await prepararArquivoParaIA(file, requestId);
+            exibirStatusIA('☁️ Arquivo preparado. Consultando a Edge Function...', 'processando');
+            const dados = await chamarGeminiOCR(arquivoPreparado, requestId);
             preencherFormularioComOCR(dados);
-            exibirStatusIA('✅ Dados lidos com sucesso!', 'sucesso');
+            exibirStatusIA(`✅ Dados lidos com sucesso! Modelo: ${dados?._meta?.model || 'Gemini'}.`, 'sucesso');
+            registrarEtapaOCR('ocr_concluido', {
+                requestId: dados?._meta?.requestId || requestId,
+                modelo: dados?._meta?.model,
+                duracaoMs: dados?._meta?.durationMs
+            });
         } catch (erro) {
-            console.error('[Mobile] Falha no OCR:', erro);
-            exibirStatusIA(`⚠️ Falha na IA: ${erro.message} Preencha manualmente ou tente outra foto.`, 'aviso');
+            registrarEtapaOCR('ocr_falhou', {
+                requestId: erro.requestId || requestId,
+                codigo: erro.code,
+                etapa: erro.stage,
+                status: erro.status,
+                mensagem: erro.message,
+                detalhes: erro.details
+            }, 'error');
+            const referencia = erro.requestId || requestId;
+            const etapa = erro.stage ? ` Etapa: ${erro.stage}.` : '';
+            exibirStatusIA(`⚠️ Falha na IA: ${erro.message}${etapa} ID: ${referencia}. Preencha manualmente ou tente outra foto.`, 'aviso');
         } finally {
-            definirControlesProcessando(false);
+            definirProcessamentoIA(false);
         }
+    }
+
+    function preencherDatalistObras(obras) {
+        const datalist = document.getElementById('lista-obras');
+        const fragmento = document.createDocumentFragment();
+        for (const obra of obras) {
+            const option = document.createElement('option');
+            option.value = obra;
+            fragmento.appendChild(option);
+        }
+        datalist.replaceChildren(fragmento);
     }
 
     async function carregarObras() {
         try {
-            const cache = sessionStorage.getItem('obras_cache');
-            const datalist = document.getElementById('lista-obras');
+            const cache = sessionStorage.getItem('obras_cache_v2');
             if (cache) {
-                datalist.innerHTML = cache;
-                return;
+                const obrasCache = JSON.parse(cache);
+                if (Array.isArray(obrasCache)) {
+                    preencherDatalistObras(obrasCache.map(String));
+                    return;
+                }
             }
 
             const { data, error } = await db.from('locacoes').select('obra');
             if (error) throw error;
 
-            const obrasUnicas = [...new Set((data || []).map(item => item.obra?.trim()).filter(Boolean))].sort();
-            const optionsHTML = obrasUnicas.map(obra => `<option value="${String(obra).replace(/"/g, '&quot;')}">`).join('');
-            datalist.innerHTML = optionsHTML;
-            sessionStorage.setItem('obras_cache', optionsHTML);
+            const obrasUnicas = [...new Set((data || [])
+                .map(item => String(item.obra || '').trim())
+                .filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+            preencherDatalistObras(obrasUnicas);
+            sessionStorage.setItem('obras_cache_v2', JSON.stringify(obrasUnicas));
         } catch (erro) {
             console.error('[Mobile] Erro ao carregar obras:', erro);
         }
@@ -463,13 +589,25 @@ Retorne somente JSON válido, sem markdown ou explicações.`;
         return porMime[obterMimeType(file)] || 'bin';
     }
 
+    function formatarDataLocalISO(data = new Date()) {
+        const ano = data.getFullYear();
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const dia = String(data.getDate()).padStart(2, '0');
+        return `${ano}-${mes}-${dia}`;
+    }
+
     async function salvarDados() {
+        if (processamentoIA) {
+            alert('Aguarde a leitura do documento terminar antes de salvar.');
+            return;
+        }
+
         try {
             const obra = document.getElementById('obra').value.trim();
             const equip = document.getElementById('equipamento').value.trim();
             const forn = document.getElementById('fornecedor').value.trim() || 'Não identificado';
-            const qtd = Number.parseInt(document.getElementById('quantidade').value, 10) || 1;
-            const valor = Number.parseFloat(document.getElementById('valor').value) || 0;
+            const qtd = Math.max(1, Number.parseInt(document.getElementById('quantidade').value, 10) || 1);
+            const valor = Math.max(0, Number.parseFloat(document.getElementById('valor').value) || 0);
             const tipo = document.getElementById('tipo').value;
             const contratoInput = document.getElementById('contrato').value.trim();
             const contratoFinal = contratoInput || (tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App');
@@ -479,24 +617,20 @@ Retorne somente JSON válido, sem markdown ou explicações.`;
                 return;
             }
 
-            elementos.loaderSalvar.style.display = 'block';
-            elementos.btnSalvar.disabled = true;
-
+            definirSalvamento(true);
             let urlAnexo = null;
             if (arquivoAnexoGlobal) {
-                try {
-                    const mimeType = obterMimeType(arquivoAnexoGlobal);
-                    const extensao = obterExtensaoUpload(arquivoAnexoGlobal);
-                    const fileName = `mobile_nf_${Date.now()}.${extensao}`;
-                    const { data, error } = await db.storage
-                        .from('comprovantes')
-                        .upload(fileName, arquivoAnexoGlobal, { contentType: mimeType, upsert: false });
+                const mimeType = obterMimeType(arquivoAnexoGlobal);
+                if (!MIME_PERMITIDOS.has(mimeType)) throw new Error(`Formato de anexo inválido: ${mimeType || 'desconhecido'}.`);
+                const extensao = obterExtensaoUpload(arquivoAnexoGlobal);
+                const sufixo = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+                const fileName = `mobile_nf_${sufixo}.${extensao}`;
+                const { data, error } = await db.storage
+                    .from('comprovantes')
+                    .upload(fileName, arquivoAnexoGlobal, { contentType: mimeType, upsert: false });
 
-                    if (error) throw error;
-                    urlAnexo = db.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
-                } catch (erroUpload) {
-                    console.error('[Mobile] Upload do anexo falhou:', erroUpload);
-                }
+                if (error) throw new Error(`Falha no upload do anexo: ${error.message}`);
+                urlAnexo = db.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
             }
 
             const payload = {
@@ -505,7 +639,7 @@ Retorne somente JSON válido, sem markdown ou explicações.`;
                 fornecedor: forn,
                 quantidade: qtd,
                 valor,
-                data_inicio: new Date().toISOString().split('T')[0],
+                data_inicio: formatarDataLocalISO(),
                 status: 'ativo',
                 anexo: urlAnexo,
                 unidade: tipo === 'Compra' ? 'Proprio' : 'Mês',
@@ -515,6 +649,7 @@ Retorne somente JSON válido, sem markdown ou explicações.`;
             const { error } = await db.from('locacoes').insert([payload]);
             if (error) throw error;
 
+            sessionStorage.removeItem('obras_cache_v2');
             alert('✅ Equipamento salvo com sucesso no Painel!');
             document.getElementById('equipamento').value = '';
             document.getElementById('valor').value = '';
@@ -528,10 +663,9 @@ Retorne somente JSON válido, sem markdown ou explicações.`;
             arquivoAnexoGlobal = null;
         } catch (erro) {
             console.error('[Mobile] Erro ao salvar:', erro);
-            alert(`❌ Erro ao salvar no banco: ${erro.message}`);
+            alert(`❌ Erro ao salvar: ${erro.message}`);
         } finally {
-            elementos.loaderSalvar.style.display = 'none';
-            elementos.btnSalvar.disabled = false;
+            definirSalvamento(false);
         }
     }
 
@@ -540,7 +674,8 @@ Retorne somente JSON válido, sem markdown ou explicações.`;
     elementos.fotoCamera.addEventListener('change', previewFotoEProcessarIA);
     elementos.fotoArquivo.addEventListener('change', previewFotoEProcessarIA);
     elementos.btnSalvar.addEventListener('click', salvarDados);
-    document.addEventListener('DOMContentLoaded', carregarObras);
+
+    carregarObras();
 
     window.addEventListener('error', event => {
         console.error('[Mobile] Erro JavaScript não tratado:', event.error || event.message);
