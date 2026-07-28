@@ -1,0 +1,12 @@
+# Segredos locais das Supabase Edge Functions
+.env
+.env.*
+!.env.example
+supabase/.env
+supabase/functions/.env
+supabase/functions/.env.local
+
+# Dependências e artefatos locais
+node_modules/
+.DS_Store
+*.log
