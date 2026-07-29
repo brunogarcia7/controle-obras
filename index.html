@@ -241,7 +241,7 @@
 
             <div class="header">
                 <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
-                <span class="badge-version">Versão 6.3.0 (OCR Gemini corrigido)</span>
+                <span class="badge-version">Versão 6.3.1 (mesclagem de fornecedores corrigida)</span>
             </div>
 
             <div class="top-controls">
@@ -559,43 +559,91 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="modal-renomear-forn"><div class="modal-box"><h3>✏️ Renomear Fornecedor</h3><div class="form-edit"><input type="hidden" id="renomear-forn-origem"><div class="form-group"><label>Nome Atual</label><input type="text" id="renomear-forn-origem-txt" disabled></div><div class="form-group"><label>Novo Nome</label><input type="text" id="renomear-forn-novo"></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-renomear-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarRenomearForn()">Atualizar</button></div></div></div>
-    <div class="modal-overlay" id="modal-mesclar-forn"><div class="modal-box"><h3>🔗 Mesclar Duplicados</h3><div class="form-edit"><input type="hidden" id="merge-origem"><div class="form-group"><label>Fornecedor Incorreto</label><input type="text" id="merge-origem-txt" disabled></div><div class="form-group"><label>Mesclar com</label><select id="merge-destino"></select></div></div><div class="modal-actions"><button class="btn-cancel-edit" onclick="UI.fecharModal('modal-mesclar-forn')">Cancelar</button><button class="btn-save-edit" onclick="Equipamentos.salvarMesclarForn()">Mesclar</button></div></div></div>
+    <div class="modal-overlay" id="modal-renomear-forn" aria-hidden="true">
+        <div class="modal-box">
+            <h3>✏️ Renomear Fornecedor</h3>
+            <div class="form-edit">
+                <input type="hidden" id="renomear-forn-origem">
+                <div class="form-group">
+                    <label>Nome atual</label>
+                    <input type="text" id="renomear-forn-origem-txt" disabled>
+                    <small id="renomear-forn-impacto" style="display:block;margin-top:7px;color:var(--text-light);"></small>
+                </div>
+                <div class="form-group">
+                    <label>Novo nome</label>
+                    <input type="text" id="renomear-forn-novo" maxlength="180" autocomplete="off">
+                </div>
+                <div style="padding:12px;border-radius:10px;background:var(--row-even);font-size:.82rem;color:var(--text-light);line-height:1.45;">
+                    A alteração será aplicada aos registros ativos, devolvidos e excluídos. Se o novo nome já existir, os fornecedores serão mesclados.
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel-edit" onclick="UI.fecharModal('modal-renomear-forn')">Cancelar</button>
+                <button class="btn-save-edit" onclick="Equipamentos.salvarRenomearForn()">Atualizar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-mesclar-forn" aria-hidden="true">
+        <div class="modal-box">
+            <h3>🔗 Mesclar Fornecedores</h3>
+            <div class="form-edit">
+                <input type="hidden" id="merge-origem">
+                <div class="form-group">
+                    <label>Fornecedor duplicado (será substituído)</label>
+                    <input type="text" id="merge-origem-txt" disabled>
+                    <small id="merge-origem-resumo" style="display:block;margin-top:7px;color:var(--text-light);"></small>
+                </div>
+                <div class="form-group">
+                    <label>Fornecedor correto (será mantido)</label>
+                    <select id="merge-destino" onchange="Equipamentos.atualizarResumoMesclagem()"></select>
+                    <small id="merge-destino-resumo" style="display:block;margin-top:7px;color:var(--text-light);line-height:1.4;"></small>
+                </div>
+                <div style="padding:12px;border:1px solid rgba(245,158,11,.35);border-radius:10px;background:rgba(245,158,11,.10);font-size:.82rem;color:var(--text);line-height:1.45;">
+                    A mesclagem altera somente o nome do fornecedor. Nenhum equipamento, contrato ou histórico será apagado.
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel-edit" onclick="UI.fecharModal('modal-mesclar-forn')">Cancelar</button>
+                <button class="btn-save-edit" id="btn-confirmar-mesclagem" onclick="Equipamentos.salvarMesclarForn()" disabled>Mesclar</button>
+            </div>
+        </div>
+    </div>
     <!--
         Scripts locais:
-        1. O parâmetro v=6.3.0 força o navegador a buscar os arquivos novos.
+        1. O parâmetro v=6.3.1 força o navegador a buscar os arquivos novos.
         2. A ordem abaixo é obrigatória.
         3. O atributo defer preserva a ordem e faz o DOMContentLoaded aguardar os módulos.
     -->
-    <script defer src="./js/config.js?v=6.3.0"
+    <script defer src="./js/config.js?v=6.3.1"
             onerror="console.error('[BOOT] Falha ao carregar config.js')"></script>
 
-    <script defer src="./js/utils.js?v=6.3.0"
+    <script defer src="./js/utils.js?v=6.3.1"
             onerror="console.error('[BOOT] Falha ao carregar utils.js')"></script>
 
-    <script defer src="./js/database.js?v=6.3.0"
+    <script defer src="./js/database.js?v=6.3.1"
             onerror="console.error('[BOOT] Falha ao carregar database.js')"></script>
 
-    <script defer src="./js/responsaveis.js?v=6.3.0"
+    <script defer src="./js/responsaveis.js?v=6.3.1"
             onerror="console.error('[BOOT] Falha ao carregar responsaveis.js')"></script>
 
-    <script defer src="./js/notificationService.js?v=6.3.0"
+    <script defer src="./js/notificationService.js?v=6.3.1"
             onerror="console.error('[BOOT] Falha ao carregar notificationService.js')"></script>
 
-    <script defer src="./js/alertas.js?v=6.3.0"
+    <script defer src="./js/alertas.js?v=6.3.1"
             onerror="console.error('[BOOT] Falha ao carregar alertas.js')"></script>
 
-    <script defer src="./js/ui.js?v=6.3.0"
+    <script defer src="./js/ui.js?v=6.3.1"
             onerror="console.error('[BOOT] Falha ao carregar ui.js')"></script>
 
-    <script defer src="./js/equipamentos.js?v=6.3.0"
+    <script defer src="./js/equipamentos.js?v=6.3.1"
             onerror="console.error('[BOOT] Falha ao carregar equipamentos.js')"></script>
 
-    <script defer src="./js/exportacao.js?v=6.3.0"
+    <script defer src="./js/exportacao.js?v=6.3.1"
             onerror="console.error('[BOOT] Falha ao carregar exportacao.js')"></script>
 
     <!-- app.js deve permanecer por último -->
-    <script defer src="./js/app.js?v=6.3.0"
+    <script defer src="./js/app.js?v=6.3.1"
             onerror="console.error('[BOOT] Falha ao carregar app.js')"></script>
 
     <!-- Diagnóstico de inicialização -->
