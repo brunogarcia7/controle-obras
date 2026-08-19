@@ -1,6 +1,6 @@
 // =====================================================
 // UI.JS
-// Sistema Gestão de Equipamentos v6.4.1
+// Sistema Gestão de Equipamentos v7.0.0
 // =====================================================
 
 (() => {
@@ -9,8 +9,10 @@
     const CHAVE_COLUNAS = 'controle_colunas';
     const CHAVE_TEMA = 'controle_tema';
     const CHAVE_ABA = 'controle_aba';
+    const CHAVE_SIDEBAR = 'controle_sidebar';
 
     const obterElemento = (id) => document.getElementById(id);
+    const viewportMobile = () => window.matchMedia('(max-width: 980px)').matches;
 
     const lerJSONLocal = (chave, valorPadrao = {}) => {
         try {
@@ -73,6 +75,54 @@
             acoes: true
         },
 
+        atualizarStatusSistema(estado = 'loading', opcoes = {}) {
+            const total = Number(opcoes?.total);
+            const totalValido = Number.isFinite(total) && total >= 0;
+            const detalheOnline = totalValido
+                ? total === 0
+                    ? 'Base conectada, sem registros'
+                    : `${total.toLocaleString('pt-BR')} registro${total === 1 ? '' : 's'} carregado${total === 1 ? '' : 's'}`
+                : 'Supabase conectado';
+
+            const estados = {
+                loading: {
+                    cabecalho: 'Sincronizando dados',
+                    titulo: 'Inicializando',
+                    detalhe: 'Conectando à base'
+                },
+                online: {
+                    cabecalho: 'Dados sincronizados',
+                    titulo: 'Sistema disponível',
+                    detalhe: detalheOnline
+                },
+                error: {
+                    cabecalho: 'Conexão indisponível',
+                    titulo: 'Atenção necessária',
+                    detalhe: 'Verifique o acesso ao Supabase'
+                }
+            };
+
+            const estadoSeguro = Object.prototype.hasOwnProperty.call(estados, estado)
+                ? estado
+                : 'loading';
+            const config = estados[estadoSeguro];
+            const cabecalho = obterElemento('system-health');
+            const lateral = obterElemento('sidebar-status');
+            const titulo = obterElemento('sidebar-status-title');
+            const detalhe = obterElemento('sidebar-status-detail');
+
+            if (cabecalho) {
+                cabecalho.dataset.state = estadoSeguro;
+                cabecalho.textContent = String(
+                    opcoes?.cabecalho || config.cabecalho
+                );
+            }
+
+            if (lateral) lateral.dataset.state = estadoSeguro;
+            if (titulo) titulo.textContent = String(opcoes?.titulo || config.titulo);
+            if (detalhe) detalhe.textContent = String(opcoes?.detalhe || config.detalhe);
+        },
+
         inicializarTema() {
             const temaSalvo =
                 localStorage.getItem(CHAVE_TEMA) ||
@@ -110,8 +160,93 @@
             UI.inicializarTema();
         },
 
+        inicializarSidebar() {
+            const sidebar = obterElemento('sidebar');
+            if (!sidebar) return;
+
+            if (viewportMobile()) {
+                sidebar.classList.remove('collapsed', 'mobile-open');
+                document.body.classList.remove('nav-open');
+                return;
+            }
+
+            const recolhida = localStorage.getItem(CHAVE_SIDEBAR) === 'collapsed';
+            sidebar.classList.toggle('collapsed', recolhida);
+            sidebar.classList.remove('mobile-open');
+            document.body.classList.remove('nav-open');
+        },
+
         toggleSidebar() {
-            obterElemento('sidebar')?.classList.toggle('collapsed');
+            const sidebar = obterElemento('sidebar');
+            if (!sidebar) return;
+
+            if (viewportMobile()) {
+                const aberta = sidebar.classList.toggle('mobile-open');
+                document.body.classList.toggle('nav-open', aberta);
+                return;
+            }
+
+            const recolhida = sidebar.classList.toggle('collapsed');
+            localStorage.setItem(
+                CHAVE_SIDEBAR,
+                recolhida ? 'collapsed' : 'expanded'
+            );
+        },
+
+        fecharSidebarMobile() {
+            const sidebar = obterElemento('sidebar');
+            sidebar?.classList.remove('mobile-open');
+            document.body.classList.remove('nav-open');
+        },
+
+        inicializarAcessibilidade() {
+            document
+                .querySelectorAll('[role="button"][tabindex="0"]')
+                .forEach((elemento) => {
+                    if (elemento.dataset.keyboardReady === 'true') return;
+
+                    elemento.addEventListener('keydown', (evento) => {
+                        if (evento.key !== 'Enter' && evento.key !== ' ') return;
+                        evento.preventDefault();
+                        elemento.click();
+                    });
+
+                    elemento.dataset.keyboardReady = 'true';
+                });
+
+            if (!UI._resizeSidebarRegistrado) {
+                window.addEventListener('resize', () => UI.inicializarSidebar());
+                UI._resizeSidebarRegistrado = true;
+            }
+
+            if (!UI._atalhosGlobaisRegistrados) {
+                document.addEventListener('keydown', (evento) => {
+                    if (evento.key !== 'Escape') return;
+
+                    if (document.body.classList.contains('nav-open')) {
+                        UI.fecharSidebarMobile();
+                        return;
+                    }
+
+                    const modais = [...document.querySelectorAll('.modal-overlay')]
+                        .filter((modal) => {
+                            if (modal.id === 'global-loader') return false;
+                            return window.getComputedStyle(modal).display !== 'none';
+                        });
+
+                    const modalVisivel = modais.at(-1);
+                    if (!modalVisivel) return;
+
+                    if (modalVisivel.id === 'modal-confirm' && window.Utils) {
+                        Utils.fecharConfirm();
+                        return;
+                    }
+
+                    UI.fecharModal(modalVisivel.id);
+                });
+
+                UI._atalhosGlobaisRegistrados = true;
+            }
         },
 
         abrirModal(id) {
@@ -167,6 +302,8 @@
 
             localStorage.setItem(CHAVE_ABA, abaSegura);
             if (window.State) State.abaAtual = abaSegura;
+
+            UI.fecharSidebarMobile();
 
             if (abaSegura === 'sistema') UI.renderizarLogs();
             if (abaSegura === 'alertas' && window.AlertasManager) {

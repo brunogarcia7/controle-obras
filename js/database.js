@@ -1,6 +1,6 @@
 // =====================================================
 // DATABASE.JS
-// Sistema Gestão de Equipamentos v6.4.1
+// Sistema Gestão de Equipamentos v7.0.0
 // =====================================================
 
 (() => {
@@ -8,6 +8,7 @@
 
     const DB = {
         client: null,
+        ultimoCarregamentoOk: null,
 
         inicializar() {
             if (DB.client) {
@@ -114,6 +115,8 @@
         },
 
         async carregarDados() {
+            DB.ultimoCarregamentoOk = null;
+
             Utils.showLoader(
                 'Carregando base de dados...'
             );
@@ -139,6 +142,7 @@
                     : [];
 
                 State.dadosGlobais = registros;
+                DB.ultimoCarregamentoOk = true;
 
                 console.info(
                     `[DB] ${registros.length} registro(s) carregado(s).`
@@ -153,6 +157,7 @@
                 );
 
                 State.dadosGlobais = [];
+                DB.ultimoCarregamentoOk = false;
 
                 const semPermissao =
                     erro?.code === '42501' ||

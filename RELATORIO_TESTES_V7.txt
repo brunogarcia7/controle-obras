@@ -1,0 +1,51 @@
+CONTROLEOBRAS — RELATÓRIO DE VALIDAÇÃO DA INTERFACE v7.0.0
+Data: 19/08/2026
+
+ESCOPO
+- Redesign do painel administrativo.
+- Redesign do cadastro móvel.
+- Tema claro e escuro.
+- Responsividade e menu lateral.
+- Estado visual real de conectividade.
+- Preservação das rotinas existentes de OCR, Storage e fornecedores.
+
+VALIDAÇÕES AUTOMATIZADAS
+1. Sintaxe de todos os arquivos em js/: APROVADA.
+2. Sintaxe de supabase/functions/gemini-ocr/core.js: APROVADA.
+3. Scripts inline de index.html e app.html: APROVADOS.
+4. tests/ocr-core.test.mjs: APROVADO (8 verificações internas).
+5. tests/storage.test.mjs: APROVADO (4 testes).
+6. tests/fornecedores.test.mjs: APROVADO (6 testes).
+7. Total exibido pelo runner Node.js: 11 testes, 0 falhas.
+
+INTEGRIDADE DOS HTMLS
+- index.html sem IDs duplicados.
+- app.html sem IDs duplicados.
+- Nenhum ID do index.html anterior foi removido.
+- Nenhum ID do app.html anterior foi removido.
+- Referências locais de CSS, JavaScript, favicon e imagens verificadas.
+- Todos os arquivos existentes na versão anterior foram preservados.
+
+SMOKE TEST NO NAVEGADOR
+- Painel desktop em 1440 x 900: APROVADO.
+- Painel responsivo em 390 x 844: APROVADO.
+- Cadastro móvel em 430 x 932: APROVADO.
+- Carregamento e mudança do estado de sincronização: APROVADOS.
+- Filtros iniciais e prazo de 7 dias: APROVADOS.
+- Navegação para fornecedores: APROVADA.
+- Abertura e fechamento do modal de cadastro: APROVADOS.
+- Alternância do tema: APROVADA.
+- Recolhimento do menu no desktop: APROVADO.
+- Abertura e fechamento do menu móvel: APROVADOS.
+- Ausência de overflow horizontal nos tamanhos testados: APROVADA.
+- Erros JavaScript durante o smoke test: 0.
+
+BANCO E INFRAESTRUTURA
+- Nenhuma tabela ou coluna criada/alterada.
+- Nenhuma política do Supabase alterada.
+- Nenhuma credencial modificada.
+- Nenhum dado real gravado durante os testes visuais.
+- O smoke test utilizou uma resposta simulada do Supabase.
+
+OBSERVAÇÃO
+A suíte de fornecedores contém um cenário que simula propositalmente uma resposta parcial do Supabase. A mensagem de erro emitida nesse cenário é esperada e o teste foi aprovado.

@@ -1,6 +1,6 @@
 // =====================================================
 // CONFIG.JS
-// Sistema Gestão de Equipamentos v6.4.1
+// Sistema Gestão de Equipamentos v7.0.0
 // =====================================================
 
 // Configuração principal do sistema
@@ -50,7 +50,7 @@ const CONFIG = Object.freeze({
     // SISTEMA
     // ==========================
 
-    VERSAO: "6.4.1",
+    VERSAO: "7.0.0",
 
     NOME_SISTEMA: "Gestão de Equipamentos",
 

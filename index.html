@@ -2,12 +2,13 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="theme-color" content="#0d1628">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>⛏️ Gestão de Equipamentos</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E🏗️%3C/text%3E%3C/svg%3E">
+    <title>ControleObras | Gestão de Equipamentos</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/controle-obras-mark.svg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -202,27 +203,50 @@
         .btn-backup.restore { background: var(--warning); color: #fff; }
         .btn-backup:hover { filter: brightness(1.1); transform: translateY(-1px); }
     </style>
+    <link rel="stylesheet" href="./css/dashboard.css?v=7.0.0">
 </head>
-<body>
+<body class="dashboard-app">
 
     <div class="app-wrapper">
-        <div class="sidebar" id="sidebar">
-            <button class="btn-toggle-menu" onclick="UI.toggleSidebar()">☰</button>
-            <h2><span class="icon">🏗️</span> <span class="text-hide">ControleObras</span></h2>
-            
-            <div class="menu-item active" id="menu-locacoes" onclick="UI.mudarAba('locacoes')"><span class="icon">📄</span> <span class="text-hide">Locações Ativas</span></div>
-            <div class="menu-item" id="menu-alertas" onclick="UI.mudarAba('alertas')"><span class="icon">⚠️</span> <span class="text-hide">Alertas de Contratos</span> <span id="badge-alertas" class="badge-red" style="display:none;">0</span></div>
-            <div class="menu-item" id="menu-compras" onclick="UI.mudarAba('compras')"><span class="icon">🛒</span> <span class="text-hide">Patrimônio Próprio</span></div>
-            <div class="menu-item" id="menu-fornecedores" onclick="UI.mudarAba('fornecedores')"><span class="icon">🏢</span> <span class="text-hide">Fornecedores</span></div>
-            <div class="menu-item" id="menu-historico" onclick="UI.mudarAba('historico')"><span class="icon">↩️</span> <span class="text-hide">Equip. Devolvidos</span></div>
-            <div class="menu-item" id="menu-excluidos" onclick="UI.mudarAba('excluidos')"><span class="icon">🗑️</span> <span class="text-hide">Itens Excluídos</span></div>
-            <div class="menu-item" id="menu-sistema" onclick="UI.mudarAba('sistema')"><span class="icon">⚙️</span> <span class="text-hide">Sistema & Backup</span></div>
+        <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+            <div class="sidebar-brand">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 20V9l8-5 8 5v11"></path>
+                        <path d="M8 20v-5h8v5M8 10h.01M12 10h.01M16 10h.01"></path>
+                    </svg>
+                </span>
+                <span class="brand-copy">
+                    <span class="brand-name">ControleObras</span>
+                    <span class="brand-subtitle">Gestão operacional</span>
+                </span>
+            </div>
+
+            <button class="btn-toggle-menu" type="button" onclick="UI.toggleSidebar()" aria-label="Recolher ou expandir menu" title="Recolher ou expandir menu"></button>
+
+            <div class="sidebar-nav-label">Operação</div>
+            <div class="menu-item active" id="menu-locacoes" data-tooltip="Locações Ativas" role="button" tabindex="0" onclick="UI.mudarAba('locacoes')"><span class="icon" aria-hidden="true">📄</span><span class="text-hide">Locações Ativas</span></div>
+            <div class="menu-item" id="menu-alertas" data-tooltip="Alertas de Contratos" role="button" tabindex="0" onclick="UI.mudarAba('alertas')"><span class="icon" aria-hidden="true">⚠️</span><span class="text-hide">Alertas de Contratos</span><span id="badge-alertas" class="badge-red" style="display:none;">0</span></div>
+            <div class="menu-item" id="menu-compras" data-tooltip="Patrimônio Próprio" role="button" tabindex="0" onclick="UI.mudarAba('compras')"><span class="icon" aria-hidden="true">🛒</span><span class="text-hide">Patrimônio Próprio</span></div>
+            <div class="menu-item" id="menu-fornecedores" data-tooltip="Fornecedores" role="button" tabindex="0" onclick="UI.mudarAba('fornecedores')"><span class="icon" aria-hidden="true">🏢</span><span class="text-hide">Fornecedores</span></div>
+
+            <div class="sidebar-nav-label">Histórico e sistema</div>
+            <div class="menu-item" id="menu-historico" data-tooltip="Equipamentos Devolvidos" role="button" tabindex="0" onclick="UI.mudarAba('historico')"><span class="icon" aria-hidden="true">↩️</span><span class="text-hide">Equip. Devolvidos</span></div>
+            <div class="menu-item" id="menu-excluidos" data-tooltip="Itens Excluídos" role="button" tabindex="0" onclick="UI.mudarAba('excluidos')"><span class="icon" aria-hidden="true">🗑️</span><span class="text-hide">Itens Excluídos</span></div>
+            <div class="menu-item" id="menu-sistema" data-tooltip="Sistema e Backup" role="button" tabindex="0" onclick="UI.mudarAba('sistema')"><span class="icon" aria-hidden="true">⚙️</span><span class="text-hide">Sistema &amp; Backup</span></div>
 
             <div class="sidebar-spacer"></div>
-            <div class="menu-item" onclick="UI.toggleTema()">
-                <span class="icon" id="tema-icone">🌙</span> <span class="text-hide" id="tema-texto">Modo Escuro</span>
+            <div class="sidebar-footer">
+                <div class="menu-item theme-menu" data-tooltip="Alternar tema" role="button" tabindex="0" onclick="UI.toggleTema()">
+                    <span class="icon" id="tema-icone" aria-hidden="true">🌙</span><span class="text-hide" id="tema-texto">Modo Escuro</span>
+                </div>
+                <div class="sidebar-status" id="sidebar-status" data-state="loading" aria-label="Status do sistema" aria-live="polite">
+                    <span class="sidebar-status-dot" aria-hidden="true"></span>
+                    <span class="sidebar-footer-copy"><strong id="sidebar-status-title">Inicializando</strong><span id="sidebar-status-detail">Conectando à base</span></span>
+                </div>
             </div>
-        </div>
+        </aside>
+        <button class="sidebar-backdrop" type="button" onclick="UI.fecharSidebarMobile()" aria-label="Fechar menu"></button>
 
         <div class="main-content">
             
@@ -239,51 +263,62 @@
                 </div>
             </div>
 
-            <div class="header">
-                <div><h1>Gestão de Equipamentos</h1><p>Controle financeiro e logística de materiais.</p></div>
-                <span class="badge-version">Versão 6.4.1 (edição e mesclagem de fornecedores)</span>
-            </div>
+            <header class="header">
+                <div class="header-main">
+                    <button class="mobile-menu-button" type="button" onclick="UI.toggleSidebar()" aria-label="Abrir menu principal"></button>
+                    <div class="header-copy">
+                        <div class="header-eyebrow">Painel operacional</div>
+                        <h1>Gestão de Equipamentos</h1>
+                        <p>Contratos, patrimônio, fornecedores e logística em uma única visão.</p>
+                    </div>
+                </div>
+                <div class="header-meta">
+                    <span class="system-health" id="system-health" data-state="loading" aria-live="polite">Sincronizando dados</span>
+                    <span class="badge-version">Versão 7.0.0</span>
+                </div>
+            </header>
 
-            <div class="top-controls">
+            <section class="top-controls" aria-label="Filtros e ações">
                 <div class="filter-group">
-                    <select id="filtroObra" onchange="App.aplicarFiltrosELocalSort()"><option value="todas">🏢 Todas as Obras</option></select>
-                    <select id="filtroForn" onchange="App.aplicarFiltrosELocalSort()"><option value="todos">🚚 Todos os Fornecedores</option></select>
-                    <input type="text" id="filtroContrato" placeholder="🔎 Busca geral..." onkeyup="App.aplicarFiltrosELocalSort()">
-                    <button class="btn-limpar" id="btn-limpar-filtros" onclick="App.limparFiltros()" style="display: none;">🧹 Limpar</button>
-                    <span class="counter-badge" id="registro-contador">0 encontrados</span>
+                    <select id="filtroObra" aria-label="Filtrar por obra" onchange="App.aplicarFiltrosELocalSort()"><option value="todas">Todas as obras</option></select>
+                    <select id="filtroForn" aria-label="Filtrar por fornecedor" onchange="App.aplicarFiltrosELocalSort()"><option value="todos">Todos os fornecedores</option></select>
+                    <input type="search" id="filtroContrato" aria-label="Busca geral" placeholder="Buscar contrato, equipamento ou fornecedor" onkeyup="App.aplicarFiltrosELocalSort()">
+                    <button class="btn-limpar" type="button" id="btn-limpar-filtros" onclick="App.limparFiltros()" style="display: none;">Limpar filtros</button>
+                    <span class="counter-badge" id="registro-contador" aria-live="polite">0 encontrados</span>
                 </div>
                 <div class="botoes-topo">
-                    <label class="checkbox-container">
+                    <label class="checkbox-container" title="Incluir devolvidos e excluídos na impressão">
                         <input type="checkbox" id="check-print-hist">
-                        <span>Imprimir Devolvidos/Excluídos</span>
+                        <span>Incluir histórico</span>
                     </label>
-                    <button class="btn-print" onclick="Exportacao.prepararImpressao()">🖨️ Imprimir PDF</button>
-                    <button class="btn-excel" onclick="Exportacao.exportarExcel()">📊 Exportar Excel</button>
-                    <button class="btn-colunas" onclick="UI.abrirModal('modal-colunas')">⚙️ Colunas</button>
-                    <button class="btn-novo" onclick="Equipamentos.abrirModalNovo()">➕ Novo</button>
+                    <button class="btn-print" type="button" onclick="Exportacao.prepararImpressao()">Imprimir PDF</button>
+                    <button class="btn-excel" type="button" onclick="Exportacao.exportarExcel()">Exportar Excel</button>
+                    <button class="btn-colunas" type="button" onclick="UI.abrirModal('modal-colunas')">Colunas</button>
+                    <button class="btn-novo" type="button" onclick="Equipamentos.abrirModalNovo()">Novo cadastro</button>
                 </div>
-            </div>
+            </section>
 
-            <div class="dashboard-grid">
-                <div class="kpi-card" style="border-left: 4px solid var(--primary);"><span class="kpi-title">Total Equipamentos</span><span class="kpi-value" id="kpi-total">0</span></div>
-                <div class="kpi-card" style="border-left: 4px solid var(--success);"><span class="kpi-title">Itens Ativos</span><span class="kpi-value" id="kpi-ativos">0</span></div>
-                <div class="kpi-card" style="border-left: 4px solid var(--text-light);"><span class="kpi-title">Equip. Devolvidos</span><span class="kpi-value" id="kpi-arquivados">0</span></div>
-                <div class="kpi-card" style="border-left: 4px solid var(--warning);"><span class="kpi-title">Contratos Ativos</span><span class="kpi-value" id="kpi-contratos">0</span></div>
-                <div class="kpi-card" style="border-left: 4px solid #f97316; cursor:pointer;" onclick="UI.mudarAba('alertas')"><span class="kpi-title">Contratos a Vencer</span><span class="kpi-value" id="dash-card-vencer">0</span></div>
-                <div class="kpi-card" style="border-left: 4px solid var(--danger); cursor:pointer;" onclick="UI.mudarAba('alertas')"><span class="kpi-title">Contratos Vencidos</span><span class="kpi-value" id="dash-card-vencidos">0</span></div>
-                <div class="kpi-card" style="border-left: 4px solid #6366f1;"><span class="kpi-title">Fornecedores Ativos</span><span class="kpi-value" id="kpi-fornecedores">0</span></div>
-            </div>
+            <section class="dashboard-grid" aria-label="Indicadores gerais">
+                <article class="kpi-card" data-tone="primary"><div class="kpi-head"><span class="kpi-title">Total de equipamentos</span><span class="kpi-icon" aria-hidden="true"></span></div><span class="kpi-value" id="kpi-total">0</span><span class="kpi-footnote">Base consolidada</span></article>
+                <article class="kpi-card" data-tone="success"><div class="kpi-head"><span class="kpi-title">Itens ativos</span><span class="kpi-icon" aria-hidden="true"></span></div><span class="kpi-value" id="kpi-ativos">0</span><span class="kpi-footnote">Em operação</span></article>
+                <article class="kpi-card" data-tone="neutral"><div class="kpi-head"><span class="kpi-title">Equip. devolvidos</span><span class="kpi-icon" aria-hidden="true"></span></div><span class="kpi-value" id="kpi-arquivados">0</span><span class="kpi-footnote">Histórico concluído</span></article>
+                <article class="kpi-card" data-tone="warning"><div class="kpi-head"><span class="kpi-title">Contratos ativos</span><span class="kpi-icon" aria-hidden="true"></span></div><span class="kpi-value" id="kpi-contratos">0</span><span class="kpi-footnote">Com vigência ativa</span></article>
+                <article class="kpi-card" data-tone="orange" data-clickable="true" role="button" tabindex="0" onclick="UI.mudarAba('alertas')"><div class="kpi-head"><span class="kpi-title">Contratos a vencer</span><span class="kpi-icon" aria-hidden="true"></span></div><span class="kpi-value" id="dash-card-vencer">0</span><span class="kpi-footnote">Próximos 7 dias</span></article>
+                <article class="kpi-card" data-tone="danger" data-clickable="true" role="button" tabindex="0" onclick="UI.mudarAba('alertas')"><div class="kpi-head"><span class="kpi-title">Contratos vencidos</span><span class="kpi-icon" aria-hidden="true"></span></div><span class="kpi-value" id="dash-card-vencidos">0</span><span class="kpi-footnote">Ação necessária</span></article>
+                <article class="kpi-card" data-tone="indigo"><div class="kpi-head"><span class="kpi-title">Fornecedores ativos</span><span class="kpi-icon" aria-hidden="true"></span></div><span class="kpi-value" id="kpi-fornecedores">0</span><span class="kpi-footnote">Com itens ativos</span></article>
+            </section>
 
-            <div class="quick-status-bar" id="quick-status-bar">
-                <span class="status-pill red" onclick="typeof AlertasManager !== 'undefined' && AlertasManager.filtrarStatus('vencido')">🔴 Vencidos</span>
-                <span class="status-pill orange" onclick="typeof AlertasManager !== 'undefined' && AlertasManager.filtrarStatus('hoje')">🟠 Vencem Hoje</span>
-                <span class="status-pill yellow" onclick="typeof AlertasManager !== 'undefined' && AlertasManager.filtrarStatus('breve')">🟡 Vencem em Breve</span>
-                <span class="status-pill green" onclick="typeof AlertasManager !== 'undefined' && AlertasManager.filtrarStatus('renovados')">🟢 Renovados este mês</span>
-            </div>
+            <nav class="quick-status-bar" id="quick-status-bar" aria-label="Atalhos de status">
+                <span class="quick-status-label">Atalhos de contratos</span>
+                <span class="status-pill red" role="button" tabindex="0" onclick="typeof AlertasManager !== 'undefined' && AlertasManager.filtrarStatus('vencido')">Vencidos</span>
+                <span class="status-pill orange" role="button" tabindex="0" onclick="typeof AlertasManager !== 'undefined' && AlertasManager.filtrarStatus('hoje')">Vencem hoje</span>
+                <span class="status-pill yellow" role="button" tabindex="0" onclick="typeof AlertasManager !== 'undefined' && AlertasManager.filtrarStatus('breve')">Vencem em breve</span>
+                <span class="status-pill green" role="button" tabindex="0" onclick="typeof AlertasManager !== 'undefined' && AlertasManager.filtrarStatus('renovados')">Renovados este mês</span>
+            </nav>
 
             <div id="secao-alertas" class="secao-tabela">
                 <div class="card-table">
-                    <h3 style="color: #f97316;">⚠️ Gestão de Alertas e Vencimentos</h3>
+                    <h3><span class="section-title-icon" aria-hidden="true"></span><span class="section-title-copy"><strong>Alertas e vencimentos</strong><small>Acompanhe prazos, responsáveis e notificações de contratos.</small></span></h3>
                     <div class="tabs-alertas" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
                          <button class="active" id="tab-btn-proximos" onclick="typeof AlertasManager !== 'undefined' && AlertasManager.mudarAbaAlerta('proximos')">Próximos do Vencimento</button>
                          <button id="tab-btn-vencidos" onclick="typeof AlertasManager !== 'undefined' && AlertasManager.mudarAbaAlerta('vencidos')">Contratos Vencidos</button>
@@ -309,7 +344,7 @@
 
             <div id="secao-locacoes" class="secao-tabela animate-show">
                 <div class="card-table">
-                    <h3 style="color: var(--primary);">📄 Locações Ativas (Aluguel)</h3>
+                    <h3><span class="section-title-icon" aria-hidden="true"></span><span class="section-title-copy"><strong>Locações ativas</strong><small>Equipamentos alugados, contratos e vencimentos em andamento.</small></span></h3>
                     <div id="loader-loc" class="loader" style="display:none;"></div>
                     <table class="table-modern" id="tabela-locacoes" style="display:none;">
                         <thead>
@@ -330,7 +365,7 @@
 
             <div id="secao-compras" class="secao-tabela">
                 <div class="card-table">
-                    <h3 style="color: var(--success);">🛒 Ferramentas Próprias (Patrimônio)</h3>
+                    <h3><span class="section-title-icon" aria-hidden="true"></span><span class="section-title-copy"><strong>Patrimônio próprio</strong><small>Ferramentas e equipamentos adquiridos pela empresa.</small></span></h3>
                     <div id="loader-comp" class="loader" style="display:none;"></div>
                     <table class="table-modern" id="tabela-compras" style="display:none;">
                         <thead>
@@ -351,7 +386,7 @@
 
             <div id="secao-fornecedores" class="secao-tabela">
                 <div class="card-table">
-                    <h3 style="color: #6366f1;">🏢 Gestão de Fornecedores e Locadoras</h3>
+                    <h3><span class="section-title-icon" aria-hidden="true"></span><span class="section-title-copy"><strong>Fornecedores e locadoras</strong><small>Cadastros consolidados, vínculos ativos e ações de organização.</small></span></h3>
                     <table class="table-modern" id="tabela-fornecedores">
                         <thead><tr><th class="col-obra">Nome do Fornecedor / Locadora</th><th class="col-equip">Total de Equipamentos Ativos</th><th class="col-acoes">Ações</th></tr></thead>
                         <tbody id="body-fornecedores"></tbody>
@@ -361,7 +396,7 @@
 
             <div id="secao-historico" class="secao-tabela">
                 <div class="card-table">
-                    <h3 style="color: var(--text-light);">↩️ Equipamentos Devolvidos (Histórico)</h3>
+                    <h3><span class="section-title-icon" aria-hidden="true"></span><span class="section-title-copy"><strong>Equipamentos devolvidos</strong><small>Histórico de itens encerrados e disponíveis para restauração.</small></span></h3>
                     <div id="loader-hist" class="loader" style="display:none;"></div>
                     <table class="table-modern" id="tabela-historico" style="display:none;">
                         <thead>
@@ -382,7 +417,7 @@
 
             <div id="secao-excluidos" class="secao-tabela">
                 <div class="card-table">
-                    <h3 style="color: var(--danger);">🗑️ Itens Excluídos Permanentemente</h3>
+                    <h3><span class="section-title-icon" aria-hidden="true"></span><span class="section-title-copy"><strong>Itens excluídos</strong><small>Registros removidos que ainda podem ser restaurados.</small></span></h3>
                     <div id="loader-excluidos" class="loader" style="display:none;"></div>
                     <table class="table-modern" id="tabela-excluidos" style="display:none;">
                         <thead>
@@ -404,17 +439,19 @@
             <div id="secao-sistema" class="secao-tabela">
                 <div class="backup-card-grid">
                     <div class="backup-box">
-                        <h4>💾 Exportar Backup (JSON)</h4>
-                        <button class="btn-backup" onclick="Exportacao.exportarBackupJSON()">⬇️ Baixar Cópia Completa</button>
+                        <h4>Exportar backup (JSON)</h4>
+                        <p>Gere uma cópia portátil dos registros para auditoria, segurança ou recuperação futura.</p>
+                        <button class="btn-backup" onclick="Exportacao.exportarBackupJSON()">Baixar cópia completa</button>
                     </div>
                     <div class="backup-box">
-                        <h4>🔄 Restaurar Backup (JSON)</h4>
+                        <h4>Restaurar backup (JSON)</h4>
+                        <p>Importe uma cópia válida para reconstruir os registros após a confirmação da operação.</p>
                         <input type="file" id="input-importar-json" accept=".json" style="display:none;" onchange="Exportacao.importarBackupJSON(event)">
-                        <button class="btn-backup restore" onclick="document.getElementById('input-importar-json').click()">⬆️ Carregar JSON</button>
+                        <button class="btn-backup restore" onclick="document.getElementById('input-importar-json').click()">Carregar arquivo JSON</button>
                     </div>
                 </div>
                 <div class="card-table">
-                    <h3>📋 Log de Auditoria</h3>
+                    <h3><span class="section-title-icon" aria-hidden="true"></span><span class="section-title-copy"><strong>Log de auditoria</strong><small>Registro local das principais ações realizadas no sistema.</small></span></h3>
                     <table class="table-modern">
                         <thead><tr><th>Data e Hora</th><th>Ação Executada</th><th>Detalhe</th></tr></thead>
                         <tbody id="body-logs"></tbody>
@@ -441,7 +478,7 @@
 
     <div class="modal-overlay" id="modal-colunas">
         <div class="modal-box" style="max-width: 350px;">
-            <h3>⚙️ Personalizar Colunas</h3>
+            <h3 class="modal-title" data-icon="settings">Personalizar colunas</h3>
             <div class="form-edit" style="display: flex; flex-direction: column; gap: 12px;">
                 <label class="checkbox-container"><input type="checkbox" id="chk-col-obra"><span>Obra / Fornecedor</span></label>
                 <label class="checkbox-container"><input type="checkbox" id="chk-col-equip"><span>Equipamento e Qtd</span></label>
@@ -458,7 +495,7 @@
 
     <div class="modal-overlay" id="modal-editar">
         <div class="modal-box">
-            <h3>✏️ Editar Equipamento</h3>
+            <h3 class="modal-title" data-icon="edit">Editar equipamento</h3>
             <div class="form-edit">
                 <input type="hidden" id="edit-id">
                 <div class="form-group"><label>Nome do Equipamento</label><input type="text" id="edit-equip"></div>
@@ -480,7 +517,7 @@
                     <div class="form-group">
                         <label>Foto ou Contrato (PDF)</label>
                         <input type="file" id="edit-anexo-file" accept="image/*,application/pdf" style="display:none;" onchange="Equipamentos.processarUploadArquivo(event, 'edit')">
-                        <button type="button" class="btn-anexo" style="width: 100%; justify-content: center; height: 42px;" onclick="document.getElementById('edit-anexo-file').click()">📸 / 📄 Trocar Anexo</button>
+                        <button type="button" class="btn-anexo" style="width: 100%; justify-content: center; height: 42px;" onclick="document.getElementById('edit-anexo-file').click()">Trocar anexo</button>
                         <div id="edit-anexo-nome" style="font-size: 0.7rem; color: var(--text-light); text-align: center; margin-top: 5px;">Manter anexo atual</div>
                     </div>
                 </div>
@@ -494,9 +531,9 @@
 
     <div class="modal-overlay" id="modal-novo">
         <div class="modal-box">
-            <h3>➕ Adicionar Novo Equipamento</h3>
+            <h3 class="modal-title" data-icon="new">Adicionar equipamento</h3>
             <div class="form-edit">
-                <div class="form-group"><label>Tipo de Entrada</label><select id="novo-tipo" onchange="Equipamentos.toggleCamposNovo()"><option value="aluguel">📄 Locação (Aluguel)</option><option value="compra">🛒 Patrimônio (Compra)</option></select></div>
+                <div class="form-group"><label>Tipo de Entrada</label><select id="novo-tipo" onchange="Equipamentos.toggleCamposNovo()"><option value="aluguel">Locação (aluguel)</option><option value="compra">Patrimônio (compra)</option></select></div>
                 <div class="form-group"><label>Obra</label><input type="text" id="novo-obra" list="lista-obras"></div>
                 <div class="form-group"><label>Equipamento</label><input type="text" id="novo-equip"></div>
                 <div class="grid-duplo">
@@ -517,7 +554,7 @@
                 <div class="form-group">
                     <label>Anexar Foto ou Contrato (PDF)</label>
                     <input type="file" id="novo-anexo-file" accept="image/*,application/pdf" style="display:none;" onchange="Equipamentos.processarUploadArquivo(event, 'novo')">
-                    <button type="button" class="btn-anexo" style="width: 100%; justify-content: center; height: 42px;" onclick="document.getElementById('novo-anexo-file').click()">📸 / 📄 Selecionar Arquivo</button>
+                    <button type="button" class="btn-anexo" style="width: 100%; justify-content: center; height: 42px;" onclick="document.getElementById('novo-anexo-file').click()">Selecionar arquivo</button>
                     <div id="novo-anexo-nome" style="font-size: 0.7rem; color: var(--text-light); text-align: center; margin-top: 5px;">Nenhum arquivo</div>
                 </div>
             </div>
@@ -531,7 +568,7 @@
     <!-- Modais de Configuração de Responsáveis (Adicionado para o Módulo de Alertas) -->
     <div class="modal-overlay" id="modal-config-responsaveis">
         <div class="modal-box" style="max-width: 600px;">
-            <h3>👥 Configurar Responsáveis por Obra</h3>
+            <h3 class="modal-title" data-icon="users">Responsáveis por obra</h3>
             <div class="form-group">
                 <label>Selecione a Obra</label>
                 <select id="config-resp-obra" onchange="typeof AlertasManager !== 'undefined' && AlertasManager.carregarDadosResponsavel()"></select>
@@ -561,7 +598,7 @@
 
     <div class="modal-overlay" id="modal-renomear-forn" aria-hidden="true">
         <div class="modal-box">
-            <h3>✏️ Renomear Fornecedor</h3>
+            <h3 class="modal-title" data-icon="edit">Renomear fornecedor</h3>
             <div class="form-edit">
                 <input type="hidden" id="renomear-forn-origem">
                 <div class="form-group">
@@ -586,7 +623,7 @@
 
     <div class="modal-overlay" id="modal-mesclar-forn" aria-hidden="true">
         <div class="modal-box">
-            <h3>🔗 Mesclar Fornecedores</h3>
+            <h3 class="modal-title" data-icon="link">Mesclar fornecedores</h3>
             <div class="form-edit">
                 <input type="hidden" id="merge-origem">
                 <div class="form-group">
@@ -611,42 +648,42 @@
     </div>
     <!--
         Scripts locais:
-        1. O parâmetro v=6.4.1 força o navegador a buscar os arquivos novos.
+        1. O parâmetro v=7.0.0 força o navegador a buscar os arquivos novos.
         2. A ordem abaixo é obrigatória.
         3. O atributo defer preserva a ordem e faz o DOMContentLoaded aguardar os módulos.
     -->
-    <script defer src="./js/config.js?v=6.4.1"
+    <script defer src="./js/config.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar config.js')"></script>
 
-    <script defer src="./js/utils.js?v=6.4.1"
+    <script defer src="./js/utils.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar utils.js')"></script>
 
-    <script defer src="./js/database.js?v=6.4.1"
+    <script defer src="./js/database.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar database.js')"></script>
 
-    <script defer src="./js/storage.js?v=6.4.1"
+    <script defer src="./js/storage.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar storage.js')"></script>
 
-    <script defer src="./js/responsaveis.js?v=6.4.1"
+    <script defer src="./js/responsaveis.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar responsaveis.js')"></script>
 
-    <script defer src="./js/notificationService.js?v=6.4.1"
+    <script defer src="./js/notificationService.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar notificationService.js')"></script>
 
-    <script defer src="./js/alertas.js?v=6.4.1"
+    <script defer src="./js/alertas.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar alertas.js')"></script>
 
-    <script defer src="./js/ui.js?v=6.4.1"
+    <script defer src="./js/ui.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar ui.js')"></script>
 
-    <script defer src="./js/equipamentos.js?v=6.4.1"
+    <script defer src="./js/equipamentos.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar equipamentos.js')"></script>
 
-    <script defer src="./js/exportacao.js?v=6.4.1"
+    <script defer src="./js/exportacao.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar exportacao.js')"></script>
 
     <!-- app.js deve permanecer por último -->
-    <script defer src="./js/app.js?v=6.4.1"
+    <script defer src="./js/app.js?v=7.0.0"
             onerror="console.error('[BOOT] Falha ao carregar app.js')"></script>
 
     <!-- Diagnóstico de inicialização -->

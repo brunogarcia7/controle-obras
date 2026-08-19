@@ -1,6 +1,6 @@
 RELATORIO DE TESTES - OTIMIZACAO SUPABASE
 Data: 2026-08-19
-Versao do painel: 6.4.1
+Versao do painel: 7.0.0
 Versao do app movel: 33.0
 
 Verificacoes executadas:

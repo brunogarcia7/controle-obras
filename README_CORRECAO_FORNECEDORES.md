@@ -1,4 +1,4 @@
-# Correção da edição e mesclagem de fornecedores — v6.4.1
+# Correção da edição e mesclagem de fornecedores — incorporada à v7.0.0
 
 ## Problema encontrado
 
@@ -25,7 +25,7 @@ Por isso, clicar no lápis ou no ícone de corrente não concluía nenhuma açã
 - Preservação do filtro atual: se a tela estava filtrada pelo fornecedor antigo, ela passa a filtrar pelo novo nome.
 - Mensagem específica quando o Supabase bloqueia a operação por política RLS.
 - Exposição explícita de `window.Equipamentos`, garantindo que os botões HTML consigam acessar os métodos.
-- Versão dos scripts alterada para `6.4.1`, evitando cache da versão antiga no GitHub Pages.
+- A correção criada na versão `6.4.1` permanece incorporada à versão `7.0.0`, com novo cache-busting no GitHub Pages.
 
 ## Como publicar
 
@@ -42,7 +42,7 @@ Após o GitHub Pages concluir a publicação:
 
 1. Abra o sistema.
 2. Pressione `Ctrl + F5`.
-3. Confirme que o cabeçalho mostra **Versão 6.4.1 (edição e mesclagem de fornecedores)**.
+3. Confirme que o cabeçalho mostra **Interface v7.0.0**.
 4. Entre em **Fornecedores**.
 5. Teste primeiro com um fornecedor que possua poucos registros.
 

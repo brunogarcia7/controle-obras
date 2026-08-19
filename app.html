@@ -2,15 +2,16 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#3157d5">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>📱 App Controle de Obras</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E📸%3C/text%3E%3C/svg%3E">
+    <title>ControleObras | Cadastro Móvel</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/controle-obras-mark.svg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js?v=6.4.1"></script>
-    <script src="js/storage.js?v=6.4.1"></script>
+    <script src="js/config.js?v=7.0.0"></script>
+    <script src="js/storage.js?v=7.0.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --white: #fff; --text: #1e293b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
@@ -39,71 +40,106 @@
         #foto-status { font-size: 0.8rem; text-align: center; display: none; margin-top: 10px; font-weight: bold; word-break: break-word; }
         #versao-app { text-align: center; font-size: 0.7rem; color: #94a3b8; margin-top: 20px; display: block; }
     </style>
+    <link rel="stylesheet" href="./css/mobile-app.css?v=7.0.0">
 </head>
-<body>
-<div class="app-container">
-    <div class="header">
-        <h1>📸 Leitor NF / Cadastro</h1>
-        <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">Envio direto para a nuvem</p>
-    </div>
+<body class="mobile-app">
+<main class="app-container">
+    <header class="mobile-header">
+        <div class="mobile-brand">
+            <span class="mobile-brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 20V9l8-5 8 5v11"></path>
+                    <path d="M8 20v-5h8v5M8 10h.01M12 10h.01M16 10h.01"></path>
+                </svg>
+            </span>
+            <span class="mobile-brand-copy">
+                <span class="mobile-eyebrow">ControleObras</span>
+                <h1>Cadastro rápido</h1>
+                <p>Leia a nota e envie o equipamento diretamente para o sistema.</p>
+            </span>
+        </div>
+        <span class="mobile-online" id="mobile-cloud-status" data-state="loading" aria-live="polite">Conectando</span>
+    </header>
 
-    <div class="card">
-        <div class="form-group">
-            <label>Anexar Foto ou PDF da NF</label>
-            <div class="grid-2">
-                <input type="file" id="foto-camera" accept="image/*" capture="environment" style="display:none;">
-                <button type="button" id="btn-camera" class="btn-camera">📷 Câmera</button>
-
-                <input type="file" id="foto-arquivo" accept="image/*,application/pdf" style="display:none;">
-                <button type="button" id="btn-arquivo" class="btn-arquivo">📄 Arquivo</button>
+    <section class="card capture-card" aria-label="Formulário de cadastro">
+        <div class="form-section">
+            <div class="section-heading">
+                <span class="step-badge">1</span>
+                <span class="section-heading-copy">
+                    <h2>Documento da nota fiscal</h2>
+                    <p>Fotografe a nota ou selecione uma imagem/PDF já salvo no aparelho.</p>
+                </span>
             </div>
-            <p id="foto-status"></p>
-            <div id="loader-ia" role="status" aria-live="polite">🤖 Processando documento...</div>
-        </div>
 
-        <div class="form-group">
-            <label>Tipo de Entrada</label>
-            <select id="tipo"><option value="Locação">Locação (Aluguel)</option><option value="Compra">Patrimônio (Compra)</option></select>
-        </div>
+            <div class="upload-zone">
+                <div class="upload-actions">
+                    <input type="file" id="foto-camera" accept="image/*" capture="environment" style="display:none;">
+                    <button type="button" id="btn-camera" class="btn-camera">Usar câmera</button>
 
-        <div class="form-group">
-            <label>Obra / Destino</label>
-            <input type="text" id="obra" list="lista-obras" placeholder="Ex: Sede Start Química" autocomplete="off">
-            <datalist id="lista-obras"></datalist>
-        </div>
-
-        <div class="form-group">
-            <label>Equipamento ou Material</label>
-            <input type="text" id="equipamento" placeholder="Ex: Betoneira 400L">
-        </div>
-
-        <div class="form-group">
-            <label>Locadora / Fornecedor</label>
-            <input type="text" id="fornecedor" placeholder="Nome da loja ou locadora">
-        </div>
-
-        <div class="form-group">
-            <label>Nº do Contrato / NF</label>
-            <input type="text" id="contrato" placeholder="Ex: 12345 (Preenchido pela IA ou Manual)">
-        </div>
-
-        <div class="grid-2">
-            <div class="form-group">
-                <label>Quantidade</label>
-                <input type="number" id="quantidade" value="1" min="1">
-            </div>
-            <div class="form-group">
-                <label>Valor Total (R$)</label>
-                <input type="number" id="valor" step="0.01" min="0" placeholder="0.00">
+                    <input type="file" id="foto-arquivo" accept="image/*,application/pdf" style="display:none;">
+                    <button type="button" id="btn-arquivo" class="btn-arquivo">Selecionar arquivo</button>
+                </div>
+                <p class="upload-note">A leitura inteligente tenta preencher automaticamente contrato, fornecedor, equipamento e valor.</p>
+                <p id="foto-status"></p>
+                <div id="loader-ia" role="status" aria-live="polite">Processando documento...</div>
             </div>
         </div>
 
-        <button type="button" class="btn-salvar" id="btn-enviar-sistema">🚀 Enviar para o Sistema</button>
-        <div id="loader-salvar" role="status" aria-live="polite">⏳ Salvando na nuvem... Aguarde.</div>
-    </div>
+        <div class="form-section">
+            <div class="section-heading">
+                <span class="step-badge">2</span>
+                <span class="section-heading-copy">
+                    <h2>Revise os dados do cadastro</h2>
+                    <p>Confirme as informações reconhecidas antes de enviar.</p>
+                </span>
+            </div>
 
-    <span id="versao-app">Versão 33.0 (OCR + anexos otimizados)</span>
-</div>
+            <div class="form-grid two-column">
+                <div class="form-group">
+                    <label for="tipo">Tipo de entrada</label>
+                    <select id="tipo"><option value="Locação">Locação (aluguel)</option><option value="Compra">Patrimônio (compra)</option></select>
+                </div>
+
+                <div class="form-group">
+                    <label for="obra">Obra / destino</label>
+                    <input type="text" id="obra" list="lista-obras" placeholder="Ex.: Sede Start Química" autocomplete="off">
+                    <datalist id="lista-obras"></datalist>
+                </div>
+
+                <div class="form-group span-2">
+                    <label for="equipamento">Equipamento ou material</label>
+                    <input type="text" id="equipamento" placeholder="Ex.: Betoneira 400 L">
+                </div>
+
+                <div class="form-group span-2">
+                    <label for="fornecedor">Locadora / fornecedor</label>
+                    <input type="text" id="fornecedor" placeholder="Nome da empresa fornecedora">
+                </div>
+
+                <div class="form-group span-2">
+                    <label for="contrato">Número do contrato / NF</label>
+                    <input type="text" id="contrato" placeholder="Ex.: 12345 — preenchimento automático ou manual">
+                </div>
+
+                <div class="form-group">
+                    <label for="quantidade">Quantidade</label>
+                    <input type="number" id="quantidade" value="1" min="1" inputmode="numeric">
+                </div>
+                <div class="form-group">
+                    <label for="valor">Valor total (R$)</label>
+                    <input type="number" id="valor" step="0.01" min="0" placeholder="0,00" inputmode="decimal">
+                </div>
+            </div>
+        </div>
+
+        <div class="submit-section">
+            <button type="button" class="btn-salvar" id="btn-enviar-sistema">Enviar cadastro</button>
+            <div id="loader-salvar" role="status" aria-live="polite">Salvando na nuvem. Aguarde...</div>
+        </div>
+    </section>
+
+    <footer class="mobile-footer"><span id="versao-app">Versão 7.0.0 · OCR e anexos otimizados</span></footer>
+</main>
 
 <script>
     'use strict';
@@ -149,8 +185,26 @@
         btnSalvar: document.getElementById('btn-enviar-sistema'),
         statusFoto: document.getElementById('foto-status'),
         loaderIA: document.getElementById('loader-ia'),
-        loaderSalvar: document.getElementById('loader-salvar')
+        loaderSalvar: document.getElementById('loader-salvar'),
+        cloudStatus: document.getElementById('mobile-cloud-status')
     };
+
+    function atualizarStatusNuvem(estado = 'loading', texto = '') {
+        if (!elementos.cloudStatus) return;
+
+        const textos = {
+            loading: 'Conectando',
+            ready: 'Pronto para envio',
+            online: 'Nuvem conectada',
+            error: 'Conexão indisponível'
+        };
+        const estadoSeguro = Object.prototype.hasOwnProperty.call(textos, estado)
+            ? estado
+            : 'loading';
+
+        elementos.cloudStatus.dataset.state = estadoSeguro;
+        elementos.cloudStatus.textContent = texto || textos[estadoSeguro];
+    }
 
     function criarRequestId() {
         if (window.crypto?.randomUUID) return window.crypto.randomUUID();
@@ -495,6 +549,7 @@
                 const obrasCache = JSON.parse(cache);
                 if (Array.isArray(obrasCache)) {
                     preencherDatalistObras(obrasCache.map(String));
+                    atualizarStatusNuvem('ready');
                     return;
                 }
             }
@@ -508,7 +563,9 @@
                 .sort((a, b) => a.localeCompare(b, 'pt-BR'));
             preencherDatalistObras(obrasUnicas);
             sessionStorage.setItem('obras_cache_v2', JSON.stringify(obrasUnicas));
+            atualizarStatusNuvem('online');
         } catch (erro) {
+            atualizarStatusNuvem('error');
             console.error('[Mobile] Erro ao carregar obras:', erro);
         }
     }
@@ -556,6 +613,7 @@
             }
 
             definirSalvamento(true);
+            atualizarStatusNuvem('loading', 'Enviando cadastro');
             let urlAnexo = null;
 
             if (arquivoAnexoGlobal) {
@@ -587,6 +645,7 @@
             if (error) throw error;
 
             sessionStorage.removeItem('obras_cache_v2');
+            atualizarStatusNuvem('online', 'Cadastro enviado');
             alert(`✅ Equipamento salvo com sucesso no Painel!${StorageService.mensagemEconomia(upload)}`);
             document.getElementById('equipamento').value = '';
             document.getElementById('valor').value = '';
@@ -610,6 +669,7 @@
                 }
             }
 
+            atualizarStatusNuvem('error', 'Falha no envio');
             console.error('[Mobile] Erro ao salvar:', erro);
             alert(`❌ Erro ao salvar: ${erro.message}`);
         } finally {

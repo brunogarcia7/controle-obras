@@ -1,6 +1,6 @@
 // =====================================================
 // APP.JS
-// Sistema Gestão de Equipamentos v6.4.1
+// Sistema Gestão de Equipamentos v7.0.0
 // =====================================================
 
 (() => {
@@ -60,7 +60,7 @@
 
             if (selObra) {
                 selObra.innerHTML =
-                    '<option value="todas">🏢 Todas as Obras</option>';
+                    '<option value="todas">Todas as obras</option>';
 
                 obras.forEach((obra) => {
                     selObra.add(
@@ -71,7 +71,7 @@
 
             if (selForn) {
                 selForn.innerHTML =
-                    '<option value="todos">🚚 Todos os Fornecedores</option>';
+                    '<option value="todos">Todos os fornecedores</option>';
 
                 fornecedores.forEach((fornecedor) => {
                     selForn.add(
@@ -153,9 +153,18 @@
         },
 
         async carregarDados() {
+            UI.atualizarStatusSistema('loading');
+
             try {
                 const registros =
                     await DB.carregarDados();
+
+                UI.atualizarStatusSistema(
+                    DB.ultimoCarregamentoOk === false
+                        ? 'error'
+                        : 'online',
+                    { total: registros.length }
+                );
 
                 App.carregarFiltrosSelect();
 
@@ -187,6 +196,7 @@
                     erro
                 );
 
+                UI.atualizarStatusSistema('error');
                 Utils.hideLoader();
 
                 Utils.showToast(
@@ -582,6 +592,8 @@
         async inicializar() {
             try {
                 UI.inicializarTema();
+                UI.inicializarSidebar();
+                UI.inicializarAcessibilidade();
                 App.bindEventos();
                 await App.carregarDados();
             } catch (erro) {
