@@ -9,7 +9,8 @@
     <title>📱 App Controle de Obras</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E📸%3C/text%3E%3C/svg%3E">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js?v=6.3.0"></script>
+    <script src="js/config.js?v=6.4.0"></script>
+    <script src="js/storage.js?v=6.4.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --white: #fff; --text: #1e293b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
@@ -101,7 +102,7 @@
         <div id="loader-salvar" role="status" aria-live="polite">⏳ Salvando na nuvem... Aguarde.</div>
     </div>
 
-    <span id="versao-app">Versão 32.0 (OCR Gemini com diagnóstico completo)</span>
+    <span id="versao-app">Versão 33.0 (OCR + anexos otimizados)</span>
 </div>
 
 <script>
@@ -131,12 +132,11 @@
         'image/heif',
         'application/pdf'
     ]);
-    const LIMITE_PDF_BYTES = 8 * 1024 * 1024;
-    const LIMITE_IMAGEM_ORIGINAL_BYTES = 20 * 1024 * 1024;
     const LIMITE_PROCESSADO_BYTES = 8 * 1024 * 1024;
     const TIMEOUT_IA_MS = 75000;
 
     let arquivoAnexoGlobal = null;
+    let anexoPreparadoGlobal = null;
     let processamentoIA = false;
     let salvamentoEmAndamento = false;
     let ocrControllerAtivo = null;
@@ -243,125 +243,44 @@
         return base64;
     }
 
-    function carregarImagem(file) {
-        return new Promise((resolve, reject) => {
-            const url = URL.createObjectURL(file);
-            const img = new Image();
-            img.onload = () => {
-                URL.revokeObjectURL(url);
-                resolve(img);
-            };
-            img.onerror = () => {
-                URL.revokeObjectURL(url);
-                reject(new Error('O navegador não conseguiu decodificar esta imagem.'));
-            };
-            img.src = url;
-        });
-    }
-
-    async function comprimirImagem(file, maxDimensao = 1800, qualidade = 0.84) {
-        const mimeOriginal = obterMimeType(file);
-        registrarEtapaOCR('compressao_iniciada', {
-            nome: file.name,
-            mimeType: mimeOriginal,
-            tamanhoOriginal: file.size
-        });
-
-        try {
-            const img = await carregarImagem(file);
-            let largura = img.naturalWidth || img.width;
-            let altura = img.naturalHeight || img.height;
-            if (!largura || !altura) throw new Error('Dimensões inválidas.');
-
-            const escala = Math.min(1, maxDimensao / Math.max(largura, altura));
-            largura = Math.max(1, Math.round(largura * escala));
-            altura = Math.max(1, Math.round(altura * escala));
-
-            const canvas = document.createElement('canvas');
-            canvas.width = largura;
-            canvas.height = altura;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) throw new Error('Canvas indisponível.');
-
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, largura, altura);
-
-            const blob = await new Promise((resolve, reject) => {
-                canvas.toBlob(
-                    resultado => resultado ? resolve(resultado) : reject(new Error('Falha ao compactar a imagem.')),
-                    'image/jpeg',
-                    qualidade
-                );
-            });
-
-            registrarEtapaOCR('compressao_concluida', {
-                largura,
-                altura,
-                tamanhoProcessado: blob.size,
-                mimeType: 'image/jpeg'
-            });
-            return { blob, mimeType: 'image/jpeg' };
-        } catch (erro) {
-            if (MIME_PERMITIDOS.has(mimeOriginal) && mimeOriginal !== 'application/pdf') {
-                registrarEtapaOCR('compressao_nao_aplicada', {
-                    motivo: erro.message,
-                    mimeType: mimeOriginal,
-                    tamanhoProcessado: file.size
-                }, 'warn');
-                return { blob: file, mimeType: mimeOriginal };
-            }
-            throw erro;
-        }
-    }
-
     async function prepararArquivoParaIA(file, requestId) {
-        const mimeType = obterMimeType(file);
+        const mimeTypeOriginal = obterMimeType(file);
         registrarEtapaOCR('arquivo_recebido', {
             requestId,
             nome: file.name,
-            mimeType,
+            mimeType: mimeTypeOriginal,
             tamanho: file.size
         });
 
-        if (!MIME_PERMITIDOS.has(mimeType)) {
-            throw new Error(`Formato não suportado: ${mimeType || 'desconhecido'}. Use JPG, PNG, WEBP, HEIC, HEIF ou PDF.`);
-        }
+        // A mesma versao compactada e usada no OCR e no Storage. Assim a foto
+        // nao e enviada pequena para a IA e depois armazenada em tamanho original.
+        const storagePrepared = await StorageService.prepararArquivo(file);
 
-        const isPDF = mimeType === 'application/pdf';
-        if (isPDF && file.size > LIMITE_PDF_BYTES) {
-            throw new Error('PDF maior que 8 MB. Reduza o arquivo ou preencha os dados manualmente.');
-        }
-        if (!isPDF && file.size > LIMITE_IMAGEM_ORIGINAL_BYTES) {
-            throw new Error('Imagem maior que 20 MB. Reduza a resolução e tente novamente.');
-        }
-
-        const preparado = isPDF
-            ? { blob: file, mimeType }
-            : await comprimirImagem(file);
-
-        if (preparado.blob.size > LIMITE_PROCESSADO_BYTES) {
+        if (storagePrepared.blob.size > LIMITE_PROCESSADO_BYTES) {
             throw new Error('O arquivo processado ficou maior que 8 MB. Reduza a resolução e tente novamente.');
         }
 
         registrarEtapaOCR('base64_iniciada', {
             requestId,
-            mimeType: preparado.mimeType,
-            tamanhoProcessado: preparado.blob.size
+            mimeType: storagePrepared.mimeType,
+            tamanhoProcessado: storagePrepared.blob.size,
+            economiaPercentual: storagePrepared.economiaPercentual
         });
-        const dataURL = await lerComoDataURL(preparado.blob);
+        const dataURL = await lerComoDataURL(storagePrepared.blob);
         const base64 = extrairBase64(dataURL);
         registrarEtapaOCR('base64_concluida', {
             requestId,
             caracteres: base64.length,
-            tamanhoProcessado: preparado.blob.size
+            tamanhoProcessado: storagePrepared.blob.size
         });
 
         return {
             name: file.name,
-            mimeType: preparado.mimeType,
+            mimeType: storagePrepared.mimeType,
             data: base64,
-            size: preparado.blob.size
+            size: storagePrepared.blob.size,
+            blob: storagePrepared.blob,
+            storagePrepared
         };
     }
 
@@ -504,6 +423,7 @@
         const isPDF = mimeType === 'application/pdf';
 
         arquivoAnexoGlobal = file;
+        anexoPreparadoGlobal = null;
         elementos.statusFoto.style.display = 'block';
         elementos.statusFoto.innerText = isPDF
             ? `📄 PDF selecionado: ${file.name}`
@@ -515,6 +435,16 @@
 
         try {
             const arquivoPreparado = await prepararArquivoParaIA(file, requestId);
+            anexoPreparadoGlobal = arquivoPreparado.storagePrepared;
+
+            const info = arquivoPreparado.storagePrepared;
+            const economia = info.otimizado
+                ? `, reduzida de ${StorageService.formatarBytes(info.tamanhoOriginal)} para ${StorageService.formatarBytes(info.tamanhoFinal)}`
+                : `, ${StorageService.formatarBytes(info.tamanhoFinal)}`;
+            elementos.statusFoto.innerText = isPDF
+                ? `📄 PDF pronto: ${file.name} (${StorageService.formatarBytes(info.tamanhoFinal)})`
+                : `✅ Imagem pronta${economia}`;
+
             exibirStatusIA('☁️ Arquivo preparado. Consultando a Edge Function...', 'processando');
             const dados = await chamarGeminiOCR(arquivoPreparado, requestId);
             preencherFormularioComOCR(dados);
@@ -525,6 +455,12 @@
                 duracaoMs: dados?._meta?.durationMs
             });
         } catch (erro) {
+            if (!anexoPreparadoGlobal) {
+                arquivoAnexoGlobal = null;
+                elementos.statusFoto.innerText = '❌ Arquivo não aceito para envio.';
+                elementos.statusFoto.style.color = 'var(--danger)';
+            }
+
             registrarEtapaOCR('ocr_falhou', {
                 requestId: erro.requestId || requestId,
                 codigo: erro.code,
@@ -602,6 +538,8 @@
             return;
         }
 
+        let upload = null;
+
         try {
             const obra = document.getElementById('obra').value.trim();
             const equip = document.getElementById('equipamento').value.trim();
@@ -619,18 +557,17 @@
 
             definirSalvamento(true);
             let urlAnexo = null;
-            if (arquivoAnexoGlobal) {
-                const mimeType = obterMimeType(arquivoAnexoGlobal);
-                if (!MIME_PERMITIDOS.has(mimeType)) throw new Error(`Formato de anexo inválido: ${mimeType || 'desconhecido'}.`);
-                const extensao = obterExtensaoUpload(arquivoAnexoGlobal);
-                const sufixo = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-                const fileName = `mobile_nf_${sufixo}.${extensao}`;
-                const { data, error } = await db.storage
-                    .from('comprovantes')
-                    .upload(fileName, arquivoAnexoGlobal, { contentType: mimeType, upsert: false });
 
-                if (error) throw new Error(`Falha no upload do anexo: ${error.message}`);
-                urlAnexo = db.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
+            if (arquivoAnexoGlobal) {
+                if (!anexoPreparadoGlobal) {
+                    throw new Error('O anexo ainda não foi preparado. Selecione o arquivo novamente.');
+                }
+
+                upload = await StorageService.uploadPreparado(
+                    anexoPreparadoGlobal,
+                    { client: db, prefix: 'mobile_nf' }
+                );
+                urlAnexo = upload.publicUrl;
             }
 
             const payload = {
@@ -650,7 +587,7 @@
             if (error) throw error;
 
             sessionStorage.removeItem('obras_cache_v2');
-            alert('✅ Equipamento salvo com sucesso no Painel!');
+            alert(`✅ Equipamento salvo com sucesso no Painel!${StorageService.mensagemEconomia(upload)}`);
             document.getElementById('equipamento').value = '';
             document.getElementById('valor').value = '';
             document.getElementById('fornecedor').value = '';
@@ -661,7 +598,18 @@
             elementos.statusFoto.style.display = 'none';
             elementos.loaderIA.style.display = 'none';
             arquivoAnexoGlobal = null;
+            anexoPreparadoGlobal = null;
         } catch (erro) {
+            if (upload?.created && upload?.publicUrl) {
+                try {
+                    await StorageService.removerSeSemReferencia(upload.publicUrl, {
+                        client: db
+                    });
+                } catch (limpezaErro) {
+                    console.warn('[Mobile] Upload sem registro ficou para manutencao:', limpezaErro);
+                }
+            }
+
             console.error('[Mobile] Erro ao salvar:', erro);
             alert(`❌ Erro ao salvar: ${erro.message}`);
         } finally {

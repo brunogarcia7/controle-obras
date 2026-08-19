@@ -1,6 +1,6 @@
 // =====================================================
 // DATABASE.JS
-// Sistema Gestão de Equipamentos v6.3.0
+// Sistema Gestão de Equipamentos v6.4.0
 // =====================================================
 
 (() => {
@@ -52,6 +52,10 @@
 
         obterTabela() {
             return CONFIG.TABELA_PRINCIPAL || 'locacoes';
+        },
+
+        obterCampos() {
+            return CONFIG.CAMPOS_LOCACOES || '*';
         },
 
         obterClient() {
@@ -124,7 +128,7 @@
 
                 const { data, error } = await client
                     .from(tabela)
-                    .select('*');
+                    .select(DB.obterCampos());
 
                 if (error) {
                     throw error;
@@ -199,7 +203,7 @@
                 }
 
                 const { data, error } = await consulta
-                    .select('*')
+                    .select(DB.obterCampos())
                     .single();
 
                 if (error) {
@@ -268,7 +272,7 @@
                     .from(tabela)
                     .update({ status })
                     .eq('id', id)
-                    .select('*')
+                    .select(DB.obterCampos())
                     .single();
 
                 if (error) {

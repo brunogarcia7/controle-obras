@@ -611,39 +611,42 @@
     </div>
     <!--
         Scripts locais:
-        1. O parâmetro v=6.3.1 força o navegador a buscar os arquivos novos.
+        1. O parâmetro v=6.4.0 força o navegador a buscar os arquivos novos.
         2. A ordem abaixo é obrigatória.
         3. O atributo defer preserva a ordem e faz o DOMContentLoaded aguardar os módulos.
     -->
-    <script defer src="./js/config.js?v=6.3.1"
+    <script defer src="./js/config.js?v=6.4.0"
             onerror="console.error('[BOOT] Falha ao carregar config.js')"></script>
 
-    <script defer src="./js/utils.js?v=6.3.1"
+    <script defer src="./js/utils.js?v=6.4.0"
             onerror="console.error('[BOOT] Falha ao carregar utils.js')"></script>
 
-    <script defer src="./js/database.js?v=6.3.1"
+    <script defer src="./js/database.js?v=6.4.0"
             onerror="console.error('[BOOT] Falha ao carregar database.js')"></script>
 
-    <script defer src="./js/responsaveis.js?v=6.3.1"
+    <script defer src="./js/storage.js?v=6.4.0"
+            onerror="console.error('[BOOT] Falha ao carregar storage.js')"></script>
+
+    <script defer src="./js/responsaveis.js?v=6.4.0"
             onerror="console.error('[BOOT] Falha ao carregar responsaveis.js')"></script>
 
-    <script defer src="./js/notificationService.js?v=6.3.1"
+    <script defer src="./js/notificationService.js?v=6.4.0"
             onerror="console.error('[BOOT] Falha ao carregar notificationService.js')"></script>
 
-    <script defer src="./js/alertas.js?v=6.3.1"
+    <script defer src="./js/alertas.js?v=6.4.0"
             onerror="console.error('[BOOT] Falha ao carregar alertas.js')"></script>
 
-    <script defer src="./js/ui.js?v=6.3.1"
+    <script defer src="./js/ui.js?v=6.4.0"
             onerror="console.error('[BOOT] Falha ao carregar ui.js')"></script>
 
-    <script defer src="./js/equipamentos.js?v=6.3.1"
+    <script defer src="./js/equipamentos.js?v=6.4.0"
             onerror="console.error('[BOOT] Falha ao carregar equipamentos.js')"></script>
 
-    <script defer src="./js/exportacao.js?v=6.3.1"
+    <script defer src="./js/exportacao.js?v=6.4.0"
             onerror="console.error('[BOOT] Falha ao carregar exportacao.js')"></script>
 
     <!-- app.js deve permanecer por último -->
-    <script defer src="./js/app.js?v=6.3.1"
+    <script defer src="./js/app.js?v=6.4.0"
             onerror="console.error('[BOOT] Falha ao carregar app.js')"></script>
 
     <!-- Diagnóstico de inicialização -->
@@ -653,6 +656,7 @@
                 CONFIG: typeof CONFIG !== 'undefined',
                 Utils: typeof Utils !== 'undefined',
                 DB: typeof DB !== 'undefined',
+                StorageService: typeof StorageService !== 'undefined',
                 AlertasManager: typeof AlertasManager !== 'undefined',
                 UI: typeof UI !== 'undefined',
                 Equipamentos: typeof Equipamentos !== 'undefined',

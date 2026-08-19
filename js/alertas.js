@@ -224,18 +224,21 @@ window.AlertasManager = {
 
 window.AlertService = {
 
-    updateAll: async () => {
+    updateAll: async (registrosCarregados = null) => {
 
         try {
 
-            console.log("[SmartAlerts] Atualizando...");
+            console.log("[SmartAlerts] Atualizando a partir dos dados ja carregados...");
 
-            const { data: contratos, error } = await DB.client
-                .from("locacoes")
-                .select("*")
-                .eq("status", "ativo");
+            // Evita uma segunda consulta completa ao Supabase a cada abertura do painel.
+            // Isso reduz chamadas e egress de banco sem alterar o resultado da tela.
+            const fonte = Array.isArray(registrosCarregados)
+                ? registrosCarregados
+                : (Array.isArray(window.State?.dadosGlobais) ? State.dadosGlobais : []);
 
-            if (error) throw error;
+            const contratos = fonte.filter(item =>
+                String(item?.status || '').toLowerCase() === 'ativo'
+            );
 
             let totalAtivos = 0;
 

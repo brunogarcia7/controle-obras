@@ -1,27 +1,11 @@
 'use strict';
 
 const Equipamentos = {
-    MIME_ANEXOS: new Set([
-        'application/pdf',
-        'image/jpeg',
-        'image/png',
-        'image/webp'
-    ]),
-
     formatarDataLocal(data = new Date()) {
         const ano = data.getFullYear();
         const mes = String(data.getMonth() + 1).padStart(2, '0');
         const dia = String(data.getDate()).padStart(2, '0');
         return `${ano}-${mes}-${dia}`;
-    },
-
-    extensaoPorMime(mimeType) {
-        return ({
-            'application/pdf': 'pdf',
-            'image/jpeg': 'jpg',
-            'image/png': 'png',
-            'image/webp': 'webp'
-        })[mimeType] || 'bin';
     },
 
     limparAnexoTemporario(origem, texto = 'Nenhum arquivo') {
@@ -43,27 +27,27 @@ const Equipamentos = {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const mimeType = String(file.type || '').toLowerCase().split(';')[0].trim();
-        if (!Equipamentos.MIME_ANEXOS.has(mimeType)) {
-            Equipamentos.limparAnexoTemporario(origem);
-            Utils.showToast('Use PDF, JPG, PNG ou WEBP.', 'warning');
-            return;
-        }
-        if (file.size > 20 * 1024 * 1024) {
-            Equipamentos.limparAnexoTemporario(origem);
-            Utils.showToast('O anexo deve ter no máximo 20 MB.', 'warning');
-            return;
-        }
+        try {
+            const { mimeType } = StorageService.validarArquivo(file);
 
-        State.arquivoAnexoTemporario = file;
-        State.base64AnexoTemporario = null;
-        State.mimeTypeTemporario = mimeType;
+            State.arquivoAnexoTemporario = file;
+            State.base64AnexoTemporario = null;
+            State.mimeTypeTemporario = mimeType;
 
-        const nomeBox = document.getElementById(`${origem}-anexo-nome`);
-        if (nomeBox) {
-            nomeBox.innerText = file.name;
-            nomeBox.style.color = mimeType === 'application/pdf' ? 'var(--danger)' : 'var(--primary)';
-            nomeBox.style.fontWeight = 'bold';
+            const nomeBox = document.getElementById(`${origem}-anexo-nome`);
+            if (nomeBox) {
+                const observacao = mimeType === 'application/pdf'
+                    ? 'PDF preservado sem alteracoes'
+                    : 'imagem sera compactada ao salvar';
+                nomeBox.innerText = `${file.name} (${StorageService.formatarBytes(file.size)}; ${observacao})`;
+                nomeBox.style.color = mimeType === 'application/pdf'
+                    ? 'var(--danger)'
+                    : 'var(--primary)';
+                nomeBox.style.fontWeight = 'bold';
+            }
+        } catch (erro) {
+            Equipamentos.limparAnexoTemporario(origem);
+            Utils.showToast(erro.message || 'Arquivo invalido.', 'warning');
         }
     },
 
@@ -71,20 +55,36 @@ const Equipamentos = {
         const file = State.arquivoAnexoTemporario;
         if (!file) return null;
 
-        const mimeType = State.mimeTypeTemporario || file.type || 'application/octet-stream';
-        const extensao = Equipamentos.extensaoPorMime(mimeType);
-        const id = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-        const caminho = `doc_${id}.${extensao}`;
+        return await StorageService.upload(file, {
+            client: DB.client,
+            prefix: 'doc'
+        });
+    },
 
-        const { data, error } = await DB.client.storage
-            .from('comprovantes')
-            .upload(caminho, file, {
-                contentType: mimeType,
-                upsert: false
+    async limparUploadFalho(upload) {
+        if (!upload?.created || !upload?.publicUrl) return;
+
+        try {
+            await StorageService.removerSeSemReferencia(upload.publicUrl, {
+                client: DB.client
             });
+        } catch (erro) {
+            console.warn('[Equipamentos] Nao foi possivel limpar upload sem registro:', erro);
+        }
+    },
 
-        if (error) throw new Error(`Falha no upload do anexo: ${error.message}`);
-        return DB.client.storage.from('comprovantes').getPublicUrl(data.path).data.publicUrl;
+    async removerAnexoAntigoSeOrfao(referencia, idAtual) {
+        if (!referencia) return;
+
+        try {
+            await StorageService.removerSeSemReferencia(referencia, {
+                client: DB.client,
+                ignoreId: idAtual
+            });
+        } catch (erro) {
+            // A aplicacao continua funcionando mesmo se a politica de DELETE do bucket nao existir.
+            console.warn('[Equipamentos] Anexo antigo ficou para a limpeza de manutencao:', erro);
+        }
     },
 
     toggleCamposNovo() {
@@ -141,22 +141,34 @@ const Equipamentos = {
             objSalvar.contrato = document.getElementById('novo-contrato').value.trim() || 'Sem Contrato';
         }
 
-        Utils.showLoader(State.arquivoAnexoTemporario ? 'Subindo anexo...' : 'Cadastrando...');
-        try {
-            const urlAnexo = await Equipamentos.uploadAnexoTemporario();
-            if (urlAnexo) objSalvar.anexo = urlAnexo;
+        Utils.showLoader(State.arquivoAnexoTemporario ? 'Otimizando e subindo anexo...' : 'Cadastrando...');
+        let upload = null;
 
-            const { data, error } = await DB.client.from('locacoes').insert([objSalvar]).select();
+        try {
+            upload = await Equipamentos.uploadAnexoTemporario();
+            if (upload) objSalvar.anexo = upload.publicUrl;
+
+            const { data, error } = await DB.client
+                .from('locacoes')
+                .insert([objSalvar])
+                .select(DB.obterCampos());
+
             if (error) throw error;
-            if (!Array.isArray(data) || data.length === 0) throw new Error('O Supabase não devolveu o registro cadastrado.');
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error('O Supabase não devolveu o registro cadastrado.');
+            }
 
             State.dadosGlobais.unshift(data[0]);
             Utils.registrarLog('Novo Cadastro', `Item: ${equipamento}`);
-            Utils.showToast('Salvo!', 'success');
+            Utils.showToast(
+                `Salvo!${StorageService.mensagemEconomia(upload)}`,
+                'success'
+            );
             UI.fecharModal('modal-novo');
             Equipamentos.limparAnexoTemporario('novo');
             App.aplicarFiltrosELocalSort();
         } catch (erro) {
+            await Equipamentos.limparUploadFalho(upload);
             console.error('[Equipamentos] Falha ao cadastrar:', erro);
             Utils.showToast(erro.message || 'Erro ao cadastrar.', 'error');
         } finally {
@@ -215,28 +227,50 @@ const Equipamentos = {
             valor_indenizacao
         };
 
-        Utils.showLoader(State.arquivoAnexoTemporario ? 'Atualizando anexo...' : 'Salvando...');
+        const registroAtual = State.dadosGlobais.find(
+            item => String(item.id) === String(id)
+        );
+        const anexoAnterior = registroAtual?.anexo || null;
+
+        Utils.showLoader(State.arquivoAnexoTemporario ? 'Otimizando e atualizando anexo...' : 'Salvando...');
+        let upload = null;
+
         try {
-            const urlAnexo = await Equipamentos.uploadAnexoTemporario();
-            if (urlAnexo) objUpdate.anexo = urlAnexo;
+            upload = await Equipamentos.uploadAnexoTemporario();
+            if (upload) objUpdate.anexo = upload.publicUrl;
 
             const { data, error } = await DB.client
                 .from('locacoes')
                 .update(objUpdate)
                 .eq('id', id)
-                .select();
+                .select(DB.obterCampos());
 
             if (error) throw error;
-            if (!Array.isArray(data) || data.length === 0) throw new Error('O Supabase não devolveu o registro atualizado.');
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error('O Supabase não devolveu o registro atualizado.');
+            }
 
             const idx = State.dadosGlobais.findIndex(item => String(item.id) === String(id));
             if (idx > -1) State.dadosGlobais[idx] = data[0];
+
+            if (
+                upload?.publicUrl &&
+                anexoAnterior &&
+                anexoAnterior !== upload.publicUrl
+            ) {
+                await Equipamentos.removerAnexoAntigoSeOrfao(anexoAnterior, id);
+            }
+
             Utils.registrarLog('Edição', `Atualizou o item: ${equipamento}`);
             UI.fecharModal('modal-editar');
             Equipamentos.limparAnexoTemporario('edit');
-            Utils.showToast('Salvo com sucesso!', 'success');
+            Utils.showToast(
+                `Salvo com sucesso!${StorageService.mensagemEconomia(upload)}`,
+                'success'
+            );
             App.aplicarFiltrosELocalSort();
         } catch (erro) {
+            await Equipamentos.limparUploadFalho(upload);
             console.error('[Equipamentos] Falha ao editar:', erro);
             Utils.showToast(erro.message || 'Erro ao salvar.', 'error');
         } finally {
@@ -276,13 +310,13 @@ const Equipamentos = {
     },
 
     excluirPermanenteItem(id, equipNome) {
-        Utils.showConfirm('Excluir Permanentemente', 'Deseja mover para a lixeira (Itens Excluídos)?', () =>
+        Utils.showConfirm('Mover para a lixeira', 'Deseja mover para Itens Excluídos?', () =>
             Equipamentos.atualizarStatus(
                 id,
                 'excluido',
                 'Excluindo...',
                 'Excluído!',
-                'Exclusão Permanente',
+                'Movido para lixeira',
                 `Moveu para excluídos: ${equipNome}`
             ), true);
     },

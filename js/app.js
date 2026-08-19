@@ -1,6 +1,6 @@
 // =====================================================
 // APP.JS
-// Sistema Gestão de Equipamentos v6.3.0
+// Sistema Gestão de Equipamentos v6.4.0
 // =====================================================
 
 (() => {
@@ -166,7 +166,7 @@
                     typeof window.AlertService
                         .updateAll === 'function'
                 ) {
-                    await window.AlertService.updateAll();
+                    await window.AlertService.updateAll(registros);
                 }
 
                 console.info(

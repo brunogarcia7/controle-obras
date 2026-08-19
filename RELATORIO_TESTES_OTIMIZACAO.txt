@@ -1,0 +1,19 @@
+RELATORIO DE TESTES - OTIMIZACAO SUPABASE
+Data: 2026-08-19
+Versao do painel: 6.4.0
+Versao do app movel: 33.0
+
+Verificacoes executadas:
+- Sintaxe de todos os arquivos JavaScript: APROVADA
+- Sintaxe dos scripts inline de index.html e app.html: APROVADA
+- Testes existentes do OCR: 8 cenarios aprovados
+- Extracao de caminho de objetos do Storage: APROVADA
+- Rejeicao de PDF acima do limite: APROVADA
+- Hash SHA-256 deterministico: APROVADA
+- Reutilizacao de arquivo duplicado em conflito 409: APROVADA
+
+Comando utilizado:
+node --test tests/*.test.mjs
+
+Observacao:
+A Edge Function storage-cleanup foi revisada estaticamente. O ambiente local nao possui Deno nem credenciais do projeto para um teste integrado contra o Supabase real. Execute primeiro em modo dry-run apos a implantacao.
