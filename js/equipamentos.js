@@ -360,5 +360,607 @@ const Equipamentos = {
                 Utils.hideLoader();
             }
         });
+    },
+    normalizarNomeFornecedor(valor) {
+        if (
+            typeof Utils !== 'undefined' &&
+            typeof Utils.normalizarFornecedor === 'function'
+        ) {
+            return Utils.normalizarFornecedor(valor);
+        }
+
+        const texto = String(valor ?? '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        return texto || 'Não identificado';
+    },
+
+    obterRegistrosFornecedor(nome) {
+        const fornecedor = Equipamentos.normalizarNomeFornecedor(nome);
+        const registros = Array.isArray(State.dadosGlobais)
+            ? State.dadosGlobais
+            : [];
+
+        return registros.filter((item) =>
+            Equipamentos.normalizarNomeFornecedor(
+                item?.fornecedor
+            ) === fornecedor
+        );
+    },
+
+    obterFornecedoresDisponiveis() {
+        const registros = Array.isArray(State.dadosGlobais)
+            ? State.dadosGlobais
+            : [];
+
+        return [
+            ...new Set(
+                registros.map((item) =>
+                    Equipamentos.normalizarNomeFornecedor(
+                        item?.fornecedor
+                    )
+                )
+            )
+        ].sort((a, b) =>
+            a.localeCompare(b, 'pt-BR')
+        );
+    },
+
+    resumirFornecedor(nome) {
+        const fornecedor = Equipamentos.normalizarNomeFornecedor(nome);
+        const registros = Equipamentos.obterRegistrosFornecedor(fornecedor);
+        const resumo = {
+            nome: fornecedor,
+            totalRegistros: registros.length,
+            ativos: 0,
+            devolvidos: 0,
+            excluidos: 0,
+            outros: 0,
+            unidades: 0
+        };
+
+        registros.forEach((item) => {
+            const status = String(item?.status || '')
+                .trim()
+                .toLowerCase();
+
+            const quantidade = Math.max(
+                1,
+                Number.parseInt(item?.quantidade, 10) || 1
+            );
+
+            resumo.unidades += quantidade;
+
+            if (status === 'ativo') resumo.ativos += 1;
+            else if (status === 'inativo') resumo.devolvidos += 1;
+            else if (status === 'excluido') resumo.excluidos += 1;
+            else resumo.outros += 1;
+        });
+
+        return resumo;
+    },
+
+    formatarResumoFornecedor(resumo) {
+        if (!resumo || resumo.totalRegistros === 0) {
+            return 'Nenhum registro encontrado.';
+        }
+
+        const partes = [
+            `${resumo.totalRegistros} registro(s)`,
+            `${resumo.ativos} ativo(s)`,
+            `${resumo.devolvidos} devolvido(s)`,
+            `${resumo.excluidos} excluído(s)`
+        ];
+
+        if (resumo.outros > 0) {
+            partes.push(`${resumo.outros} em outro status`);
+        }
+
+        return `${partes.join(' • ')} • ${resumo.unidades} unidade(s)`;
+    },
+
+    obterDestinoCanonico(nomeDesejado, origem) {
+        const destino = Equipamentos.normalizarNomeFornecedor(nomeDesejado);
+        const origemNormalizada = Equipamentos.normalizarNomeFornecedor(origem);
+
+        const existente = Equipamentos
+            .obterFornecedoresDisponiveis()
+            .filter((nome) => nome !== origemNormalizada)
+            .find((nome) =>
+                nome.localeCompare(
+                    destino,
+                    'pt-BR',
+                    { sensitivity: 'accent' }
+                ) === 0
+            );
+
+        return existente || destino;
+    },
+
+    abrirRenomearForn(nome) {
+        const resumo = Equipamentos.resumirFornecedor(nome);
+
+        if (resumo.totalRegistros === 0) {
+            Utils.showToast(
+                'Fornecedor não encontrado na base carregada.',
+                'warning'
+            );
+            return;
+        }
+
+        const origem = document.getElementById('renomear-forn-origem');
+        const origemTexto = document.getElementById('renomear-forn-origem-txt');
+        const novoNome = document.getElementById('renomear-forn-novo');
+        const impacto = document.getElementById('renomear-forn-impacto');
+
+        if (!origem || !origemTexto || !novoNome) {
+            Utils.showToast(
+                'Os campos de edição do fornecedor não foram encontrados.',
+                'error'
+            );
+            return;
+        }
+
+        origem.value = resumo.nome;
+        origemTexto.value = resumo.nome;
+        novoNome.value = resumo.nome;
+
+        if (impacto) {
+            impacto.textContent =
+                Equipamentos.formatarResumoFornecedor(resumo);
+        }
+
+        UI.abrirModal('modal-renomear-forn');
+
+        window.setTimeout(() => {
+            novoNome.focus();
+            novoNome.select();
+        }, 0);
+    },
+
+    salvarRenomearForn() {
+        const origemCampo = document.getElementById('renomear-forn-origem');
+        const novoCampo = document.getElementById('renomear-forn-novo');
+        const valorDigitado = String(novoCampo?.value || '').trim();
+
+        if (!origemCampo || !novoCampo) {
+            Utils.showToast(
+                'Os campos de edição do fornecedor não foram encontrados.',
+                'error'
+            );
+            return;
+        }
+
+        if (!valorDigitado) {
+            Utils.showToast(
+                'Informe o novo nome do fornecedor.',
+                'warning'
+            );
+            novoCampo.focus();
+            return;
+        }
+
+        const origem = Equipamentos.normalizarNomeFornecedor(
+            origemCampo.value
+        );
+        const destino = Equipamentos.obterDestinoCanonico(
+            valorDigitado,
+            origem
+        );
+
+        if (destino.length > 180) {
+            Utils.showToast(
+                'O nome do fornecedor deve ter no máximo 180 caracteres.',
+                'warning'
+            );
+            return;
+        }
+
+        if (destino === origem) {
+            Utils.showToast(
+                'O nome informado é igual ao nome atual.',
+                'info'
+            );
+            return;
+        }
+
+        const resumo = Equipamentos.resumirFornecedor(origem);
+        const destinoJaExiste = Equipamentos
+            .obterFornecedoresDisponiveis()
+            .some((nome) => nome === destino && nome !== origem);
+
+        const mensagem = destinoJaExiste
+            ? `O fornecedor "${origem}" será mesclado com "${destino}". ${Equipamentos.formatarResumoFornecedor(resumo)}.`
+            : `O fornecedor "${origem}" será renomeado para "${destino}" em ${resumo.totalRegistros} registro(s).`;
+
+        Utils.showConfirm(
+            destinoJaExiste
+                ? 'Renomear e mesclar fornecedor'
+                : 'Renomear fornecedor',
+            mensagem,
+            () => Equipamentos.atualizarFornecedorEmLote(
+                origem,
+                destino,
+                {
+                    modalId: 'modal-renomear-forn',
+                    acaoLog: destinoJaExiste
+                        ? 'Mesclagem de fornecedor'
+                        : 'Renomeação de fornecedor'
+                }
+            )
+        );
+    },
+
+    abrirMesclarForn(nome) {
+        const origemResumo = Equipamentos.resumirFornecedor(nome);
+
+        if (origemResumo.totalRegistros === 0) {
+            Utils.showToast(
+                'Fornecedor não encontrado na base carregada.',
+                'warning'
+            );
+            return;
+        }
+
+        const origem = document.getElementById('merge-origem');
+        const origemTexto = document.getElementById('merge-origem-txt');
+        const origemResumoEl = document.getElementById('merge-origem-resumo');
+        const destinoSelect = document.getElementById('merge-destino');
+        const botao = document.getElementById('btn-confirmar-mesclagem');
+
+        if (!origem || !origemTexto || !destinoSelect || !botao) {
+            Utils.showToast(
+                'Os campos de mesclagem não foram encontrados.',
+                'error'
+            );
+            return;
+        }
+
+        const destinos = Equipamentos
+            .obterFornecedoresDisponiveis()
+            .filter((fornecedor) => fornecedor !== origemResumo.nome);
+
+        if (destinos.length === 0) {
+            Utils.showToast(
+                'Não existe outro fornecedor para realizar a mesclagem.',
+                'warning'
+            );
+            return;
+        }
+
+        origem.value = origemResumo.nome;
+        origemTexto.value = origemResumo.nome;
+
+        if (origemResumoEl) {
+            origemResumoEl.textContent =
+                Equipamentos.formatarResumoFornecedor(origemResumo);
+        }
+
+        destinoSelect.innerHTML = '';
+        destinoSelect.add(
+            new Option('Selecione o fornecedor correto...', '')
+        );
+
+        destinos.forEach((fornecedor) => {
+            const resumo = Equipamentos.resumirFornecedor(fornecedor);
+            destinoSelect.add(
+                new Option(
+                    `${fornecedor} — ${resumo.totalRegistros} registro(s)`,
+                    fornecedor
+                )
+            );
+        });
+
+        destinoSelect.value = '';
+        botao.disabled = true;
+        Equipamentos.atualizarResumoMesclagem();
+        UI.abrirModal('modal-mesclar-forn');
+
+        window.setTimeout(() => destinoSelect.focus(), 0);
+    },
+
+    atualizarResumoMesclagem() {
+        const origem = Equipamentos.normalizarNomeFornecedor(
+            document.getElementById('merge-origem')?.value
+        );
+        const destinoSelect = document.getElementById('merge-destino');
+        const destinoResumoEl = document.getElementById('merge-destino-resumo');
+        const botao = document.getElementById('btn-confirmar-mesclagem');
+        const destinoValor = String(destinoSelect?.value || '').trim();
+
+        if (!destinoSelect || !botao) return;
+
+        if (!destinoValor) {
+            botao.disabled = true;
+            if (destinoResumoEl) {
+                destinoResumoEl.textContent =
+                    'Selecione o fornecedor que será mantido.';
+            }
+            return;
+        }
+
+        const destino = Equipamentos.normalizarNomeFornecedor(destinoValor);
+
+        if (destino === origem) {
+            botao.disabled = true;
+            if (destinoResumoEl) {
+                destinoResumoEl.textContent =
+                    'O fornecedor de destino deve ser diferente da origem.';
+            }
+            return;
+        }
+
+        const resumoOrigem = Equipamentos.resumirFornecedor(origem);
+        const resumoDestino = Equipamentos.resumirFornecedor(destino);
+
+        if (destinoResumoEl) {
+            destinoResumoEl.textContent =
+                `${Equipamentos.formatarResumoFornecedor(resumoDestino)}. ` +
+                `Após a mesclagem: ${resumoOrigem.totalRegistros + resumoDestino.totalRegistros} registro(s) e ${resumoOrigem.unidades + resumoDestino.unidades} unidade(s).`;
+        }
+
+        botao.disabled = resumoOrigem.totalRegistros === 0;
+    },
+
+    salvarMesclarForn() {
+        const origem = Equipamentos.normalizarNomeFornecedor(
+            document.getElementById('merge-origem')?.value
+        );
+        const destinoValor = String(
+            document.getElementById('merge-destino')?.value || ''
+        ).trim();
+
+        if (!destinoValor) {
+            Utils.showToast(
+                'Selecione o fornecedor que será mantido.',
+                'warning'
+            );
+            return;
+        }
+
+        const destino = Equipamentos.normalizarNomeFornecedor(destinoValor);
+
+        if (origem === destino) {
+            Utils.showToast(
+                'Escolha um fornecedor diferente da origem.',
+                'warning'
+            );
+            return;
+        }
+
+        const resumo = Equipamentos.resumirFornecedor(origem);
+
+        if (resumo.totalRegistros === 0) {
+            Utils.showToast(
+                'O fornecedor de origem não possui registros.',
+                'warning'
+            );
+            return;
+        }
+
+        Utils.showConfirm(
+            'Confirmar mesclagem',
+            `Substituir "${origem}" por "${destino}" em ${resumo.totalRegistros} registro(s)? Nenhum equipamento ou contrato será apagado.`,
+            () => Equipamentos.atualizarFornecedorEmLote(
+                origem,
+                destino,
+                {
+                    modalId: 'modal-mesclar-forn',
+                    acaoLog: 'Mesclagem de fornecedor'
+                }
+            )
+        );
+    },
+
+    atualizarEstadoFornecedor(idsAtualizados, destino, origem, filtroAnterior) {
+        const ids = new Set(
+            [...idsAtualizados].map((id) => String(id))
+        );
+
+        State.dadosGlobais.forEach((item) => {
+            if (ids.has(String(item?.id))) {
+                item.fornecedor = destino;
+            }
+        });
+
+        App.carregarFiltrosSelect();
+
+        const filtroFornecedor = document.getElementById('filtroForn');
+        const filtroEraOrigem =
+            filtroAnterior !== 'todos' &&
+            Equipamentos.normalizarNomeFornecedor(
+                filtroAnterior
+            ) === origem;
+
+        if (
+            filtroFornecedor &&
+            filtroEraOrigem &&
+            [...filtroFornecedor.options].some(
+                (opcao) => opcao.value === destino
+            )
+        ) {
+            filtroFornecedor.value = destino;
+        }
+
+        App.aplicarFiltrosELocalSort();
+
+        if (
+            window.AlertService &&
+            typeof window.AlertService.updateAll === 'function'
+        ) {
+            Promise.resolve(
+                window.AlertService.updateAll(State.dadosGlobais)
+            ).catch((erro) => {
+                console.warn(
+                    '[Equipamentos] Não foi possível atualizar os alertas:',
+                    erro
+                );
+            });
+        }
+    },
+
+    async atualizarFornecedorEmLote(origem, destino, opcoes = {}) {
+        const origemNormalizada = Equipamentos.normalizarNomeFornecedor(origem);
+        const destinoNormalizado = Equipamentos.normalizarNomeFornecedor(destino);
+        const registros = Equipamentos.obterRegistrosFornecedor(
+            origemNormalizada
+        );
+
+        if (origemNormalizada === destinoNormalizado) {
+            Utils.showToast(
+                'Origem e destino são iguais.',
+                'warning'
+            );
+            return false;
+        }
+
+        if (registros.length === 0) {
+            Utils.showToast(
+                'Nenhum registro foi encontrado para atualizar.',
+                'warning'
+            );
+            return false;
+        }
+
+        const mapaIds = new Map();
+
+        registros.forEach((item) => {
+            if (
+                item?.id !== undefined &&
+                item?.id !== null &&
+                String(item.id) !== ''
+            ) {
+                mapaIds.set(String(item.id), item.id);
+            }
+        });
+
+        const ids = [...mapaIds.values()];
+
+        if (ids.length !== registros.length) {
+            Utils.showToast(
+                'Existem registros sem ID válido; a operação foi cancelada.',
+                'error'
+            );
+            return false;
+        }
+
+        const filtroAnterior =
+            document.getElementById('filtroForn')?.value || 'todos';
+        const idsConfirmados = new Set();
+        const tamanhoLote = 100;
+
+        Utils.showLoader(
+            `Atualizando ${registros.length} registro(s)...`
+        );
+
+        try {
+            const client = typeof DB.obterClient === 'function'
+                ? DB.obterClient()
+                : DB.client;
+            const tabela = typeof DB.obterTabela === 'function'
+                ? DB.obterTabela()
+                : 'locacoes';
+
+            if (!client) {
+                throw new Error('Cliente do Supabase não inicializado.');
+            }
+
+            for (let indice = 0; indice < ids.length; indice += tamanhoLote) {
+                const lote = ids.slice(indice, indice + tamanhoLote);
+                const { data, error } = await client
+                    .from(tabela)
+                    .update({ fornecedor: destinoNormalizado })
+                    .in('id', lote)
+                    .select('id');
+
+                if (error) throw error;
+
+                const retornados = Array.isArray(data)
+                    ? data
+                    : [];
+                const idsRetornados = new Set(
+                    retornados.map((item) => String(item?.id))
+                );
+                const faltantes = lote.filter(
+                    (id) => !idsRetornados.has(String(id))
+                );
+
+                retornados.forEach((item) => {
+                    if (item?.id !== undefined && item?.id !== null) {
+                        idsConfirmados.add(String(item.id));
+                    }
+                });
+
+                if (faltantes.length > 0) {
+                    const erroIncompleto = new Error(
+                        `O Supabase não confirmou ${faltantes.length} atualização(ões). Verifique a política RLS de UPDATE e SELECT.`
+                    );
+                    erroIncompleto.code = 'FORNECEDOR_UPDATE_INCOMPLETO';
+                    throw erroIncompleto;
+                }
+            }
+
+            Equipamentos.atualizarEstadoFornecedor(
+                idsConfirmados,
+                destinoNormalizado,
+                origemNormalizada,
+                filtroAnterior
+            );
+
+            if (opcoes.modalId) {
+                UI.fecharModal(opcoes.modalId);
+            }
+
+            Utils.registrarLog(
+                opcoes.acaoLog || 'Atualização de fornecedor',
+                `${origemNormalizada} → ${destinoNormalizado} (${idsConfirmados.size} registro(s))`
+            );
+
+            Utils.showToast(
+                `${idsConfirmados.size} registro(s) atualizado(s). Fornecedor: ${destinoNormalizado}.`,
+                'success',
+                6000
+            );
+
+            return true;
+        } catch (erro) {
+            console.error(
+                '[Equipamentos] Falha ao atualizar fornecedor em lote:',
+                erro
+            );
+
+            if (idsConfirmados.size > 0) {
+                Equipamentos.atualizarEstadoFornecedor(
+                    idsConfirmados,
+                    destinoNormalizado,
+                    origemNormalizada,
+                    filtroAnterior
+                );
+            }
+
+            const semPermissao =
+                erro?.code === '42501' ||
+                erro?.status === 401 ||
+                erro?.status === 403;
+            const parcial = idsConfirmados.size > 0;
+            const mensagem = semPermissao
+                ? 'O Supabase bloqueou a alteração. Verifique a política RLS de UPDATE da tabela locacoes.'
+                : (erro?.message || 'Não foi possível atualizar o fornecedor.');
+
+            Utils.showToast(
+                parcial
+                    ? `Operação parcial: ${idsConfirmados.size} registro(s) foram atualizados. ${mensagem}`
+                    : mensagem,
+                'error',
+                9000
+            );
+
+            return false;
+        } finally {
+            Utils.hideLoader();
+        }
     }
 };
+
+window.Equipamentos = Equipamentos;

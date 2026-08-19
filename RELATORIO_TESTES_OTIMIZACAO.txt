@@ -1,6 +1,6 @@
 RELATORIO DE TESTES - OTIMIZACAO SUPABASE
 Data: 2026-08-19
-Versao do painel: 6.4.0
+Versao do painel: 6.4.1
 Versao do app movel: 33.0
 
 Verificacoes executadas:
@@ -11,6 +11,16 @@ Verificacoes executadas:
 - Rejeicao de PDF acima do limite: APROVADA
 - Hash SHA-256 deterministico: APROVADA
 - Reutilizacao de arquivo duplicado em conflito 409: APROVADA
+- Metodos de renomeacao e mesclagem de fornecedores: APROVADOS
+- Resumo de fornecedor em todos os status: APROVADO
+- Normalizacao de nomes e deteccao de destino existente: APROVADAS
+- Preenchimento dos modais de fornecedor: APROVADO
+- Atualizacao em lotes 100 + 100 + 5: APROVADA
+- Tratamento de atualizacao parcial/RLS: APROVADO
+- IDs HTML duplicados: NENHUM
+- Arquivos JavaScript locais ausentes: NENHUM
+
+Resultado automatizado: 11 testes aprovados.
 
 Comando utilizado:
 node --test tests/*.test.mjs

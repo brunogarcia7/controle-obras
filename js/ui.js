@@ -1,6 +1,6 @@
 // =====================================================
 // UI.JS
-// Sistema Gestão de Equipamentos v6.3.0
+// Sistema Gestão de Equipamentos v6.4.1
 // =====================================================
 
 (() => {
@@ -31,6 +31,9 @@
 
     const normalizarStatus = (valor) =>
         String(valor || '').trim().toLowerCase();
+
+    const normalizarFornecedor = (valor) =>
+        Utils.normalizarFornecedor(valor);
 
     const ehPatrimonioProprio = (item) => {
         const unidade = String(item?.unidade || '')
@@ -290,12 +293,15 @@
                     arquivados += quantidade;
                 }
 
+                const fornecedor = normalizarFornecedor(
+                    item.fornecedor
+                );
+
                 if (
                     status !== 'excluido' &&
-                    item.fornecedor &&
-                    item.fornecedor !== 'Não identificado'
+                    fornecedor !== 'Não identificado'
                 ) {
-                    fornecedores.add(item.fornecedor);
+                    fornecedores.add(fornecedor);
                 }
             });
 
@@ -522,9 +528,9 @@
             registros.forEach((item) => {
                 if (normalizarStatus(item.status) !== 'ativo') return;
 
-                const fornecedor = String(
-                    item.fornecedor || 'Não identificado'
-                ).trim();
+                const fornecedor = normalizarFornecedor(
+                    item.fornecedor
+                );
 
                 const quantidade = Math.max(
                     1,

@@ -1,6 +1,6 @@
 // =====================================================
 // UTILS.JS
-// Sistema Gestão de Equipamentos v6.3.0
+// Sistema Gestão de Equipamentos v6.4.1
 // =====================================================
 
 (() => {
@@ -284,6 +284,14 @@
             if (botao) {
                 botao.onclick = null;
             }
+        },
+
+        normalizarFornecedor(valor, padrao = 'Não identificado') {
+            const texto = String(valor ?? '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            return texto || String(padrao || 'Não identificado');
         },
 
         formatarMoeda(valor) {

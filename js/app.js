@@ -1,10 +1,13 @@
 // =====================================================
 // APP.JS
-// Sistema Gestão de Equipamentos v6.4.0
+// Sistema Gestão de Equipamentos v6.4.1
 // =====================================================
 
 (() => {
     'use strict';
+
+    const normalizarFornecedor = (valor) =>
+        Utils.normalizarFornecedor(valor);
 
     const App = {
         eventosVinculados: false,
@@ -30,8 +33,11 @@
             const fornecedores = [
                 ...new Set(
                     registros
-                        .map(item => item.fornecedor)
-                        .filter(Boolean)
+                        .map(item =>
+                            normalizarFornecedor(
+                                item.fornecedor
+                            )
+                        )
                 )
             ].sort((a, b) =>
                 String(a).localeCompare(
@@ -242,7 +248,9 @@
 
                         const matchForn =
                             fForn === 'todos' ||
-                            item.fornecedor === fForn;
+                            normalizarFornecedor(
+                                item.fornecedor
+                            ) === fForn;
 
                         const equipamento =
                             String(

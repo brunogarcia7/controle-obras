@@ -83,7 +83,7 @@ A nova versao tenta remover esses objetos sem referencia. Se a politica do bucke
 
 ## Como publicar
 
-Publique todos os arquivos do projeto, incluindo o novo `js/storage.js`. O `index.html` e o `app.html` ja apontam para a versao `6.4.0`, o que ajuda a evitar que o navegador mantenha JavaScript antigo.
+Publique todos os arquivos do projeto, incluindo o novo `js/storage.js`. O `index.html` e o `app.html` ja apontam para a versao `6.4.1`, o que ajuda a evitar que o navegador mantenha JavaScript antigo.
 
 No bucket `comprovantes`, configure tambem um limite de arquivo proximo de 6 MB. Isso impede que outro cliente ou uma versao antiga do site envie arquivos muito grandes.
 
