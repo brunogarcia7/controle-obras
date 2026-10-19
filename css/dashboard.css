@@ -893,6 +893,70 @@ textarea:focus-visible,
 
 /* ---------- KPIs ---------- */
 
+.metrics-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.metrics-heading {
+    color: var(--text-light);
+    font-size: 0.72rem;
+    font-weight: 750;
+}
+
+.metrics-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-light);
+    background: var(--surface);
+    font-size: 0.70rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
+}
+
+.metrics-toggle:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.metrics-toggle-icon {
+    flex-shrink: 0;
+    transition: transform 300ms ease;
+}
+
+/* A linha de grid anima a altura real, inclusive quando os cards quebram linhas. */
+.metrics-collapse {
+    display: grid;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transition: grid-template-rows 300ms ease, opacity 200ms ease;
+}
+
+.metrics-collapse-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.metrics-panel.is-collapsed .metrics-collapse {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.metrics-panel.is-collapsed .metrics-toggle-icon {
+    transform: rotate(180deg);
+}
+
 .dashboard-grid {
     display: grid !important;
     grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -951,6 +1015,20 @@ textarea:focus-visible,
 
 .kpi-card[data-clickable="true"] {
     cursor: pointer !important;
+}
+
+button.kpi-card {
+    width: 100%;
+    text-align: left;
+}
+
+.kpi-card[aria-pressed="true"] {
+    border-color: var(--kpi-accent) !important;
+    box-shadow: inset 0 0 0 1px var(--kpi-accent), var(--shadow-xs) !important;
+}
+
+.kpi-card[aria-pressed="true"] .kpi-footnote {
+    color: var(--kpi-accent);
 }
 
 .kpi-card:hover {
@@ -1080,6 +1158,12 @@ textarea:focus-visible,
     color: var(--danger) !important;
     background: var(--danger-soft) !important;
     border-color: rgba(220, 59, 75, 0.22) !important;
+}
+
+.status-pill[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 1px currentColor;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .status-pill.orange {
@@ -2168,6 +2252,10 @@ textarea:focus-visible,
 /* ---------- Impressão ---------- */
 
 @media print {
+    .metrics-toolbar {
+        display: none !important;
+    }
+
     body.dashboard-app {
         background: #fff !important;
     }

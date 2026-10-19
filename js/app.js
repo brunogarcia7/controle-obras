@@ -115,6 +115,8 @@
                 );
             }
 
+            State.filtroVencidos = filtrosSalvos?.vencidos === true;
+
             if (!filtrosSalvos) {
                 return;
             }
@@ -236,12 +238,15 @@
                         .trim()
                         .toLowerCase();
 
+                const fVencidos = State.filtroVencidos === true;
+
                 localStorage.setItem(
                     'controle_filtros',
                     JSON.stringify({
                         obra: fObra,
                         forn: fForn,
-                        texto: fTexto
+                        texto: fTexto,
+                        vencidos: fVencidos
                     })
                 );
 
@@ -295,10 +300,14 @@
                             fTexto === '' ||
                             textoAlvo.includes(fTexto);
 
+                        const matchStatus =
+                            !fVencidos || Utils.contratoEstaVencido(item);
+
                         return (
                             matchObra &&
                             matchForn &&
-                            matchTexto
+                            matchTexto &&
+                            matchStatus
                         );
                     });
 
@@ -311,7 +320,8 @@
                     botaoLimpar.style.display =
                         fObra !== 'todas' ||
                         fForn !== 'todos' ||
-                        fTexto !== ''
+                        fTexto !== '' ||
+                        fVencidos
                             ? 'flex'
                             : 'none';
                 }
@@ -367,6 +377,7 @@
                 );
 
                 App.atualizarSetasOrdenacao();
+                UI.atualizarFiltroVencidos(fVencidos);
                 UI.renderizarTabelas();
                 UI.atualizarKPIsEDashboards();
                 UI.renderizarModuloFornecedores();
@@ -470,6 +481,12 @@
             });
         },
 
+        alternarFiltroVencidos() {
+            State.filtroVencidos = !State.filtroVencidos;
+            UI.mudarAba('locacoes');
+            App.aplicarFiltrosELocalSort();
+        },
+
         limparFiltros() {
             const campoObra =
                 document.getElementById(
@@ -498,6 +515,8 @@
                 campoTexto.value = '';
             }
 
+            State.filtroVencidos = false;
+
             App.aplicarFiltrosELocalSort();
 
             Utils.showToast(
@@ -510,6 +529,18 @@
             if (App.eventosVinculados) {
                 return;
             }
+
+            ['card-contratos-vencidos', 'atalho-vencidos'].forEach((id) => {
+                document.getElementById(id)?.addEventListener(
+                    'click',
+                    () => App.alternarFiltroVencidos()
+                );
+            });
+
+            document.getElementById('btn-toggle-metricas')?.addEventListener(
+                'click',
+                () => UI.togglePainelMetricas()
+            );
 
             document.body.addEventListener(
                 'click',
@@ -593,6 +624,7 @@
             try {
                 UI.inicializarTema();
                 UI.inicializarSidebar();
+                UI.inicializarPainelMetricas();
                 UI.inicializarAcessibilidade();
                 App.bindEventos();
                 await App.carregarDados();

@@ -10,6 +10,7 @@
     const CHAVE_TEMA = 'controle_tema';
     const CHAVE_ABA = 'controle_aba';
     const CHAVE_SIDEBAR = 'controle_sidebar';
+    const CHAVE_METRICAS = 'controle_metricas_recolhidas';
 
     const obterElemento = (id) => document.getElementById(id);
     const viewportMobile = () => window.matchMedia('(max-width: 980px)').matches;
@@ -36,16 +37,6 @@
 
     const normalizarFornecedor = (valor) =>
         Utils.normalizarFornecedor(valor);
-
-    const ehPatrimonioProprio = (item) => {
-        const unidade = String(item?.unidade || '')
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .trim()
-            .toLowerCase();
-
-        return unidade.includes('proprio');
-    };
 
     const urlAnexoSegura = (valor) => {
         if (!valor || typeof valor !== 'string') return '';
@@ -191,6 +182,72 @@
                 CHAVE_SIDEBAR,
                 recolhida ? 'collapsed' : 'expanded'
             );
+        },
+
+        inicializarPainelMetricas() {
+            let recolhido = false;
+
+            try {
+                recolhido = localStorage.getItem(CHAVE_METRICAS) === 'true';
+            } catch (erro) {
+                console.warn('[UI] Preferência dos indicadores indisponível:', erro);
+            }
+
+            UI.definirPainelMetricasRecolhido(recolhido, false);
+        },
+
+        definirPainelMetricasRecolhido(recolhido, salvar = true) {
+            const secao = obterElemento('secao-metricas');
+            const painel = obterElemento('painel-metricas');
+            const botao = obterElemento('btn-toggle-metricas');
+            if (!secao || !painel || !botao) return;
+
+            if (recolhido && painel.contains(document.activeElement)) {
+                botao.focus();
+            }
+
+            secao.classList.toggle('is-collapsed', recolhido);
+            painel.inert = recolhido;
+            painel.setAttribute('aria-hidden', String(recolhido));
+            botao.setAttribute('aria-expanded', String(!recolhido));
+
+            const rotulo = recolhido ? 'Mostrar indicadores' : 'Ocultar indicadores';
+            botao.setAttribute('aria-label', rotulo);
+            botao.title = rotulo;
+            const texto = obterElemento('toggle-metricas-texto');
+            if (texto) texto.textContent = rotulo;
+
+            if (salvar) {
+                try {
+                    localStorage.setItem(CHAVE_METRICAS, String(recolhido));
+                } catch (erro) {
+                    console.warn('[UI] Não foi possível salvar a preferência dos indicadores:', erro);
+                }
+            }
+        },
+
+        togglePainelMetricas() {
+            const botao = obterElemento('btn-toggle-metricas');
+            if (!botao) return;
+            UI.definirPainelMetricasRecolhido(
+                botao.getAttribute('aria-expanded') === 'true'
+            );
+        },
+
+        atualizarFiltroVencidos(ativo) {
+            const titulo = ativo
+                ? 'Remover filtro de contratos vencidos'
+                : 'Mostrar somente equipamentos com contratos vencidos';
+
+            ['card-contratos-vencidos', 'atalho-vencidos'].forEach((id) => {
+                const botao = obterElemento(id);
+                if (!botao) return;
+                botao.setAttribute('aria-pressed', String(ativo));
+                botao.title = titulo;
+            });
+
+            const legenda = obterElemento('legenda-card-vencidos');
+            if (legenda) legenda.textContent = ativo ? 'Filtro ativo' : 'Ação necessária';
         },
 
         fecharSidebarMobile() {
@@ -474,7 +531,7 @@
 
                 registros.forEach((item) => {
                     const status = normalizarStatus(item.status);
-                    const proprio = ehPatrimonioProprio(item);
+                    const proprio = Utils.ehPatrimonioProprio(item);
                     const quantidade = Math.max(
                         1,
                         Number.parseInt(item.quantidade, 10) || 1
@@ -502,16 +559,7 @@
                         alertas += '<span class="smart-alert alert-yellow">⚠️ Sem Fornecedor</span>';
                     }
 
-                    const diasRestantes = item.data_fim
-                        ? DateUtils.calcularDiasRestantes(item.data_fim)
-                        : null;
-
-                    if (
-                        status === 'ativo' &&
-                        !proprio &&
-                        diasRestantes !== null &&
-                        diasRestantes < 0
-                    ) {
+                    if (Utils.contratoEstaVencido(item)) {
                         alertas += '<span class="smart-alert alert-red">🚨 Vencido</span>';
                     }
 

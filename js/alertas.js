@@ -237,7 +237,7 @@ window.AlertService = {
                 : (Array.isArray(window.State?.dadosGlobais) ? State.dadosGlobais : []);
 
             const contratos = fonte.filter(item =>
-                String(item?.status || '').toLowerCase() === 'ativo'
+                String(item?.status || '').trim().toLowerCase() === 'ativo'
             );
 
             let totalAtivos = 0;
@@ -250,7 +250,7 @@ window.AlertService = {
 
                 totalAtivos++;
 
-                if (!contrato.data_fim)
+                if (!contrato.data_fim || Utils.ehPatrimonioProprio(contrato))
                     return;
 
                 const dias = DateUtils.calcularDiasRestantes(
@@ -262,7 +262,7 @@ window.AlertService = {
                 if (dias === null)
                     return;
 
-                if (dias <= 0) {
+                if (Utils.contratoEstaVencido(contrato)) {
 
                     vencidos.push(contrato);
 

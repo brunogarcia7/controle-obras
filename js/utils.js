@@ -319,6 +319,28 @@
             ).format(data);
         },
 
+        ehPatrimonioProprio(item) {
+            const unidade = String(item?.unidade || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim()
+                .toLowerCase();
+
+            return unidade.includes('proprio');
+        },
+
+        contratoEstaVencido(item) {
+            if (
+                String(item?.status || '').trim().toLowerCase() !== 'ativo' ||
+                Utils.ehPatrimonioProprio(item)
+            ) {
+                return false;
+            }
+
+            const dias = DateUtils.calcularDiasRestantes(item?.data_fim);
+            return dias !== null && dias < 0;
+        },
+
         escapeStr(valor) {
             return String(valor ?? '')
                 .replaceAll('&', '&amp;')

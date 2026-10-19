@@ -101,6 +101,9 @@ const State = {
     // Dados após filtros
     dadosFiltrados: [],
 
+    // Filtro de contratos vencidos da lista principal
+    filtroVencidos: false,
+
     // Dados devolvidos
     dadosHistorico: [],
 
