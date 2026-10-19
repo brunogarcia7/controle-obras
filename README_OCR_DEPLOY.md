@@ -1,5 +1,7 @@
 # Deploy da correção OCR
 
+Para a atualização com vários equipamentos e indenização por linha, siga primeiro [README_OCR_MULTIPLOS_ITENS.md](README_OCR_MULTIPLOS_ITENS.md). Ele inclui a publicação pelo Dashboard do Supabase com um arquivo completo para copiar.
+
 Este projeto contém agora o código-fonte completo da Edge Function `gemini-ocr`. O frontend e a função precisam ser publicados; apenas enviar o `app.html` ao GitHub Pages não atualiza a função que roda no Supabase.
 
 ## 1. Pré-requisitos

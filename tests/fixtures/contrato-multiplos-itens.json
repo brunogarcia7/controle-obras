@@ -1,0 +1,18 @@
+{
+  "fornecedor": "ANDAIMES E CONTAINERS UBERLÂNDIA",
+  "contrato": "012004/A",
+  "data_inicio": "2026-09-08",
+  "data_fim": "2026-10-08",
+  "periodo": "Mês",
+  "valor_total": "265,00",
+  "valor_indenizacao_total": "3.583,00",
+  "total_itens": 5,
+  "avisos": [],
+  "itens": [
+    { "codigo": "78", "equipamento": "ANDAIME TUBULAR (1,00m x 1,00m)", "quantidade": 4, "valor": "100,00", "valor_indenizacao": "1.060,00" },
+    { "codigo": "51", "equipamento": "TRAVA DIAGONAL 1,45m", "quantidade": 1, "valor": "0,00", "valor_indenizacao": "108,00" },
+    { "codigo": "52", "equipamento": "PISO METÁLICO (0,33m x 1,00m) PARA ANDAIME 1,00m", "quantidade": 3, "valor": "45,00", "valor_indenizacao": "855,00" },
+    { "codigo": "154", "equipamento": "RODÍZIO GIRATÓRIO 6\" POLIURETANO C/ TRAV", "quantidade": 4, "valor": "60,00", "valor_indenizacao": "980,00" },
+    { "codigo": "54", "equipamento": "GUARDA CORPO SIMPLES PARA ANDAIME 1,00m", "quantidade": 4, "valor": "60,00", "valor_indenizacao": "580,00" }
+  ]
+}

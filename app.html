@@ -10,8 +10,8 @@
     <title>ControleObras | Cadastro Móvel</title>
     <link rel="icon" type="image/svg+xml" href="./assets/controle-obras-mark.svg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js?v=7.0.0"></script>
-    <script src="js/storage.js?v=7.0.0"></script>
+    <script src="js/config.js?v=7.0.0-ocr-itens.1"></script>
+    <script src="js/storage.js?v=7.0.0-ocr-itens.1"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --white: #fff; --text: #1e293b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
@@ -40,7 +40,7 @@
         #foto-status { font-size: 0.8rem; text-align: center; display: none; margin-top: 10px; font-weight: bold; word-break: break-word; }
         #versao-app { text-align: center; font-size: 0.7rem; color: #94a3b8; margin-top: 20px; display: block; }
     </style>
-    <link rel="stylesheet" href="./css/mobile-app.css?v=7.0.0">
+    <link rel="stylesheet" href="./css/mobile-app.css?v=7.0.0-ocr-itens.1">
 </head>
 <body class="mobile-app">
 <main class="app-container">
@@ -55,7 +55,7 @@
             <span class="mobile-brand-copy">
                 <span class="mobile-eyebrow">ControleObras</span>
                 <h1>Cadastro rápido</h1>
-                <p>Leia a nota e envie o equipamento diretamente para o sistema.</p>
+                <p>Leia o documento e envie cada equipamento para o sistema.</p>
             </span>
         </div>
         <span class="mobile-online" id="mobile-cloud-status" data-state="loading" aria-live="polite">Conectando</span>
@@ -66,8 +66,8 @@
             <div class="section-heading">
                 <span class="step-badge">1</span>
                 <span class="section-heading-copy">
-                    <h2>Documento da nota fiscal</h2>
-                    <p>Fotografe a nota ou selecione uma imagem/PDF já salvo no aparelho.</p>
+                    <h2>Contrato ou nota fiscal</h2>
+                    <p>Fotografe o documento completo ou selecione uma imagem/PDF já salvo no aparelho.</p>
                 </span>
             </div>
 
@@ -79,7 +79,7 @@
                     <input type="file" id="foto-arquivo" accept="image/*,application/pdf" style="display:none;">
                     <button type="button" id="btn-arquivo" class="btn-arquivo">Selecionar arquivo</button>
                 </div>
-                <p class="upload-note">A leitura inteligente tenta preencher automaticamente contrato, fornecedor, equipamento e valor.</p>
+                <p class="upload-note">A leitura identifica as linhas de equipamentos, quantidades, locação, indenização e datas para sua conferência.</p>
                 <p id="foto-status"></p>
                 <div id="loader-ia" role="status" aria-live="polite">Processando documento...</div>
             </div>
@@ -107,11 +107,6 @@
                 </div>
 
                 <div class="form-group span-2">
-                    <label for="equipamento">Equipamento ou material</label>
-                    <input type="text" id="equipamento" placeholder="Ex.: Betoneira 400 L">
-                </div>
-
-                <div class="form-group span-2">
                     <label for="fornecedor">Locadora / fornecedor</label>
                     <input type="text" id="fornecedor" placeholder="Nome da empresa fornecedora">
                 </div>
@@ -122,14 +117,52 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="quantidade">Quantidade</label>
-                    <input type="number" id="quantidade" value="1" min="1" inputmode="numeric">
+                    <label for="data-inicio">Data inicial</label>
+                    <input type="date" id="data-inicio">
                 </div>
                 <div class="form-group">
-                    <label for="valor">Valor total (R$)</label>
-                    <input type="number" id="valor" step="0.01" min="0" placeholder="0,00" inputmode="decimal">
+                    <label for="data-fim">Vencimento</label>
+                    <input type="date" id="data-fim">
+                </div>
+                <div class="form-group span-2">
+                    <label for="periodo">Período da locação</label>
+                    <select id="periodo"><option value="Mês">Mês</option><option value="Semana">Semana</option><option value="Dia">Dia</option></select>
                 </div>
             </div>
+
+            <div class="items-toolbar">
+                <h3>Equipamentos do documento</h3>
+                <button type="button" id="btn-adicionar-item" class="btn-item">Adicionar item</button>
+            </div>
+            <p class="items-note">Cada linha será cadastrada separadamente. Informe os valores totais para a quantidade de cada linha.</p>
+            <div id="itens-cadastro">
+                <fieldset class="item-cadastro">
+                    <legend data-titulo-item>Item 1</legend>
+                    <div class="item-actions"><span data-codigo-item></span><button type="button" class="btn-item item-remove" data-remover-item>Remover item</button></div>
+                    <div class="form-grid two-column">
+                        <div class="form-group span-2">
+                            <label for="equipamento" data-label-campo="equipamento">Equipamento ou material</label>
+                            <input type="text" id="equipamento" data-campo="equipamento" placeholder="Ex.: Betoneira 400 L">
+                        </div>
+                        <div class="form-group">
+                            <label for="quantidade" data-label-campo="quantidade">Quantidade</label>
+                            <input type="number" id="quantidade" data-campo="quantidade" value="1" min="1" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label for="valor" data-label-campo="valor">Locação / compra total (R$)</label>
+                            <input type="number" id="valor" data-campo="valor" step="0.01" min="0" placeholder="0,00" inputmode="decimal">
+                        </div>
+                        <div class="form-group span-2">
+                            <label for="valor-indenizacao" data-label-campo="valor_indenizacao">Indenização total da linha (R$)</label>
+                            <input type="number" id="valor-indenizacao" data-campo="valor_indenizacao" step="0.01" min="0" placeholder="Não informado" inputmode="decimal" aria-describedby="ajuda-indenizacao">
+                            <small class="field-note" id="ajuda-indenizacao" data-ajuda-indenizacao>Valor de reposição para a quantidade desta linha.</small>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+            <div class="items-summary" id="resumo-itens" role="status" aria-live="polite"></div>
+            <p class="items-note">Confira se todas as linhas do documento estão presentes antes de enviar.</p>
+            <div class="items-warning" id="aviso-conferencia" role="status" aria-live="polite" hidden></div>
         </div>
 
         <div class="submit-section">
@@ -138,559 +171,11 @@
         </div>
     </section>
 
-    <footer class="mobile-footer"><span id="versao-app">Versão 7.0.0 · OCR e anexos otimizados</span></footer>
+    <footer class="mobile-footer"><span id="versao-app">Versão 7.0.0 · OCR por item e indenização</span></footer>
 </main>
 
-<script>
-    'use strict';
+<script defer src="./js/ocr-itens.js?v=7.0.0-ocr-itens.1"></script>
+<script defer src="./js/mobile-app.js?v=7.0.0-ocr-itens.1"></script>
 
-    const SUPABASE_URL = window.CONFIG?.SUPABASE_URL || '';
-    const SUPABASE_KEY = window.CONFIG?.SUPABASE_KEY || '';
-    const OCR_FUNCTION_NAME = window.CONFIG?.OCR_FUNCTION_NAME || 'gemini-ocr';
-    const OCR_ENDPOINT = `${SUPABASE_URL}/functions/v1/${OCR_FUNCTION_NAME}`;
-
-    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-        throw new Error('A biblioteca do Supabase não foi carregada.');
-    }
-    if (!SUPABASE_URL || !/^https:\/\/[a-z0-9]+\.supabase\.co$/i.test(SUPABASE_URL)) {
-        throw new Error('A URL pública do Supabase não foi configurada corretamente.');
-    }
-    if (!SUPABASE_KEY || (!SUPABASE_KEY.startsWith('sb_publishable_') && !SUPABASE_KEY.startsWith('eyJ'))) {
-        throw new Error('A chave pública do Supabase não foi configurada corretamente.');
-    }
-
-    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const MIME_PERMITIDOS = new Set([
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'image/heic',
-        'image/heif',
-        'application/pdf'
-    ]);
-    const LIMITE_PROCESSADO_BYTES = 8 * 1024 * 1024;
-    const TIMEOUT_IA_MS = 75000;
-
-    let arquivoAnexoGlobal = null;
-    let anexoPreparadoGlobal = null;
-    let processamentoIA = false;
-    let salvamentoEmAndamento = false;
-    let ocrControllerAtivo = null;
-
-    const elementos = {
-        fotoCamera: document.getElementById('foto-camera'),
-        fotoArquivo: document.getElementById('foto-arquivo'),
-        btnCamera: document.getElementById('btn-camera'),
-        btnArquivo: document.getElementById('btn-arquivo'),
-        btnSalvar: document.getElementById('btn-enviar-sistema'),
-        statusFoto: document.getElementById('foto-status'),
-        loaderIA: document.getElementById('loader-ia'),
-        loaderSalvar: document.getElementById('loader-salvar'),
-        cloudStatus: document.getElementById('mobile-cloud-status')
-    };
-
-    function atualizarStatusNuvem(estado = 'loading', texto = '') {
-        if (!elementos.cloudStatus) return;
-
-        const textos = {
-            loading: 'Conectando',
-            ready: 'Pronto para envio',
-            online: 'Nuvem conectada',
-            error: 'Conexão indisponível'
-        };
-        const estadoSeguro = Object.prototype.hasOwnProperty.call(textos, estado)
-            ? estado
-            : 'loading';
-
-        elementos.cloudStatus.dataset.state = estadoSeguro;
-        elementos.cloudStatus.textContent = texto || textos[estadoSeguro];
-    }
-
-    function criarRequestId() {
-        if (window.crypto?.randomUUID) return window.crypto.randomUUID();
-        return `ocr-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-    }
-
-    function registrarEtapaOCR(etapa, dados = {}, nivel = 'info') {
-        const payload = {
-            etapa,
-            horario: new Date().toISOString(),
-            ...dados
-        };
-        const metodo = nivel === 'error' ? 'error' : nivel === 'warn' ? 'warn' : 'info';
-        console[metodo]('[OCR]', payload);
-    }
-
-    function atualizarEstadoControles() {
-        const bloqueado = processamentoIA || salvamentoEmAndamento;
-        elementos.btnCamera.disabled = bloqueado;
-        elementos.btnArquivo.disabled = bloqueado;
-        elementos.btnSalvar.disabled = bloqueado;
-    }
-
-    function definirProcessamentoIA(ativo) {
-        processamentoIA = ativo;
-        atualizarEstadoControles();
-    }
-
-    function definirSalvamento(ativo) {
-        salvamentoEmAndamento = ativo;
-        atualizarEstadoControles();
-        elementos.loaderSalvar.style.display = ativo ? 'block' : 'none';
-    }
-
-    function exibirStatusIA(mensagem, tipo = 'processando') {
-        const estilos = {
-            processando: { cor: '#6366f1', fundo: 'rgba(99, 102, 241, 0.1)' },
-            sucesso: { cor: 'var(--success)', fundo: 'rgba(16, 185, 129, 0.1)' },
-            aviso: { cor: 'var(--warning)', fundo: 'rgba(245, 158, 11, 0.1)' },
-            erro: { cor: 'var(--danger)', fundo: 'rgba(239, 68, 68, 0.1)' }
-        };
-        const estilo = estilos[tipo] || estilos.processando;
-        elementos.loaderIA.style.display = 'block';
-        elementos.loaderIA.innerText = mensagem;
-        elementos.loaderIA.style.color = estilo.cor;
-        elementos.loaderIA.style.background = estilo.fundo;
-    }
-
-    function abrirSeletor(input) {
-        if (processamentoIA || salvamentoEmAndamento) return;
-        input.value = '';
-        input.click();
-    }
-
-    function obterMimeType(file) {
-        const mimeInformado = String(file.type || '').toLowerCase().split(';')[0].trim();
-        if (MIME_PERMITIDOS.has(mimeInformado)) return mimeInformado;
-
-        const extensao = String(file.name || '').toLowerCase().split('.').pop();
-        const porExtensao = {
-            jpg: 'image/jpeg',
-            jpeg: 'image/jpeg',
-            png: 'image/png',
-            webp: 'image/webp',
-            heic: 'image/heic',
-            heif: 'image/heif',
-            pdf: 'application/pdf'
-        };
-        return porExtensao[extensao] || mimeInformado;
-    }
-
-    function lerComoDataURL(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(String(reader.result || ''));
-            reader.onerror = () => reject(new Error('Não foi possível ler o arquivo selecionado.'));
-            reader.onabort = () => reject(new Error('A leitura do arquivo foi cancelada.'));
-            reader.readAsDataURL(blob);
-        });
-    }
-
-    function extrairBase64(dataURL) {
-        const separador = dataURL.indexOf(',');
-        if (separador < 0) throw new Error('O arquivo não foi convertido para Base64 corretamente.');
-        const base64 = dataURL.slice(separador + 1).replace(/\s/g, '');
-        if (!base64) throw new Error('O arquivo convertido está vazio.');
-        if (base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
-            throw new Error('O arquivo convertido contém Base64 inválido.');
-        }
-        return base64;
-    }
-
-    async function prepararArquivoParaIA(file, requestId) {
-        const mimeTypeOriginal = obterMimeType(file);
-        registrarEtapaOCR('arquivo_recebido', {
-            requestId,
-            nome: file.name,
-            mimeType: mimeTypeOriginal,
-            tamanho: file.size
-        });
-
-        // A mesma versao compactada e usada no OCR e no Storage. Assim a foto
-        // nao e enviada pequena para a IA e depois armazenada em tamanho original.
-        const storagePrepared = await StorageService.prepararArquivo(file);
-
-        if (storagePrepared.blob.size > LIMITE_PROCESSADO_BYTES) {
-            throw new Error('O arquivo processado ficou maior que 8 MB. Reduza a resolução e tente novamente.');
-        }
-
-        registrarEtapaOCR('base64_iniciada', {
-            requestId,
-            mimeType: storagePrepared.mimeType,
-            tamanhoProcessado: storagePrepared.blob.size,
-            economiaPercentual: storagePrepared.economiaPercentual
-        });
-        const dataURL = await lerComoDataURL(storagePrepared.blob);
-        const base64 = extrairBase64(dataURL);
-        registrarEtapaOCR('base64_concluida', {
-            requestId,
-            caracteres: base64.length,
-            tamanhoProcessado: storagePrepared.blob.size
-        });
-
-        return {
-            name: file.name,
-            mimeType: storagePrepared.mimeType,
-            data: base64,
-            size: storagePrepared.blob.size,
-            blob: storagePrepared.blob,
-            storagePrepared
-        };
-    }
-
-    function criarErroDaResposta(data, status, requestIdPadrao) {
-        const mensagem = data?.error || data?.message || `Falha no servidor (${status}).`;
-        const detalhes = Array.isArray(data?.details?.attempts)
-            ? data.details.attempts.map(item => `${item.model}: HTTP ${item.status} - ${item.error}`).join(' | ')
-            : '';
-        const erro = new Error(detalhes ? `${mensagem} ${detalhes}` : mensagem);
-        erro.code = data?.code || 'OCR_SERVER_ERROR';
-        erro.stage = data?.stage || 'edge-function';
-        erro.requestId = data?.requestId || requestIdPadrao;
-        erro.status = status;
-        erro.details = data?.details;
-        return erro;
-    }
-
-    async function chamarGeminiOCR(arquivoPreparado, requestId) {
-        const controller = new AbortController();
-        ocrControllerAtivo = controller;
-        const timer = setTimeout(() => controller.abort(), TIMEOUT_IA_MS);
-        const payload = {
-            requestId,
-            file: {
-                name: arquivoPreparado.name,
-                mimeType: arquivoPreparado.mimeType,
-                size: arquivoPreparado.size,
-                data: arquivoPreparado.data
-            }
-        };
-
-        try {
-            registrarEtapaOCR('edge_envio_iniciado', {
-                requestId,
-                endpoint: OCR_ENDPOINT,
-                mimeType: arquivoPreparado.mimeType,
-                tamanho: arquivoPreparado.size
-            });
-
-            const resposta = await fetch(OCR_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'apikey': SUPABASE_KEY,
-                    'x-request-id': requestId
-                },
-                body: JSON.stringify(payload),
-                signal: controller.signal,
-                cache: 'no-store'
-            });
-
-            const corpoTexto = await resposta.text();
-            let data = {};
-            if (corpoTexto) {
-                try {
-                    data = JSON.parse(corpoTexto);
-                } catch {
-                    const erro = new Error(`A Edge Function retornou conteúdo não JSON (HTTP ${resposta.status}).`);
-                    erro.stage = 'edge-response-parse';
-                    erro.requestId = requestId;
-                    erro.responsePreview = corpoTexto.slice(0, 240);
-                    throw erro;
-                }
-            }
-
-            registrarEtapaOCR('edge_resposta_recebida', {
-                requestId: data?._meta?.requestId || data?.requestId || requestId,
-                status: resposta.status,
-                ok: resposta.ok,
-                modelo: data?._meta?.model,
-                duracaoMs: data?._meta?.durationMs,
-                codigo: data?.code,
-                etapaErro: data?.stage
-            }, resposta.ok ? 'info' : 'warn');
-
-            if (!resposta.ok || data?.error) {
-                throw criarErroDaResposta(data, resposta.status, requestId);
-            }
-            if (!data || typeof data !== 'object' || Array.isArray(data)) {
-                throw new Error('A Edge Function não retornou um objeto de OCR válido.');
-            }
-            return data;
-        } catch (erro) {
-            if (erro.name === 'AbortError') {
-                const timeoutError = new Error('A análise excedeu 75 segundos. Consulte os logs da Edge Function e tente novamente.');
-                timeoutError.code = 'OCR_TIMEOUT';
-                timeoutError.stage = 'frontend-timeout';
-                timeoutError.requestId = requestId;
-                throw timeoutError;
-            }
-            throw erro;
-        } finally {
-            clearTimeout(timer);
-            if (ocrControllerAtivo === controller) ocrControllerAtivo = null;
-        }
-    }
-
-    function formatarValorParaInput(texto) {
-        if (texto === null || texto === undefined || texto === '') return 0;
-        let limpo = String(texto).replace(/[^\d.,-]/g, '');
-        if (limpo.includes(',') && limpo.includes('.')) {
-            limpo = limpo.replace(/\./g, '').replace(',', '.');
-        } else if (limpo.includes(',')) {
-            limpo = limpo.replace(',', '.');
-        }
-        return Number.parseFloat(limpo) || 0;
-    }
-
-    function preencherFormularioComOCR(data) {
-        const fornecedor = String(data.fornecedor || '').trim();
-        const equipamento = String(data.equipamento || '').trim();
-        const quantidade = Number.parseInt(data.quantidade, 10) || 1;
-        const valor = data.valor ?? '';
-        const contrato = String(data.contrato || '').trim();
-
-        if (fornecedor && fornecedor.toLowerCase() !== 'não identificado') {
-            document.getElementById('fornecedor').value = fornecedor;
-        }
-        if (equipamento) document.getElementById('equipamento').value = equipamento;
-        document.getElementById('quantidade').value = String(Math.max(1, quantidade));
-        if (valor !== '') document.getElementById('valor').value = String(formatarValorParaInput(valor));
-        if (contrato) document.getElementById('contrato').value = contrato;
-
-        registrarEtapaOCR('formulario_preenchido', {
-            fornecedorPreenchido: Boolean(fornecedor),
-            equipamentoPreenchido: Boolean(equipamento),
-            quantidade: Math.max(1, quantidade),
-            valorPreenchido: valor !== '',
-            contratoPreenchido: Boolean(contrato)
-        });
-    }
-
-    async function previewFotoEProcessarIA(event) {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const requestId = criarRequestId();
-        const mimeType = obterMimeType(file);
-        const isPDF = mimeType === 'application/pdf';
-
-        arquivoAnexoGlobal = file;
-        anexoPreparadoGlobal = null;
-        elementos.statusFoto.style.display = 'block';
-        elementos.statusFoto.innerText = isPDF
-            ? `📄 PDF selecionado: ${file.name}`
-            : `✅ Imagem selecionada: ${file.name}`;
-        elementos.statusFoto.style.color = isPDF ? 'var(--primary)' : 'var(--success)';
-
-        definirProcessamentoIA(true);
-        exibirStatusIA('🤖 Validando e preparando o documento...', 'processando');
-
-        try {
-            const arquivoPreparado = await prepararArquivoParaIA(file, requestId);
-            anexoPreparadoGlobal = arquivoPreparado.storagePrepared;
-
-            const info = arquivoPreparado.storagePrepared;
-            const economia = info.otimizado
-                ? `, reduzida de ${StorageService.formatarBytes(info.tamanhoOriginal)} para ${StorageService.formatarBytes(info.tamanhoFinal)}`
-                : `, ${StorageService.formatarBytes(info.tamanhoFinal)}`;
-            elementos.statusFoto.innerText = isPDF
-                ? `📄 PDF pronto: ${file.name} (${StorageService.formatarBytes(info.tamanhoFinal)})`
-                : `✅ Imagem pronta${economia}`;
-
-            exibirStatusIA('☁️ Arquivo preparado. Consultando a Edge Function...', 'processando');
-            const dados = await chamarGeminiOCR(arquivoPreparado, requestId);
-            preencherFormularioComOCR(dados);
-            exibirStatusIA(`✅ Dados lidos com sucesso! Modelo: ${dados?._meta?.model || 'Gemini'}.`, 'sucesso');
-            registrarEtapaOCR('ocr_concluido', {
-                requestId: dados?._meta?.requestId || requestId,
-                modelo: dados?._meta?.model,
-                duracaoMs: dados?._meta?.durationMs
-            });
-        } catch (erro) {
-            if (!anexoPreparadoGlobal) {
-                arquivoAnexoGlobal = null;
-                elementos.statusFoto.innerText = '❌ Arquivo não aceito para envio.';
-                elementos.statusFoto.style.color = 'var(--danger)';
-            }
-
-            registrarEtapaOCR('ocr_falhou', {
-                requestId: erro.requestId || requestId,
-                codigo: erro.code,
-                etapa: erro.stage,
-                status: erro.status,
-                mensagem: erro.message,
-                detalhes: erro.details
-            }, 'error');
-            const referencia = erro.requestId || requestId;
-            const etapa = erro.stage ? ` Etapa: ${erro.stage}.` : '';
-            exibirStatusIA(`⚠️ Falha na IA: ${erro.message}${etapa} ID: ${referencia}. Preencha manualmente ou tente outra foto.`, 'aviso');
-        } finally {
-            definirProcessamentoIA(false);
-        }
-    }
-
-    function preencherDatalistObras(obras) {
-        const datalist = document.getElementById('lista-obras');
-        const fragmento = document.createDocumentFragment();
-        for (const obra of obras) {
-            const option = document.createElement('option');
-            option.value = obra;
-            fragmento.appendChild(option);
-        }
-        datalist.replaceChildren(fragmento);
-    }
-
-    async function carregarObras() {
-        try {
-            const cache = sessionStorage.getItem('obras_cache_v2');
-            if (cache) {
-                const obrasCache = JSON.parse(cache);
-                if (Array.isArray(obrasCache)) {
-                    preencherDatalistObras(obrasCache.map(String));
-                    atualizarStatusNuvem('ready');
-                    return;
-                }
-            }
-
-            const { data, error } = await db.from('locacoes').select('obra');
-            if (error) throw error;
-
-            const obrasUnicas = [...new Set((data || [])
-                .map(item => String(item.obra || '').trim())
-                .filter(Boolean))]
-                .sort((a, b) => a.localeCompare(b, 'pt-BR'));
-            preencherDatalistObras(obrasUnicas);
-            sessionStorage.setItem('obras_cache_v2', JSON.stringify(obrasUnicas));
-            atualizarStatusNuvem('online');
-        } catch (erro) {
-            atualizarStatusNuvem('error');
-            console.error('[Mobile] Erro ao carregar obras:', erro);
-        }
-    }
-
-    function obterExtensaoUpload(file) {
-        const porMime = {
-            'application/pdf': 'pdf',
-            'image/jpeg': 'jpg',
-            'image/png': 'png',
-            'image/webp': 'webp',
-            'image/heic': 'heic',
-            'image/heif': 'heif'
-        };
-        return porMime[obterMimeType(file)] || 'bin';
-    }
-
-    function formatarDataLocalISO(data = new Date()) {
-        const ano = data.getFullYear();
-        const mes = String(data.getMonth() + 1).padStart(2, '0');
-        const dia = String(data.getDate()).padStart(2, '0');
-        return `${ano}-${mes}-${dia}`;
-    }
-
-    async function salvarDados() {
-        if (processamentoIA) {
-            alert('Aguarde a leitura do documento terminar antes de salvar.');
-            return;
-        }
-
-        let upload = null;
-
-        try {
-            const obra = document.getElementById('obra').value.trim();
-            const equip = document.getElementById('equipamento').value.trim();
-            const forn = document.getElementById('fornecedor').value.trim() || 'Não identificado';
-            const qtd = Math.max(1, Number.parseInt(document.getElementById('quantidade').value, 10) || 1);
-            const valor = Math.max(0, Number.parseFloat(document.getElementById('valor').value) || 0);
-            const tipo = document.getElementById('tipo').value;
-            const contratoInput = document.getElementById('contrato').value.trim();
-            const contratoFinal = contratoInput || (tipo === 'Compra' ? 'NF Compra Mobile' : 'NF via App');
-
-            if (!obra || !equip) {
-                alert('⚠️ ATENÇÃO: Preencha a Obra e o Equipamento antes de salvar!');
-                return;
-            }
-
-            definirSalvamento(true);
-            atualizarStatusNuvem('loading', 'Enviando cadastro');
-            let urlAnexo = null;
-
-            if (arquivoAnexoGlobal) {
-                if (!anexoPreparadoGlobal) {
-                    throw new Error('O anexo ainda não foi preparado. Selecione o arquivo novamente.');
-                }
-
-                upload = await StorageService.uploadPreparado(
-                    anexoPreparadoGlobal,
-                    { client: db, prefix: 'mobile_nf' }
-                );
-                urlAnexo = upload.publicUrl;
-            }
-
-            const payload = {
-                obra,
-                equipamento: equip,
-                fornecedor: forn,
-                quantidade: qtd,
-                valor,
-                data_inicio: formatarDataLocalISO(),
-                status: 'ativo',
-                anexo: urlAnexo,
-                unidade: tipo === 'Compra' ? 'Proprio' : 'Mês',
-                contrato: contratoFinal
-            };
-
-            const { error } = await db.from('locacoes').insert([payload]);
-            if (error) throw error;
-
-            sessionStorage.removeItem('obras_cache_v2');
-            atualizarStatusNuvem('online', 'Cadastro enviado');
-            alert(`✅ Equipamento salvo com sucesso no Painel!${StorageService.mensagemEconomia(upload)}`);
-            document.getElementById('equipamento').value = '';
-            document.getElementById('valor').value = '';
-            document.getElementById('fornecedor').value = '';
-            document.getElementById('contrato').value = '';
-            document.getElementById('quantidade').value = '1';
-            elementos.fotoCamera.value = '';
-            elementos.fotoArquivo.value = '';
-            elementos.statusFoto.style.display = 'none';
-            elementos.loaderIA.style.display = 'none';
-            arquivoAnexoGlobal = null;
-            anexoPreparadoGlobal = null;
-        } catch (erro) {
-            if (upload?.created && upload?.publicUrl) {
-                try {
-                    await StorageService.removerSeSemReferencia(upload.publicUrl, {
-                        client: db
-                    });
-                } catch (limpezaErro) {
-                    console.warn('[Mobile] Upload sem registro ficou para manutencao:', limpezaErro);
-                }
-            }
-
-            atualizarStatusNuvem('error', 'Falha no envio');
-            console.error('[Mobile] Erro ao salvar:', erro);
-            alert(`❌ Erro ao salvar: ${erro.message}`);
-        } finally {
-            definirSalvamento(false);
-        }
-    }
-
-    elementos.btnCamera.addEventListener('click', () => abrirSeletor(elementos.fotoCamera));
-    elementos.btnArquivo.addEventListener('click', () => abrirSeletor(elementos.fotoArquivo));
-    elementos.fotoCamera.addEventListener('change', previewFotoEProcessarIA);
-    elementos.fotoArquivo.addEventListener('change', previewFotoEProcessarIA);
-    elementos.btnSalvar.addEventListener('click', salvarDados);
-
-    carregarObras();
-
-    window.addEventListener('error', event => {
-        console.error('[Mobile] Erro JavaScript não tratado:', event.error || event.message);
-    });
-    window.addEventListener('unhandledrejection', event => {
-        console.error('[Mobile] Promise rejeitada sem tratamento:', event.reason);
-    });
-</script>
 </body>
 </html>

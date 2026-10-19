@@ -19,36 +19,64 @@ const OCR_SCHEMA = Object.freeze({
             type: 'string',
             description: 'Empresa emissora do documento, nunca o destinatário.'
         },
-        equipamento: {
+        valor_total: {
             type: 'string',
-            description: 'Principal equipamento ou material, sem prefixos de locação ou aluguel.'
+            description: 'Total de locação ou compra do documento. Não é o valor de reposição dos equipamentos. Vazio se ausente.'
         },
-        quantidade: {
-            type: 'integer',
-            minimum: 1,
-            description: 'Quantidade do item principal.'
-        },
-        valor: {
+        valor_indenizacao_total: {
             type: 'string',
-            description: 'Valor total final do documento, preservando os separadores exibidos.'
+            description: 'Total de reposição/indenização de todos os equipamentos. Vazio se ausente.'
+        },
+        data_inicio: { type: 'string', description: 'Data inicial da locação/compra em YYYY-MM-DD; vazio se ausente.' },
+        data_fim: { type: 'string', description: 'Data final da locação em YYYY-MM-DD; vazio se ausente.' },
+        periodo: { type: 'string', description: 'Dia, Semana ou Mês, conforme o documento; vazio se ausente.' },
+        total_itens: { type: 'integer', minimum: 1, description: 'Número de linhas de equipamentos do documento, não a soma das quantidades.' },
+        itens: {
+            type: 'array',
+            minItems: 1,
+            description: 'TODAS as linhas de equipamentos, na ordem do documento. Uma entrada por linha; nunca agrupar ou escolher apenas o principal.',
+            items: {
+                type: 'object',
+                properties: {
+                    codigo: { type: 'string', description: 'Código da linha; vazio se ausente.' },
+                    equipamento: { type: 'string', description: 'Descrição completa desta linha, incluindo dimensões e características.' },
+                    quantidade: { type: 'integer', minimum: 1 },
+                    valor: { type: 'string', description: 'Total de locação/compra DESTA linha, para sua quantidade. Inclua linhas com 0,00. Vazio se ilegível ou ausente.' },
+                    valor_indenizacao: { type: 'string', description: 'Total de indenização/reposição DESTA linha para sua quantidade. Colunas como Vlr. Equip. Total não são aluguel. Vazio se ausente.' }
+                },
+                required: ['codigo', 'equipamento', 'quantidade', 'valor', 'valor_indenizacao'],
+                additionalProperties: false
+            }
+        },
+        avisos: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Trechos ilegíveis, linhas incompletas e dúvidas que precisam de revisão; vazio quando não houver.'
         },
         contrato: {
             type: 'string',
             description: 'Número do contrato, pedido, fatura ou nota fiscal; vazio quando ausente.'
         }
     },
-    required: ['fornecedor', 'equipamento', 'quantidade', 'valor', 'contrato'],
+    required: ['fornecedor', 'contrato', 'data_inicio', 'data_fim', 'periodo', 'valor_total', 'valor_indenizacao_total', 'total_itens', 'itens', 'avisos'],
     additionalProperties: false
 });
 
-const OCR_PROMPT = `Analise o documento brasileiro anexado (nota fiscal, recibo, fatura de locação ou documento de compra) e extraia somente os campos definidos no esquema JSON.
+const OCR_PROMPT = `Analise todas as páginas do documento brasileiro anexado (contrato, nota fiscal, recibo ou fatura) e extraia os campos do esquema JSON, incluindo a lista itens.
 Regras obrigatórias:
 - fornecedor: empresa emissora/vendedora/locadora; nunca o destinatário/cliente;
-- equipamento: principal equipamento ou material; remova prefixos como "LOCAÇÃO DE", "LOCAÇÃO" e "ALUGUEL DE";
-- quantidade: inteiro maior ou igual a 1; use 1 quando não houver quantidade explícita;
-- valor: valor total final do documento, não subtotal nem valor unitário;
+- percorra a tabela de equipamentos de cima para baixo e TODAS as páginas. Cada linha vira um objeto em itens, mesmo que tenha descrição ou código repetido. NUNCA agrupe acessórios, some quantidades de linhas diferentes ou escolha apenas o equipamento principal;
+- inclua acessórios e linhas com locação de R$ 0,00. Não descarte travas, pisos, rodízios, guarda-corpos ou peças sem patrimônio;
+- equipamento: transcreva toda a descrição da linha, incluindo medidas e características. Remova somente prefixos como LOCAÇÃO DE ou ALUGUEL DE;
+- quantidade: quantidade desta linha, não o código/patrimônio. Use 1 apenas quando não houver quantidade explícita;
+- itens[].valor: TOTAL de aluguel/compra desta linha. Não repita o total do contrato em cada item. Se existir só valor unitário explicitamente identificado, multiplique pela quantidade. Uma coluna Vlr. Locação pode já representar o total da linha: confira com o total do contrato e não multiplique novamente;
+- itens[].valor_indenizacao: TOTAL de reposição/indenização da linha. Colunas Vlr. Equip. Total, valor do equipamento e reposição são indenização, não aluguel. Se houver só indenização unitária, multiplique pela quantidade. Nunca copie o total geral de reposição para cada item;
+- valor_total e valor_indenizacao_total são os totais gerais impressos, usados para conferência. Não distribua diferenças, frete, multas ou descontos entre linhas;
+- valores monetários: preserve os separadores impressos; use string vazia se ausentes/ilegíveis. Zero impresso é "0,00", nunca vazio;
+- total_itens: conte as linhas da tabela independentemente da extração e compare com o tamanho da lista. Não conte cabeçalhos, frete ou totais como equipamentos;
+- data_inicio, data_fim: copie as datas do contrato em YYYY-MM-DD; periodo: Dia, Semana ou Mês; vazios se ausentes;
 - contrato: número do contrato, pedido, fatura ou nota fiscal; use string vazia quando não existir;
-- não invente dados e não acrescente explicações.`;
+- avisos: informe linhas ilegíveis, omissões e valores cuja coluna não pôde ser identificada. Não invente dados e não acrescente texto fora do JSON.`;
 
 class HttpError extends Error {
     constructor(status, code, message, stage, details = undefined) {
@@ -221,7 +249,7 @@ function extractFile(payload) {
 }
 
 function buildGeminiPayload(file, outputMode = 'structured') {
-    const generationConfig = { maxOutputTokens: 2048 };
+    const generationConfig = { maxOutputTokens: 16384 };
 
     if (outputMode === 'structured') {
         generationConfig.responseFormat = {
@@ -238,7 +266,7 @@ function buildGeminiPayload(file, outputMode = 'structured') {
         contents: [{
             role: 'user',
             parts: [
-                { text: OCR_PROMPT },
+                { text: outputMode === 'legacy-json' ? `${OCR_PROMPT}\nEsquema JSON obrigatório: ${JSON.stringify(OCR_SCHEMA)}` : OCR_PROMPT },
                 {
                     inline_data: {
                         mime_type: file.mimeType,
@@ -253,9 +281,14 @@ function buildGeminiPayload(file, outputMode = 'structured') {
 
 function extractGeminiText(responseJson) {
     const candidates = Array.isArray(responseJson?.candidates) ? responseJson.candidates : [];
+    if (candidates[0]?.finishReason === 'MAX_TOKENS') {
+        throw new HttpError(502, 'OCR_TRUNCATED_RESPONSE',
+            'A leitura foi interrompida antes de concluir todos os itens. Envie o documento em partes e confira as linhas.',
+            'gemini-response');
+    }
     const parts = candidates[0]?.content?.parts;
     const text = Array.isArray(parts)
-        ? parts.map((part) => typeof part?.text === 'string' ? part.text : '').join('').trim()
+        ? parts.filter((part) => part?.thought !== true).map((part) => typeof part?.text === 'string' ? part.text : '').join('').trim()
         : '';
 
     if (!text) {
@@ -304,14 +337,76 @@ function normalizeOcrResult(value) {
         throw new HttpError(502, 'INVALID_OCR_OBJECT', 'O JSON do OCR não é um objeto.', 'normalization');
     }
 
-    const quantity = Number.parseInt(value.quantidade, 10);
+    if ('itens' in value && (!Array.isArray(value.itens) || value.itens.length === 0)) {
+        throw new HttpError(502, 'OCR_ITEMS_MISSING', 'O OCR não retornou a lista de equipamentos. Revise a imagem ou preencha os itens manualmente.', 'normalization');
+    }
+    const legacy = !Array.isArray(value.itens);
+    const itens = (legacy ? [value] : value.itens).map((item, indice) => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+            throw new HttpError(502, 'INVALID_OCR_ITEM', `O item ${indice + 1} não foi retornado corretamente.`, 'normalization');
+        }
+        const quantity = Number.parseInt(item.quantidade, 10);
+        return {
+            codigo: cleanText(item.codigo, 80),
+            equipamento: cleanText(item.equipamento, 500),
+            quantidade: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+            valor: cleanText(item.valor, 80),
+            valor_indenizacao: cleanText(item.valor_indenizacao, 80)
+        };
+    });
+    if (!itens.some((item) => item.equipamento)) {
+        throw new HttpError(502, 'OCR_ITEMS_MISSING', 'Não foi possível identificar equipamentos no documento.', 'normalization');
+    }
+    const avisos = (Array.isArray(value.avisos) ? value.avisos : []).map((v) => cleanText(v, 400)).filter(Boolean);
+    const totalInformado = Number.parseInt(value.total_itens, 10);
+    if (legacy) avisos.push('O modelo retornou somente um item no formato antigo. Confira todas as linhas do documento e adicione as faltantes.');
+    if (Number.isFinite(totalInformado) && totalInformado !== itens.length) {
+        avisos.push(`Leitura parcial: o documento indica ${totalInformado} linhas, mas foram retornados ${itens.length} itens. Confira e adicione as linhas faltantes.`);
+    }
+    itens.forEach((item, indice) => {
+        if (!item.equipamento || monetaryCents(item.valor) === null) {
+            avisos.push(`Revise a descrição e o valor de locação/compra do item ${indice + 1}.`);
+        }
+    });
+    const valorTotal = cleanText(value.valor_total ?? (legacy ? value.valor : ''), 80);
+    const indenizacaoTotal = cleanText(value.valor_indenizacao_total, 80);
+    for (const [campo, total, rotulo] of [
+        ['valor', valorTotal, 'locação/compra'],
+        ['valor_indenizacao', indenizacaoTotal, 'indenização']
+    ]) {
+        const esperado = monetaryCents(total);
+        const valores = itens.map((item) => monetaryCents(item[campo]));
+        if (esperado !== null && valores.every((v) => v !== null) && valores.reduce((soma, v) => soma + v, 0) !== esperado) {
+            avisos.push(`A soma de ${rotulo} dos itens difere do total impresso. Confira todas as linhas, frete e descontos antes de enviar.`);
+        }
+    }
     return {
         fornecedor: cleanText(value.fornecedor, 180),
-        equipamento: cleanText(value.equipamento, 240),
-        quantidade: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
-        valor: cleanText(value.valor, 80),
-        contrato: cleanText(value.contrato, 120)
+        contrato: cleanText(value.contrato, 120),
+        data_inicio: cleanText(value.data_inicio, 10),
+        data_fim: cleanText(value.data_fim, 10),
+        periodo: cleanText(value.periodo, 30),
+        valor_total: valorTotal,
+        valor_indenizacao_total: indenizacaoTotal,
+        total_itens: Number.isFinite(totalInformado) && totalInformado > 0 ? totalInformado : itens.length,
+        itens,
+        avisos: [...new Set(avisos)],
+        // Compatibilidade com o formulário anterior de um único equipamento.
+        equipamento: itens[0].equipamento,
+        quantidade: itens[0].quantidade,
+        valor: itens[0].valor,
+        valor_indenizacao: itens[0].valor_indenizacao
     };
+}
+
+function monetaryCents(value) {
+    if (value === null || value === undefined || String(value).trim() === '') return null;
+    let text = String(value).replace(/R\$|\s/g, '');
+    if (text.includes(',')) text = text.replace(/\./g, '').replace(',', '.');
+    else if (/^\d{1,3}(\.\d{3})+$/.test(text)) text = text.replace(/\./g, '');
+    if (!/^\d+(\.\d{1,2})?$/.test(text)) return null;
+    const number = Number(text);
+    return Number.isFinite(number) ? Math.round(number * 100) : null;
 }
 
 async function readResponseBody(response) {
@@ -495,6 +590,7 @@ export function createHandler(options = {}) {
                 return jsonResponse({
                     ok: true,
                     service: 'gemini-ocr',
+                    schemaVersion: 2,
                     requestId,
                     geminiKeyConfigured: Boolean(geminiApiKey),
                     models,
@@ -571,6 +667,8 @@ export function createHandler(options = {}) {
             return jsonResponse({
                 ...execution.result,
                 _meta: {
+                    schemaVersion: 2,
+                    itemCount: execution.result.itens.length,
                     requestId,
                     model: execution.model,
                     durationMs
