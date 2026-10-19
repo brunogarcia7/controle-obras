@@ -1,5 +1,7 @@
 # Cadastro móvel: leitura por linha e indenização
 
+Para falhas HTTP 503 por alta demanda do Gemini, esta versão inclui recuperação automática. Veja também [README_OCR_RECUPERACAO_503.md](README_OCR_RECUPERACAO_503.md).
+
 ## Resultado da correção
 
 A versão anterior solicitava ao Gemini apenas o equipamento principal, sua quantidade e o total do documento. O cadastro móvel tinha campos para apenas esse equipamento e fazia uma inserção de uma linha. Isso associava o valor do contrato inteiro ao primeiro item e deixava os demais de fora.

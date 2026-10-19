@@ -44,9 +44,9 @@ function linha() {
     };
 }
 
-function ambiente({ inserir = async () => ({ error: null }) } = {}) {
+function ambiente({ inserir = async () => ({ error: null }), fetchImpl = async () => { throw new Error('Fetch não esperado'); } } = {}) {
     const elementos = new Map();
-    for (const id of ['foto-camera', 'foto-arquivo', 'btn-camera', 'btn-arquivo', 'btn-enviar-sistema', 'foto-status', 'loader-ia', 'loader-salvar', 'mobile-cloud-status', 'btn-adicionar-item', 'resumo-itens', 'aviso-conferencia', 'obra', 'fornecedor', 'contrato', 'tipo', 'periodo', 'data-inicio', 'data-fim', 'lista-obras']) {
+    for (const id of ['foto-camera', 'foto-arquivo', 'btn-camera', 'btn-arquivo', 'btn-repetir-ocr', 'btn-enviar-sistema', 'foto-status', 'loader-ia', 'loader-salvar', 'mobile-cloud-status', 'btn-adicionar-item', 'resumo-itens', 'aviso-conferencia', 'obra', 'fornecedor', 'contrato', 'tipo', 'periodo', 'data-inicio', 'data-fim', 'lista-obras']) {
         elementos.set(id, no());
     }
     elementos.get('tipo').value = 'Locação';
@@ -76,7 +76,7 @@ function ambiente({ inserir = async () => ({ error: null }) } = {}) {
         }
     }; } };
     const contexto = vm.createContext({
-        document: documento, Intl, Date, URL, AbortController, setTimeout, clearTimeout,
+        document: documento, Intl, Date, URL, AbortController, setTimeout, clearTimeout, fetch: fetchImpl,
         CONFIG: { SUPABASE_URL: 'https://exemplo.supabase.co', SUPABASE_KEY: 'sb_publishable_test' },
         supabase: { createClient: () => db },
         StorageService: {
@@ -177,4 +177,35 @@ test('segundo acionamento durante envio não cria outro lote', async () => {
     assert.equal(a.chamadas.inserts.length, 1);
     concluir({ error: null });
     await primeiro;
+});
+
+test('nova tentativa reaproveita o documento após 503 e preenche as cinco linhas quando recupera', async () => {
+    const pedidos = [];
+    const a = ambiente({ fetchImpl: async (_url, options) => {
+        pedidos.push(JSON.parse(options.body));
+        return pedidos.length === 1
+            ? Response.json({ error: 'O serviço de leitura está temporariamente ocupado.', code: 'GEMINI_BUSY', requestId: 'teste-503' }, { status: 503 })
+            : Response.json(structuredClone(fixture));
+    } });
+    vm.runInContext("arquivoOCRPreparadoGlobal = {name:'contrato.webp', mimeType:'image/webp', size:4, data:'ZmFrZQ=='}; anexoPreparadoGlobal = {}; arquivoAnexoGlobal = {};", a.contexto);
+    await a.contexto.repetirLeituraOCR();
+    assert.equal(a.elemento('btn-repetir-ocr').hidden, false);
+    assert.match(a.elemento('loader-ia').innerText, /temporariamente ocupado/);
+    await a.elemento('btn-repetir-ocr').disparar('click');
+    assert.equal(pedidos.length, 2);
+    assert.deepEqual(pedidos[0].file, pedidos[1].file);
+    assert.equal(a.chamadas.uploads, 0);
+    assert.equal(a.lista.linhas.length, 5);
+    assert.equal(a.elemento('btn-repetir-ocr').hidden, true);
+});
+
+test('limpar o documento descarta a imagem da nova tentativa', async () => {
+    let calls = 0;
+    const a = ambiente({ fetchImpl: async () => { calls++; return Response.json({ error: 'Ocupado', code: 'GEMINI_BUSY' }, { status: 503 }); } });
+    vm.runInContext("arquivoOCRPreparadoGlobal = {name:'contrato.webp', mimeType:'image/webp', size:4, data:'ZmFrZQ=='}; anexoPreparadoGlobal = {}; arquivoAnexoGlobal = {};", a.contexto);
+    await a.contexto.repetirLeituraOCR();
+    a.contexto.limparDadosDoDocumento();
+    assert.equal(a.elemento('btn-repetir-ocr').hidden, true);
+    await a.contexto.repetirLeituraOCR();
+    assert.equal(calls, 1);
 });

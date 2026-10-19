@@ -672,6 +672,9 @@ select:focus-visible {
 
 .items-warning[hidden] { display: none; }
 
+#btn-repetir-ocr { margin-top: 12px; }
+#btn-repetir-ocr[hidden] { display: none; }
+
 .mobile-online[data-state="loading"],
 .mobile-online[data-state="ready"] {
     color: var(--mobile-primary);

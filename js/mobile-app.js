@@ -33,6 +33,8 @@ let processamentoIA = false;
 let salvamentoEmAndamento = false;
 let ocrControllerAtivo = null;
 let conferenciaOCR = null;
+let arquivoOCRPreparadoGlobal = null;
+let ultimaLeituraFalhou = false;
 
 const elementos = {
     fotoCamera: document.getElementById('foto-camera'),
@@ -47,7 +49,8 @@ const elementos = {
     itens: document.getElementById('itens-cadastro'),
     btnAdicionar: document.getElementById('btn-adicionar-item'),
     resumo: document.getElementById('resumo-itens'),
-    aviso: document.getElementById('aviso-conferencia')
+    aviso: document.getElementById('aviso-conferencia'),
+    btnRepetirOCR: document.getElementById('btn-repetir-ocr')
 };
 const modeloItem = elementos.itens.querySelector('.item-cadastro').cloneNode(true);
 const moedaBR = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -116,6 +119,8 @@ function atualizarResumoItens() {
 
 function limparDadosDoDocumento() {
     conferenciaOCR = null;
+    arquivoOCRPreparadoGlobal = null;
+    ultimaLeituraFalhou = false;
     for (const id of ['fornecedor', 'contrato', 'data-fim']) document.getElementById(id).value = '';
     document.getElementById('data-inicio').value = formatarDataLocalISO();
     document.getElementById('periodo').value = 'Mês';
@@ -160,6 +165,8 @@ function atualizarEstadoControles() {
     elementos.btnArquivo.disabled = bloqueado;
     elementos.btnSalvar.disabled = bloqueado;
     elementos.btnAdicionar.disabled = bloqueado;
+    elementos.btnRepetirOCR.disabled = bloqueado;
+    elementos.btnRepetirOCR.hidden = !ultimaLeituraFalhou || !arquivoOCRPreparadoGlobal;
     document.querySelectorAll('.capture-card input, .capture-card select').forEach((campo) => { campo.disabled = bloqueado; });
     elementos.itens.querySelectorAll('[data-remover-item]').forEach((botao) => {
         botao.disabled = bloqueado || elementos.itens.querySelectorAll('.item-cadastro').length === 1;
@@ -395,6 +402,53 @@ function preencherFormularioComOCR(data) {
     return leitura;
 }
 
+function tratarFalhaOCR(erro, requestId) {
+    ultimaLeituraFalhou = true;
+    if (!anexoPreparadoGlobal) {
+        arquivoAnexoGlobal = null;
+        elementos.statusFoto.innerText = '❌ Arquivo não aceito para envio.';
+        elementos.statusFoto.style.color = 'var(--danger)';
+    }
+    registrarEtapaOCR('ocr_falhou', {
+        requestId: erro.requestId || requestId,
+        codigo: erro.code, etapa: erro.stage, status: erro.status,
+        mensagem: erro.message, detalhes: erro.details
+    }, 'error');
+    const temporario = ['GEMINI_BUSY', 'OCR_TIMEOUT'].includes(erro.code) ||
+        [503, 504].includes(erro.status) ||
+        (Array.isArray(erro.details?.attempts) && erro.details.attempts.some((item) => item.status === 503));
+    const mensagem = temporario
+        ? 'O serviço de leitura está temporariamente ocupado. Aguarde um pouco e clique em “Tentar leitura novamente”. Sua imagem foi mantida.'
+        : `Não foi possível ler o documento: ${erro.message}. Revise os dados manualmente ou tente a leitura novamente.`;
+    exibirStatusIA(`⚠️ ${mensagem} Referência: ${erro.requestId || requestId}.`, 'aviso');
+}
+
+async function executarLeituraOCR(arquivoPreparado, requestId) {
+    definirProcessamentoIA(true);
+    ultimaLeituraFalhou = false;
+    elementos.btnRepetirOCR.hidden = true;
+    exibirStatusIA('☁️ Lendo o documento. Se o serviço estiver ocupado, novas tentativas serão feitas automaticamente...', 'processando');
+    try {
+        const dados = await chamarGeminiOCR(arquivoPreparado, requestId);
+        const leitura = preencherFormularioComOCR(dados);
+        exibirStatusIA(`${leitura.avisos.length ? '⚠️' : '✅'} ${leitura.itens.length} ${leitura.itens.length === 1 ? 'item reconhecido' : 'itens reconhecidos'}. Confira todas as linhas antes de enviar.`, leitura.avisos.length ? 'aviso' : 'sucesso');
+        registrarEtapaOCR('ocr_concluido', {
+            requestId: dados?._meta?.requestId || requestId,
+            modelo: dados?._meta?.model,
+            duracaoMs: dados?._meta?.durationMs
+        });
+    } catch (erro) {
+        tratarFalhaOCR(erro, requestId);
+    } finally {
+        definirProcessamentoIA(false);
+    }
+}
+
+async function repetirLeituraOCR() {
+    if (!arquivoOCRPreparadoGlobal || processamentoIA || salvamentoEmAndamento) return;
+    await executarLeituraOCR(arquivoOCRPreparadoGlobal, criarRequestId());
+}
+
 async function previewFotoEProcessarIA(event) {
     const file = event.target.files?.[0];
     if (!file || processamentoIA || salvamentoEmAndamento) return;
@@ -420,6 +474,7 @@ async function previewFotoEProcessarIA(event) {
     try {
         const arquivoPreparado = await prepararArquivoParaIA(file, requestId);
         anexoPreparadoGlobal = arquivoPreparado.storagePrepared;
+        arquivoOCRPreparadoGlobal = arquivoPreparado;
 
         const info = arquivoPreparado.storagePrepared;
         const economia = info.otimizado
@@ -429,33 +484,9 @@ async function previewFotoEProcessarIA(event) {
             ? `📄 PDF pronto: ${file.name} (${StorageService.formatarBytes(info.tamanhoFinal)})`
             : `✅ Imagem pronta${economia}`;
 
-        exibirStatusIA('☁️ Arquivo preparado. Consultando a Edge Function...', 'processando');
-        const dados = await chamarGeminiOCR(arquivoPreparado, requestId);
-        const leitura = preencherFormularioComOCR(dados);
-        exibirStatusIA(`${leitura.avisos.length ? '⚠️' : '✅'} ${leitura.itens.length} ${leitura.itens.length === 1 ? 'item reconhecido' : 'itens reconhecidos'}. Confira todas as linhas antes de enviar.`, leitura.avisos.length ? 'aviso' : 'sucesso');
-        registrarEtapaOCR('ocr_concluido', {
-            requestId: dados?._meta?.requestId || requestId,
-            modelo: dados?._meta?.model,
-            duracaoMs: dados?._meta?.durationMs
-        });
+        await executarLeituraOCR(arquivoPreparado, requestId);
     } catch (erro) {
-        if (!anexoPreparadoGlobal) {
-            arquivoAnexoGlobal = null;
-            elementos.statusFoto.innerText = '❌ Arquivo não aceito para envio.';
-            elementos.statusFoto.style.color = 'var(--danger)';
-        }
-
-        registrarEtapaOCR('ocr_falhou', {
-            requestId: erro.requestId || requestId,
-            codigo: erro.code,
-            etapa: erro.stage,
-            status: erro.status,
-            mensagem: erro.message,
-            detalhes: erro.details
-        }, 'error');
-        const referencia = erro.requestId || requestId;
-        const etapa = erro.stage ? ` Etapa: ${erro.stage}.` : '';
-        exibirStatusIA(`⚠️ Falha na IA: ${erro.message}${etapa} ID: ${referencia}. Preencha manualmente ou tente outra foto.`, 'aviso');
+        tratarFalhaOCR(erro, requestId);
     } finally {
         definirProcessamentoIA(false);
     }
@@ -596,6 +627,7 @@ elementos.btnArquivo.addEventListener('click', () => abrirSeletor(elementos.foto
 elementos.fotoCamera.addEventListener('change', previewFotoEProcessarIA);
 elementos.fotoArquivo.addEventListener('change', previewFotoEProcessarIA);
 elementos.btnSalvar.addEventListener('click', salvarDados);
+elementos.btnRepetirOCR.addEventListener('click', repetirLeituraOCR);
 elementos.btnAdicionar.addEventListener('click', () => {
     if (processamentoIA || salvamentoEmAndamento) return;
     const itens = obterItensDoFormulario();

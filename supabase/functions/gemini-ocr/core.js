@@ -424,6 +424,21 @@ function describeGoogleError(status, body) {
     return cleanText(message, 360);
 }
 
+const isTransientStatus = (status) => [408, 500, 502, 503, 504].includes(status);
+
+function boundedInteger(value, fallback, min, max) {
+    const number = value === undefined || value === null || value === '' ? NaN : Number(value);
+    return Number.isFinite(number) ? Math.max(min, Math.min(max, Math.trunc(number))) : fallback;
+}
+
+function retryAfterMs(value) {
+    if (!value) return null;
+    const seconds = Number(value);
+    if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+    const timestamp = Date.parse(value);
+    return Number.isNaN(timestamp) ? null : Math.max(0, timestamp - Date.now());
+}
+
 async function callGeminiModel({ model, file, apiKey, fetchImpl, timeoutMs, outputMode }) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -446,6 +461,7 @@ async function callGeminiModel({ model, file, apiKey, fetchImpl, timeoutMs, outp
                 ok: false,
                 status: response.status,
                 error: describeGoogleError(response.status, body),
+                retryAfterMs: retryAfterMs(response.headers.get('retry-after')),
                 outputMode
             };
         }
@@ -476,8 +492,8 @@ async function callGeminiModel({ model, file, apiKey, fetchImpl, timeoutMs, outp
 }
 
 function parseModelVersion(name) {
-    const match = String(name).match(/^gemini-(\d+)(?:\.(\d+))?-flash$/);
-    return match ? [Number(match[1]), Number(match[2] || 0)] : null;
+    const match = String(name).match(/^gemini-(\d+)(?:\.(\d+))?-flash(-lite)?$/);
+    return match ? [Number(match[1]), Number(match[2] || 0), match[3] ? 1 : 0] : null;
 }
 
 async function discoverStableFlashModels(apiKey, fetchImpl, timeoutMs) {
@@ -492,13 +508,18 @@ async function discoverStableFlashModels(apiKey, fetchImpl, timeoutMs) {
         const json = await response.json();
         const names = (Array.isArray(json?.models) ? json.models : [])
             .filter((model) => Array.isArray(model?.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
-            .map((model) => String(model?.name || '').replace(/^models\//, ''))
+            .filter((model) => !Number.isFinite(Number(model?.outputTokenLimit)) || Number(model.outputTokenLimit) >= 16384)
+            .map((model) => {
+                const base = String(model?.baseModelId || '').replace(/^models\//, '');
+                return parseModelVersion(base) ? base : String(model?.name || '').replace(/^models\//, '');
+            })
             .filter((name) => parseModelVersion(name));
 
         return [...new Set(names)].sort((a, b) => {
             const av = parseModelVersion(a);
             const bv = parseModelVersion(b);
-            return (bv[0] - av[0]) || (bv[1] - av[1]);
+            // Flash-Lite oferece uma alternativa de capacidade antes dos Flash comuns.
+            return (bv[2] - av[2]) || (bv[0] - av[0]) || (bv[1] - av[1]);
         });
     } catch {
         return [];
@@ -507,29 +528,45 @@ async function discoverStableFlashModels(apiKey, fetchImpl, timeoutMs) {
     }
 }
 
-async function runModels({ models, file, apiKey, fetchImpl, timeoutMs, logger, requestId }) {
+async function runModels({ models, file, apiKey, fetchImpl, timeoutMs, logger, requestId, deadline, maxRetries, sleepImpl, nowImpl, randomImpl }) {
     const errors = [];
+    let exhausted = false;
     for (const model of models) {
-        logEvent(logger, 'info', 'gemini_request_started', { requestId, model, mimeType: file.mimeType, size: file.size });
-        let attempt = await callGeminiModel({ model, file, apiKey, fetchImpl, timeoutMs, outputMode: 'structured' });
+        let outputMode = 'structured';
+        let lastStatus = null;
+        for (let retry = 0; retry <= maxRetries; retry++) {
+            let remaining = deadline - nowImpl();
+            if (remaining < 500) { exhausted = true; break; }
+            logEvent(logger, 'info', 'gemini_request_started', { requestId, model, attempt: retry + 1, mimeType: file.mimeType, size: file.size });
+            let attempt = await callGeminiModel({ model, file, apiKey, fetchImpl, timeoutMs: Math.min(timeoutMs, remaining), outputMode });
 
-        if (!attempt.ok && attempt.status === 400 && /schema|responsejsonschema|responseformat|generationconfig/i.test(attempt.error)) {
-            logEvent(logger, 'warn', 'gemini_structured_output_retry', { requestId, model, status: attempt.status, error: attempt.error });
-            attempt = await callGeminiModel({ model, file, apiKey, fetchImpl, timeoutMs, outputMode: 'legacy-json' });
+            if (!attempt.ok && outputMode === 'structured' && attempt.status === 400 && /schema|responsejsonschema|responseformat|generationconfig/i.test(attempt.error)) {
+                outputMode = 'legacy-json';
+                remaining = deadline - nowImpl();
+                if (remaining < 500) { exhausted = true; break; }
+                logEvent(logger, 'warn', 'gemini_structured_output_retry', { requestId, model, status: attempt.status, error: attempt.error });
+                attempt = await callGeminiModel({ model, file, apiKey, fetchImpl, timeoutMs: Math.min(timeoutMs, remaining), outputMode });
+            }
+
+            if (attempt.ok) {
+                logEvent(logger, 'info', 'gemini_request_succeeded', { requestId, model, outputMode: attempt.outputMode });
+                return { result: attempt.result, model, errors, exhausted: false };
+            }
+            lastStatus = attempt.status;
+            const item = { model, status: attempt.status, error: attempt.error };
+            errors.push(item);
+            logEvent(logger, 'warn', 'gemini_request_failed', { requestId, attempt: retry + 1, ...item });
+            if (!isTransientStatus(attempt.status) || retry === maxRetries) break;
+
+            const waitMs = Math.max(1000 * (2 ** retry) + Math.floor(randomImpl() * 250), attempt.retryAfterMs || 0);
+            // Não aguarda além do orçamento da leitura nem repete um Retry-After longo.
+            if (waitMs > 8000 || deadline - nowImpl() < waitMs + 500) break;
+            logEvent(logger, 'info', 'gemini_retry_scheduled', { requestId, model, waitMs, attempt: retry + 2 });
+            await sleepImpl(waitMs);
         }
-
-        if (attempt.ok) {
-            logEvent(logger, 'info', 'gemini_request_succeeded', { requestId, model, outputMode: attempt.outputMode });
-            return { result: attempt.result, model, errors };
-        }
-
-        const item = { model, status: attempt.status, error: attempt.error };
-        errors.push(item);
-        logEvent(logger, 'warn', 'gemini_request_failed', { requestId, ...item });
-
-        if (attempt.status === 401 || attempt.status === 403) break;
+        if (exhausted || lastStatus === 401 || lastStatus === 403) break;
     }
-    return { result: null, model: null, errors };
+    return { result: null, model: null, errors, exhausted };
 }
 
 function formatErrorResponse(error, requestId) {
@@ -564,7 +601,12 @@ export function createHandler(options = {}) {
     const allowedOrigins = getAllowedOrigins(env);
     const maxFileBytes = Number(env.OCR_MAX_FILE_BYTES) || (10 * 1024 * 1024);
     const maxRequestBytes = Number(env.OCR_MAX_REQUEST_BYTES) || (15 * 1024 * 1024);
-    const timeoutMs = Number(env.GEMINI_TIMEOUT_MS) || 35000;
+    const timeoutMs = boundedInteger(env.GEMINI_TIMEOUT_MS, 35000, 1000, 45000);
+    const totalTimeoutMs = boundedInteger(env.OCR_TOTAL_TIMEOUT_MS, 60000, 1000, 65000);
+    const maxRetries = boundedInteger(env.GEMINI_MAX_RETRIES, 1, 0, 2);
+    const sleepImpl = options.sleepImpl || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    const nowImpl = options.nowImpl || Date.now;
+    const randomImpl = options.randomImpl || Math.random;
 
     return async function handler(request) {
         const startedAt = Date.now();
@@ -591,6 +633,7 @@ export function createHandler(options = {}) {
                     ok: true,
                     service: 'gemini-ocr',
                     schemaVersion: 2,
+                    recoveryVersion: 1,
                     requestId,
                     geminiKeyConfigured: Boolean(geminiApiKey),
                     models,
@@ -638,15 +681,18 @@ export function createHandler(options = {}) {
             }
             logEvent(logger, 'info', 'ocr_file_validated', { requestId, mimeType: file.mimeType, size: file.size, name: file.name || undefined });
 
-            let execution = await runModels({ models, file, apiKey: geminiApiKey, fetchImpl, timeoutMs, logger, requestId });
+            const deadline = nowImpl() + totalTimeoutMs;
+            const runOptions = { file, apiKey: geminiApiKey, fetchImpl, timeoutMs, logger, requestId, deadline, maxRetries, sleepImpl, nowImpl, randomImpl };
+            let execution = await runModels({ ...runOptions, models });
 
-            const allConfiguredModelsMissing = execution.errors.length === models.length && execution.errors.every((item) => item.status === 404);
-            if (!execution.result && allConfiguredModelsMissing) {
-                const discovered = (await discoverStableFlashModels(geminiApiKey, fetchImpl, Math.min(timeoutMs, 15000)))
-                    .filter((model) => !models.includes(model));
+            const authFailed = execution.errors.some((item) => item.status === 401 || item.status === 403);
+            const discoverableFailure = execution.errors.some((item) => item.status === 404 || isTransientStatus(item.status));
+            if (!execution.result && !authFailed && discoverableFailure && env.GEMINI_AUTO_DISCOVER !== 'false' && deadline - nowImpl() >= 1000) {
+                const discovered = (await discoverStableFlashModels(geminiApiKey, fetchImpl, Math.min(5000, deadline - nowImpl())))
+                    .filter((model) => !models.includes(model)).slice(0, 2);
                 if (discovered.length) {
                     logEvent(logger, 'warn', 'gemini_models_auto_discovered', { requestId, models: discovered });
-                    const discoveredExecution = await runModels({ models: discovered, file, apiKey: geminiApiKey, fetchImpl, timeoutMs, logger, requestId });
+                    const discoveredExecution = await runModels({ ...runOptions, models: discovered });
                     execution = {
                         ...discoveredExecution,
                         errors: [...execution.errors, ...discoveredExecution.errors]
@@ -659,6 +705,11 @@ export function createHandler(options = {}) {
                 if (authFailure) {
                     throw new HttpError(502, 'GEMINI_AUTH_FAILED', 'A API do Gemini rejeitou a chave configurada.', 'gemini-auth', { attempts: execution.errors });
                 }
+                if (execution.exhausted || execution.errors.some((item) => isTransientStatus(item.status))) {
+                    throw new HttpError(503, 'GEMINI_BUSY',
+                        'O serviço de leitura está temporariamente ocupado. Aguarde um pouco e tente novamente com o mesmo documento.',
+                        'gemini', { retryAfterSeconds: 10 });
+                }
                 throw new HttpError(502, 'ALL_GEMINI_MODELS_FAILED', 'Todos os modelos Gemini configurados falharam.', 'gemini', { attempts: execution.errors });
             }
 
@@ -668,6 +719,7 @@ export function createHandler(options = {}) {
                 ...execution.result,
                 _meta: {
                     schemaVersion: 2,
+                    recoveryVersion: 1,
                     itemCount: execution.result.itens.length,
                     requestId,
                     model: execution.model,
